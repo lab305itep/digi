@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ "X"$1 == "X" ] ; then
+	echo "Usage ./evtbuilder run_number"
+	exit 10
+fi
+
+RUNNUMBER=`printf "%6.6d" $1`
+#RUN=`find /data /ddata -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
+RUN=`find /space/digi_rawProc -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
+
+if [ "x$RUN" == "x" ] ; then
+    echo Run $RUNNUMBER not found
+    exit 10
+fi
+
+
+
+if [ $RUN != ${RUN/.bz2} ] ; then
+	bzip2 -d $RUN
+	RUN=${RUN/.bz2}
+fi
+echo $RUN > evtbuilder_list.txt
+
+RUNDIR=`dirname $RUN`
+CALIB=`find $RUNDIR -name "*calib.txt" -print`
+CALIB=${CALIB:-/data/DANSS/digi_rawProc/v1.0/002086-2148/danss_data_002101-17_calib.txt}
+
+if [ $RUNNUMBER -lt 2066 ] ; then
+	TCALIB=tcalib_1000_ss.calib
+else
+	TCALIB=tcalib_cmnew_ss.calib
+fi
+
+./digi_evtbuilder -calib $CALIB -file evtbuilder_list.txt -tcalib $TCALIB -output root/danss_${RUNNUMBER}.root
+
