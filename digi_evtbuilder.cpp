@@ -51,6 +51,7 @@
 #define VETO2MEV	0.002			// Translate corrected VETO signal to MeV
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
+#define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
 #define MINPMTENERGY	0.1			// Minimum PMT energy for a hit
 #define MINVETOENERGY	0.1			// Minimum VETO energy for a hit
 //	fine time
@@ -66,6 +67,7 @@
 #define FLG_NOCLEANNOISE 	0x10000
 #define FLG_NOTIMECUT		0x20000
 #define FLG_NOCONFIRM		0x40000
+#define FLG_NOCONFIRM2		0x80000
 
 using namespace std;
 
@@ -305,6 +307,21 @@ void CleanByConfirmation(ReadDigiDataUser *user)
 		for (j=0; j<N; j++) if (HitFlag[j] >= 0 && user->type(j) == SiPmHit && IsInModule(j, i, user)) break;
 		if (j == N) HitFlag[i] = -1;
 		break;
+	}
+}
+
+
+/*	Clean SiPM only if npix == 1 and no PMT confirmation	*/
+void CleanByConfirmation2(ReadDigiDataUser *user)
+{
+	int i, j, N;
+	
+	N = user->nhits();
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit) {
+		if (user->npix(i) >= MINSIPMPIXELS2) continue;		// that's enough
+		for (j=0; j<N; j++) if (HitFlag[j] >= 0 && user->type(j) == PmtHit && IsInModule(i, j, user)) break;
+		if (j < N) continue;
+		HitFlag[i] = -1;
 	}
 }
 
@@ -639,6 +656,7 @@ int ReadDigiDataUser::processUserEvent()
 	FindFineTime(this);
 	if (!(iFlags & FLG_NOTIMECUT)) CleanByTime(this);
 	if (!(iFlags & FLG_NOCONFIRM)) CleanByConfirmation(this);
+	if (!(iFlags & FLG_NOCONFIRM2)) CleanByConfirmation2(this);
 	SumClean(this);
 	CalculateNeutron(this);
 	CalculatePositron(this);

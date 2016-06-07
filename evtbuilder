@@ -1,9 +1,12 @@
 #!/bin/bash
 
 if [ "X"$1 == "X" ] ; then
-	echo "Usage ./evtbuilder run_number"
+	echo "Usage ./evtbuilder run_number [flags] [root_dir]"
 	exit 10
 fi
+
+FLAGS=${2:-"0x80000"}
+ROOT_DIR=${3:-"danss_root"}
 
 RUNNUMBER=`printf "%6.6d" $1`
 #RUN=`find /data /ddata -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
@@ -32,5 +35,5 @@ else
 	TCALIB=tcalib_cmnew_ss.calib
 fi
 
-./digi_evtbuilder -calib $CALIB -file evtbuilder_list.txt -tcalib $TCALIB -output root/danss_${RUNNUMBER}.root
+./digi_evtbuilder -calib $CALIB -file evtbuilder_list.txt -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
 

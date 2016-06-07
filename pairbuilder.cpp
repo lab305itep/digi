@@ -42,7 +42,7 @@
 #define NEUTN		3	// number of gammas
 #define MINVETOE	4.0	// MeV
 #define VETON		2	// number of hits
-#define VETOBLK		10.0	// us
+#define VETOBLK		100.0	// us
 
 int IsNeutron(struct DanssEventStruct *DanssEvent)
 {
