@@ -61,7 +61,7 @@
 #define TCUT		15			// fine time cut, ns
 #define NOFINETIME	10000			// something out of range
 //	Neutron
-#define NEUTRONRAD	25.0			// Radius for neutron gammas, cm
+#define NEUTRONRAD	200.0			// Radius for neutron gammas, cm
 //	Positron
 #define ANNIHRAD	25.0			// Distance to annihiliation gammas
 //	Flags

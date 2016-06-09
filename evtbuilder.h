@@ -89,7 +89,8 @@ struct DanssCmStruct {
 	int		Hits[10];
 	int		NeutronHits[10];	// number of hits considered as neutron capture gammas
 	float		NeutronEnergy[10];	// Energy sum of above (SiPM)
-	float		NeutronX[10][5];	// center of gammas position
+	float		NeutronX[10][3];	// center of gammas position
+	float		PositronX[10][3];	// center of maximum hit clusters
 	float		NeutronGammaEnergy[10][5];	// sorted list of the 5 most energetic gammas
 	float		NeutronGammaDistance[10][5];	// distances for the gammas above to the "neutron" center
 	float		NeutronRadius[10];		// average distance between hits and the center

@@ -49,8 +49,8 @@ int IsFission(struct DanssEventStruct *DanssEvent)
 {
 	if (DanssEvent->PmtCleanEnergy < MINTRIGE || DanssEvent->PmtCleanEnergy > MAXTRIGE) return 0;
 	if (DanssEvent->SiPmCleanEnergy < MINTRIGE || DanssEvent->SiPmCleanEnergy > MAXTRIGE) return 0;
-	if (fabs(DanssEvent->NeutronX[0] - SOURCEX) > DELTA) return 0;
-	if (fabs(DanssEvent->NeutronX[2] - SOURCEZ) > DELTA) return 0;
+//	if (fabs(DanssEvent->NeutronX[0] - SOURCEX) > DELTA) return 0;
+	if (fabs(DanssEvent->PositronX[2] - SOURCEZ) > DELTA) return 0;
 	return 1;
 }
 
@@ -72,6 +72,7 @@ void Add2Cm(struct DanssEventStruct *DanssEvent, struct DanssCmStruct *DanssCm, 
 	DanssCm->NeutronHits[num] = DanssEvent->NeutronHits;
 	DanssCm->NeutronEnergy[num] = DanssEvent->NeutronSiPmEnergy;
 	memcpy(DanssCm->NeutronX[num], DanssEvent->NeutronX, sizeof(DanssEvent->NeutronX));
+	memcpy(DanssCm->PositronX[num], DanssEvent->PositronX, sizeof(DanssEvent->PositronX));
 	memcpy(DanssCm->NeutronGammaEnergy[num], DanssEvent->NeutronGammaEnergy, sizeof(DanssEvent->NeutronGammaEnergy));
 	memcpy(DanssCm->NeutronGammaDistance[num], DanssEvent->NeutronGammaDistance, sizeof(DanssEvent->NeutronGammaDistance));
 	DanssCm->NeutronRadius[num] = DanssEvent->NeutronRadius;
@@ -131,6 +132,7 @@ int main(int argc, char **argv)
 		"NeutronHits[10]/I:"	// number of hits considered as neutron capture gammas
 		"NeutronEnergy[10]/F:"	// Energy sum of above (SiPM)
 		"NeutronX[10][3]/F:"	// center of gammas position
+		"PositronX[10][3]/F:"	// maximum hit clusters
 		"NeutronGammaEnergy[10][5]/F:"	// sorted list of the 5 most energetic gammas
 		"NeutronGammaDistance[10][5]/F:"	// distances for the gammas above to the "neutron" center
 		"NeutronRadius[10]/F:"	// average distance between hits and the center
