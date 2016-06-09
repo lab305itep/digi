@@ -34,7 +34,7 @@
 #include "evtbuilder.h"
 
 #define GFREQ2US	(GLOBALFREQ / 1000000)
-#define MAXTDIFF	50.0	// us
+#define MAXTDIFF	1000.0	// us
 #define MINPOSE		1.0	// MeV
 #define MAXPOSE		8.0	// MeV
 #define MINNEUTE	3.0	// MeV
@@ -50,7 +50,6 @@ int IsNeutron(struct DanssEventStruct *DanssEvent)
 	if (DanssEvent->NeutronSiPmEnergy < MINNEUTE || DanssEvent->NeutronSiPmEnergy > MAXNEUTE) return 0;
 	if (DanssEvent->PmtCleanEnergy < MINNEUTE || DanssEvent->PmtCleanEnergy > MAXNEUTE) return 0;
 	if (DanssEvent->SiPmCleanEnergy < MINNEUTE || DanssEvent->SiPmCleanEnergy > MAXNEUTE) return 0;
-	
 	if (DanssEvent->SiPmCleanHits < NEUTN) return 0;
 	return 1;
 }
@@ -118,7 +117,9 @@ int main(int argc, char **argv)
 	char str[1024];
 	long long iEvt, nEvt;
 	long long lastgTime, lastVeto;
-	int PairCnt;
+	long long PairCnt;
+	long long NeutronCnt;
+	long long VetoCnt;
 	int i;
 	char *ptr;
 	
@@ -190,21 +191,23 @@ int main(int argc, char **argv)
 	fclose(fList);
 
 	nEvt = EventChain->GetEntries();
-	PairCnt = 0;
+	PairCnt = VetoCnt = NeutronCnt = 0;
 	lastVeto = lastgTime = -GLOBALFREQ;
-	for (iEvt =0; iEvt < nEvt; iEvt++) {
+	for (iEvt = 0; iEvt < nEvt; iEvt++) {
 		EventChain->GetEntry(iEvt);
-		if (IsVeto(&DanssEvent)) lastVeto = DanssEvent.globalTime;
-		if (DanssEvent.globalTime - lastVeto < VETOBLK * GFREQ2US) {
-			continue;	// Veto is active
-		}
+		if (IsVeto(&DanssEvent)) VetoCnt++;
+		if (IsNeutron(&DanssEvent)) NeutronCnt++;
+//		if (IsVeto(&DanssEvent)) lastVeto = DanssEvent.globalTime;
+//		if (DanssEvent.globalTime - lastVeto < VETOBLK * GFREQ2US) {
+//			continue;	// Veto is active
+//		}
 		if (DanssEvent.globalTime - lastgTime < MAXTDIFF * GFREQ2US && IsNeutron(&DanssEvent)) {
 			MakePair(&DanssEvent, &SavedEvent, &DanssPair);
 			tOut->Fill();
 			lastgTime = -GLOBALFREQ;
 			PairCnt++;
 			continue;
-		} else if (IsPositron(&DanssEvent)) {
+		} else if (IsVeto(&DanssEvent)) {
 			memcpy(&SavedEvent, &DanssEvent, sizeof(struct DanssEventStruct));
 			lastgTime = DanssEvent.globalTime;
 		}
@@ -219,7 +222,7 @@ int main(int argc, char **argv)
 	}
 	InfoOut->Fill();	
 
-	printf("%Ld events processed - %d pairs found. Aquired time %f7.0 s\n", iEvt, PairCnt, SumInfo.upTime / GLOBALFREQ);
+	printf("%Ld events processed - %Ld pairs, %Ld muons and %Ld found. Aquired time %f7.0 s\n", iEvt, PairCnt, VetoCnt, NeutronCnt, SumInfo.upTime / GLOBALFREQ);
 fin:
 	delete EventChain;
 	delete InfoChain;

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export DANSSRAWREC_HOME=/usr/local/digi/
+
 if [ "X"$1 == "X" ] ; then
 	echo "Usage ./evtbuilder run_number [flags] [root_dir]"
 	exit 10
@@ -10,11 +12,14 @@ ROOT_DIR=${3:-"danss_root"}
 
 RUNNUMBER=`printf "%6.6d" $1`
 #RUN=`find /data /ddata -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
-RUN=`find /space/digi_rawProc -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
+RUN=`find /space/digi_fullProc -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
+if [ "x$RUN" == "x" ] ; then
+	RUN=`find /space/digi_rawProc -name danss*${RUNNUMBER}*digi* -print -quit 2>/dev/null`
+fi
 
 if [ "x$RUN" == "x" ] ; then
-    echo Run $RUNNUMBER not found
-    exit 10
+    	echo Run $RUNNUMBER not found
+    	exit 10
 fi
 
 

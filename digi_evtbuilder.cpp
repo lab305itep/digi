@@ -40,7 +40,7 @@
 #include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "TSpectrum.h"
+//#include "TSpectrum.h"
 
 #include "readDigiData.h"
 #include "danssScmGlobals.h"
@@ -54,6 +54,8 @@
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
 #define MINPMTENERGY	0.1			// Minimum PMT energy for a hit
 #define MINVETOENERGY	0.1			// Minimum VETO energy for a hit
+#define SIPMEARLYTIME	45			// ns - shift from fine time
+#define SOMEEARLYTIME	130			// ns - absolute if fineTime is not defined
 //	fine time
 #define MINENERGY4TIME	0.25			// Minimum energy to use for fine time averaging
 #define TCUT		15			// fine time cut, ns
@@ -275,6 +277,14 @@ void CalculateNeutron(ReadDigiDataUser *user)
 	}
 }
 
+void CleanZeroes(ReadDigiDataUser *user)
+{
+	int i, N;
+	
+	N = user->nhits();
+	for (i=0; i<N; i++) if (user->type(i) == SiPmHit && user->npix(i) <= 0) HitFlag[i] = -1;
+}
+
 void CleanNoise(ReadDigiDataUser *user)
 {
 	int i, N;
@@ -385,6 +395,9 @@ void FindFineTime(ReadDigiDataUser *user)
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0) {
 		switch(user->type(i)) {
 		case SiPmHit:
+			e = user->e(i);
+			if (user->npix(i) < MINSIPMPIXELS) e = 0;
+			break;
 		case PmtHit:
 			e = user->e(i);
 			break;
@@ -398,6 +411,12 @@ void FindFineTime(ReadDigiDataUser *user)
 		}
 	}
 	DanssEvent.fineTime = (asum > 0) ? tsum / asum : NOFINETIME;	// some large number if not usable hits found
+	tsum = (asum > 0) ? (tsum / asum - SIPMEARLYTIME) : SOMEEARLYTIME;
+
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && fabs(user->t(i) - tsum) <= TCUT) {
+		DanssEvent.SiPmEarlyHits++;
+		DanssEvent.SiPmEarlyEnergy += user->e(i);		
+	}
 }
 
 void SumClean(ReadDigiDataUser *user)
@@ -586,6 +605,8 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"SiPmEnergy/F:"
 		"SiPmCleanHits/I:"
 		"SiPmCleanEnergy/F:"
+		"SiPmEarlyHits/I:"
+		"SiPmEarlyEnergy/F:"		
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
 		"PositronSiPmEnergy/F:"	// Energy sum of the cluster (SiPM)
@@ -651,6 +672,7 @@ int ReadDigiDataUser::processUserEvent()
 	DanssEvent.number     = nevt();
 	DanssEvent.unixTime   = absTime();
 
+	CleanZeroes(this);
 	SumEverything(this);
 	if (!(iFlags & FLG_NOCLEANNOISE)) CleanNoise(this);
 	FindFineTime(this);

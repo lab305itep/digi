@@ -40,7 +40,7 @@
 #include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
-#include "TSpectrum.h"
+//#include "TSpectrum.h"
 
 #include "readDigiData.h"
 #include "danssScmGlobals.h"
