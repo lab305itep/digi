@@ -60,10 +60,9 @@
 #define MINENERGY4TIME	0.25			// Minimum energy to use for fine time averaging
 #define TCUT		15			// fine time cut, ns
 #define NOFINETIME	10000			// something out of range
-//	Neutron
-#define NEUTRONRAD	200.0			// Radius for neutron gammas, cm - looks useless
 //	Positron
-#define ANNIHRAD	25.0			// Distance to annihiliation gammas
+#define ATTENUATION	0.00342			// Signal attenuation for positron energy correction
+#define MCATTENUATION	0.005			// Signal attenuation for positron energy correction MC
 //	Flags
 #define FLG_PRINTALL		1
 #define FLG_NOCLEANNOISE 	0x10000
@@ -90,7 +89,7 @@ int					IsMc;				// MC run flag
 TFile *					OutputFile;
 TTree *					OutputTree;
 TTree *					InfoTree;
-struct DanssEventStruct			DanssEvent;
+struct DanssEventStruct2			DanssEvent;
 struct DanssInfoStruct			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
@@ -108,16 +107,17 @@ float VetoEnergy(int chan, float amp)
 	return amp * TrigCoef[chan] * VETO2MEV;
 }
 
-int IsInModule(int SiPmHit, int PmtHit, ReadDigiDataUser *user)
+int IsInModule(int SiPm, int Pmt, ReadDigiDataUser *user)
 {
 	int SiPmXY, PmtXY;
 	int SiPmZ, PmtZ;
 
-	if (user->side(SiPmHit) != user->side(PmtHit)) return false;
-	SiPmXY = user->firstCoord(SiPmHit);
-	PmtXY  = user->firstCoord(PmtHit);
-	SiPmZ  = user->zCoord(SiPmHit);
-	PmtZ   = user->zCoord(PmtHit);
+	if (user->side(SiPm) != user->side(Pmt)) return false;
+	if (user->type(SiPm) != SiPmHit || user->type(Pmt) != PmtHit) return false;	// wrong request
+	SiPmXY = user->firstCoord(SiPm);
+	PmtXY  = user->firstCoord(Pmt);
+	SiPmZ  = user->zCoord(SiPm);
+	PmtZ   = user->zCoord(Pmt);
 	if (SiPmXY / 5 != PmtXY || SiPmZ / 20 != PmtZ) return false;
 	return true;
 }
@@ -129,13 +129,30 @@ int IsNeighbor(int hitA, int hitB, ReadDigiDataUser *user)
 	return 0;
 }
 
+float acorr(float energy, float dist, int side)
+{
+	float C;
+
+	if (dist >= 0) {
+		if (IsMc) {
+			C = exp(MCATTENUATION * (dist - 50.0));	// 50 cm is the middle
+		 	if (side) C = 1/C;			// side = 1 - X
+		} else {
+			C = exp(ATTENUATION * (dist - 50.0));	// 50 cm is the middle
+		}
+	} else {
+		C = 1;
+	}
+	return C * energy;
+}
+
 //				Main analysis
 
 void CalculatePositron(ReadDigiDataUser *user)
 {
 	int i, j, N;
 	float A;
-	float x, y, z, r2;
+	float x, y, z;
 	float nx, ny;
 	int maxHit;
 	int clHits;
@@ -161,12 +178,11 @@ void CalculatePositron(ReadDigiDataUser *user)
 		}
 		if (!repeat) break;
 	}
-//		Summ the cluster
+//		Find cluster position
 	x = y = z = 0;
 	nx = ny = 0;
 	for (i=0; i<N; i++) if (HitFlag[i] >= 10) {
 		DanssEvent.PositronHits++;
-		DanssEvent.PositronSiPmEnergy += user->e(i);
 		if (user->side(i) == 'X') {
 			x += user->firstCoord(i) * fStripWidth * user->e(i);
 			z += user->zCoord(i) * fStripHeight * user->e(i);
@@ -180,20 +196,27 @@ void CalculatePositron(ReadDigiDataUser *user)
 	DanssEvent.PositronX[0] = (nx > 0) ? x / nx : -1;		// 50 cm is DANSS center
 	DanssEvent.PositronX[1] = (ny > 0) ? y / ny : -1;		// 50 cm is DANSS center
 	DanssEvent.PositronX[2] = (nx + ny > 0) ? z / (nx + ny) : -1;	// 50 cm is DANSS center
+//		Find corrected energy
+	for (i=0; i<N; i++) if (HitFlag[i] >= 10) {
+		if (user->side(i) == 'X') {
+			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 1);
+		} else {
+			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 0);
+		}
+	}
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == PmtHit) {
+		for (j=0; j<N; j++) if (IsInModule(j, i, user) && HitFlag[j] >= 10) break;
+		if (j >= N) continue;
+		if (user->side(i) == 'X') {
+			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 1);
+		} else {
+			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 0);
+		}
+	}
 //		Count possible gammas
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
-		r2 = user->zCoord(i) * fStripHeight - DanssEvent.PositronX[2];
-		r2 *= r2;
-		if (user->side(i) == 'X' && nx > 0) {
-			r2 += (user->firstCoord(i) * fStripWidth - DanssEvent.PositronX[0]) * (user->firstCoord(i) * fStripWidth - DanssEvent.PositronX[0]);
-		} else if (user->side(i) == 'Y' && ny > 0) {
-			r2 += (user->firstCoord(i) * fStripWidth - DanssEvent.PositronX[1]) * (user->firstCoord(i) * fStripWidth - DanssEvent.PositronX[1]);
-		}
-//		printf("r2=%f\n", r2);
-		if (r2 < ANNIHRAD * ANNIHRAD) {
-			DanssEvent.AnnihilationGammas++;
-			DanssEvent.AnnihilationEnergy += user->e(i);
-		}
+		DanssEvent.AnnihilationGammas++;
+		DanssEvent.AnnihilationEnergy += user->e(i);
 	}
 }
 
@@ -201,8 +224,7 @@ void CalculateNeutron(ReadDigiDataUser *user)
 {
 	float x, y, z, r;
 	int nx, ny;
-	int i, j, k, N;
-	float A, B;
+	int i, N;
 
 	N = user->nhits();
 //	Find the center (1st approximation)
@@ -219,39 +241,12 @@ void CalculateNeutron(ReadDigiDataUser *user)
 			ny++;
 		}
 	}
-	x = (nx) ? x / nx : -1;			// 50 cm is DANSS center
-	y = (ny) ? y / ny : -1;			// 50 cm is DANSS center
-	z = (nx + ny) ? z / (nx + ny) : -1;	// 50 cm is DANSS center
-//	Mark inside neutron sphere
-	nx = ny = 0;
-	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit) {
-		r = (user->side(i) == 'X') ? x : y;
-		r = (user->firstCoord(i) * fStripWidth - r) * (user->firstCoord(i) * fStripWidth - r);
-		r += (user->zCoord(i) * fStripHeight - z) * (user->zCoord(i) * fStripHeight - z);
-		r = sqrt(r);
-		if (r <= NEUTRONRAD) HitFlag[i] = 1;
-	}
-//	Calculate parameters using selected hits
-	for (i=0; i<N; i++) if (HitFlag[i] == 1) {
-		DanssEvent.NeutronHits++;
-		DanssEvent.NeutronSiPmEnergy += user->e(i);
-		if (user->side(i) == 'X') {
-			DanssEvent.NeutronX[0] += user->firstCoord(i) * fStripWidth;
-			DanssEvent.NeutronX[2] += user->zCoord(i) * fStripHeight;
-			nx++;
-		} else {
-			DanssEvent.NeutronX[1] += user->firstCoord(i) * fStripWidth;
-			DanssEvent.NeutronX[2] += user->zCoord(i) * fStripHeight;
-			ny++;
-		}
-	}
-	DanssEvent.NeutronX[0] = (nx) ? DanssEvent.NeutronX[0] / nx : -1;		// 50 cm is DANSS center
-	DanssEvent.NeutronX[1] = (ny) ? DanssEvent.NeutronX[1] / ny : -1;		// 50 cm is DANSS center
-	DanssEvent.NeutronX[2] = (nx + ny) ? DanssEvent.NeutronX[2] / (nx + ny) : -1;	// 50 cm is DANSS center
-
+	DanssEvent.NeutronX[0] = (nx) ? x / nx : -1;			// 50 cm is DANSS center
+	DanssEvent.NeutronX[1] = (ny) ? y / ny : -1;			// 50 cm is DANSS center
+	DanssEvent.NeutronX[2] = (nx + ny) ? z / (nx + ny) : -1;	// 50 cm is DANSS center
 //	Average distance
 	nx = 0;
-	for (i=0; i<N; i++) if (HitFlag[i] == 1) {
+	for (i=0; i<N; i++) if (user->type(i) == SiPmHit && HitFlag[i] >= 0) {
 		r = DanssEvent.NeutronX[(user->side(i) == 'X') ? 0 : 1]; 
 		r = (user->firstCoord(i) * fStripWidth - r) * (user->firstCoord(i) * fStripWidth - r);
 		r += (user->zCoord(i) * fStripHeight - DanssEvent.NeutronX[2]) * (user->zCoord(i) * fStripHeight - DanssEvent.NeutronX[2]);
@@ -260,24 +255,6 @@ void CalculateNeutron(ReadDigiDataUser *user)
 		nx++;
 	}
 	DanssEvent.NeutronRadius = (nx) ? DanssEvent.NeutronRadius / nx : -1;
-//
-	B = 10000;
-	for (i=0; i<5; i++) {
-		j = -1;
-		A = 0;
-		for (j=0; j<N; j++) if (HitFlag[j] == 1) if (user->e(j) > A && user->e(j) < B) {
-			A = user->e(j);
-			k = j;
-		}
-		if (A == 0) break;
-		DanssEvent.NeutronGammaEnergy[i] = A;
-		r = DanssEvent.NeutronX[(user->side(k) == 'X') ? 0 : 1]; 
-		r = (user->firstCoord(k) * fStripWidth - r) * (user->firstCoord(k) * fStripWidth - r);
-		r += (user->zCoord(k) * fStripHeight - DanssEvent.NeutronX[2]) * (user->zCoord(k) * fStripHeight - DanssEvent.NeutronX[2]);
-		r = sqrt(r);
-		DanssEvent.NeutronGammaDistance[i] = r;
-		B = A;
-	}
 }
 
 void CleanZeroes(ReadDigiDataUser *user)
@@ -615,17 +592,14 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"SiPmEarlyEnergy/F:"		
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
-		"PositronSiPmEnergy/F:"	// Energy sum of the cluster (SiPM)
+		"PositronSiPmEnergy/F:"	// Energy sum of the cluster, corrected (SiPM)
+		"PositronPmtEnergy/F:"	// Energy sum of the cluster, corrected (PMT)
 		"MaxHitEnergy/F:"	// Energy of the maximum hit
 		"PositronX[3]/F:"	// cluster position
 		"AnnihilationGammas/I:"	// number of possible annihilation gammas
 		"AnnihilationEnergy/F:"	// Energy in annihilation gammas
 //		"neutron" parameters
-		"NeutronHits/I:"	// number of hits considered as neutron capture gammas
-		"NeutronSiPmEnergy/F:"	// Energy sum of above (SiPM)
 		"NeutronX[3]/F:"	// center of gammas position
-		"NeutronGammaEnergy[5]/F:"	// sorted list of the 5 most energetic gammas
-		"NeutronGammaDistance[5]/F:"	// distances for the gammas above to the "neutron" center
 		"NeutronRadius/F"	// average distance between hits and the center
 	);
 	if (IsMc) OutputTree->Branch("MC", &DanssMc,

@@ -7,7 +7,7 @@ if [ "X"$1 == "X" ] ; then
 	exit 10
 fi
 
-FLAGS=${2:-"0x80000"}
+FLAGS=${2:-"0x50000"}
 ROOT_DIR=${3:-"danss_root"}
 
 RUNNUMBER=`printf "%6.6d" $1`
@@ -22,13 +22,12 @@ if [ "x$RUN" == "x" ] ; then
     	exit 10
 fi
 
-
-
 if [ $RUN != ${RUN/.bz2} ] ; then
 	bzip2 -d $RUN
 	RUN=${RUN/.bz2}
 fi
-echo $RUN > evtbuilder_list.txt
+LISTFILE="${RUNNUMBER}.list"
+echo $RUN > $LISTFILE
 
 RUNDIR=`dirname $RUN`
 CALIB=`find $RUNDIR -name "*calib.txt" -print`
@@ -40,5 +39,6 @@ else
 	TCALIB=tcalib_cmnew_ss.calib
 fi
 
-./digi_evtbuilder -calib $CALIB -file evtbuilder_list.txt -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
+./digi_evtbuilder2 -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
+rm $LISTFILE
 

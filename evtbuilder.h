@@ -45,6 +45,42 @@ struct DanssEventStruct {
 	float		NeutronRadius;		// average distance between hits and the center
 };
 
+struct DanssEventStruct2 {
+//		Common parameters
+	long long	globalTime;		// time in terms of 125 MHz
+	long long	number;			// event number in the file
+	int		unixTime;		// linux time, seconds
+	float		fineTime;		// fine time of the event (for hit selection)
+//		Veto parameters
+	int		VetoHits;		// hits in the event record
+	float		VetoEnergy;		// Energy Sum of all hits
+	int		VetoCleanHits;		// hits above threshold and in time window
+	float		VetoCleanEnergy;	// Energy Sum of clean hits
+//		PMT parameters
+	int		PmtHits;		// the same as above for PMT
+	float		PmtEnergy;
+	int		PmtCleanHits;
+	float		PmtCleanEnergy;
+//		SiPM parameters
+	int		SiPmHits;		// the same as above for PMT
+	float		SiPmEnergy;
+	int		SiPmCleanHits;
+	float		SiPmCleanEnergy;
+	int		SiPmEarlyHits;		// to understand random background
+	float		SiPmEarlyEnergy;
+//		"positron cluster" parameters
+	int		PositronHits;		// hits in the cluster
+	float		PositronSiPmEnergy;	// Energy sum of the cluster, corrected (SiPM)
+	float		PositronPmtEnergy;	// Energy sum of the cluster, corrected (PMT)
+	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
+	float		PositronX[3];		// cluster position
+	int		AnnihilationGammas;	// number of possible annihilation gammas
+	float		AnnihilationEnergy;	// Energy in annihilation gammas
+//		"neutron" parameters
+	float		NeutronX[3];		// center of gammas position
+	float		NeutronRadius;		// average distance between hits and the center
+};
+
 struct DanssInfoStruct {
 	long long	upTime;			// running time in terms of 125 MHz
 	int		startTime;		// linux start time, seconds
@@ -98,6 +134,12 @@ struct DanssCmStruct {
 	float		gtDiff[10];		// time difference in us (from 125 MHz clock)
 	float		Distance[10];		// distance between neutron and positron, cm
 	float		DistanceZ[10];		// in Z, cm
+};
+
+//		MC truth
+struct DanssMcStruct {
+	float		Energy;
+	float		X[3];
 };
 
 #endif /* EVTBUILDER_H */

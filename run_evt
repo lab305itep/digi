@@ -7,6 +7,9 @@ fi
 
 FLAGS=${3:-"0x80000"}
 ROOT_DIR=${4:-"danss_root"}
+LOG_FILE="$1-$2-evtbuilder.log"
 
-for ((i=$1; $i < $2+1; i=$i+1)) ; do ./evtbuilder $i $FLAGS $ROOT_DIR ; done
+for ((i=$1; $i < $2+1; i=$i+1)) ; do 
+	./evtbuilder $i $FLAGS $ROOT_DIR > $LOG_FILE 2>&1
+done
 
