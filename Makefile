@@ -5,8 +5,12 @@ LDFLAGS = `root-config --glibs` -L/usr/local/digi -lReadDigiData
 pairbuilder : pairbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
+pairbuilder2 : pairbuilder2.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`
+
 mupairbuilder : mupairbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
 cmbuilder : cmbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
+

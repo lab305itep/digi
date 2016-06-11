@@ -96,7 +96,7 @@ struct DanssPairStruct {
 	float		PmtCleanEnergy[2];	// Full Clean energy Pmt
 //		"positron cluster" parameters
 	int		PositronHits;		// hits in the cluster
-	float		PositronSiPmEnergy;	// Energy sum of the cluster (SiPM)
+	float		PositronEnergy;		// Energy sum of the cluster (SiPM)
 	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
 	float		PositronX[3];		// cluster position
 	int		AnnihilationGammas;	// number of possible annihilation gammas
@@ -105,13 +105,41 @@ struct DanssPairStruct {
 	int		NeutronHits;		// number of hits considered as neutron capture gammas
 	float		NeutronSiPmEnergy;	// Energy sum of above (SiPM)
 	float		NeutronX[3];		// center of gammas position
-	float		NeutronGammaEnergy[5];	// sorted list of the 5 most energetic gammas
-	float		NeutronGammaDistance[5];	// distances for the gammas above to the "neutron" center
+        float           NeutronGammaEnergy[5];  // sorted list of the 5 most energetic gammas
+        float           NeutronGammaDistance[5];        // distances for the gammas above to the "neutron" center
 	float		NeutronRadius;		// average distance between hits and the center
 //		Pair parameters
 	float		gtDiff;			// time difference in us (from 125 MHz clock)
 	float		Distance;		// distance between neutron and positron, cm
 	float		DistanceZ;		// in Z, cm
+};
+
+struct DanssPairStruct2 {
+//		Common parameters
+	long long	number[2];		// event numbers in the file
+	int		unixTime;		// linux time, seconds
+	float		SiPmCleanEnergy[2];	// Full Clean energy SiPm
+	float		PmtCleanEnergy[2];	// Full Clean energy Pmt
+//		"positron cluster" parameters
+	int		PositronHits;		// hits in the cluster
+	float		PositronEnergy;		// Energy sum of the cluster (SiPM)
+	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
+	float		PositronX[3];		// cluster position
+	int		AnnihilationGammas;	// number of possible annihilation gammas
+	float		AnnihilationEnergy;	// Energy in annihilation gammas
+//		"neutron" parameters
+	int		NeutronHits;		// number of hits considered as neutron capture gammas
+	float		NeutronEnergy;		// Energy sum of above (SiPM)
+	float		NeutronX[3];		// center of gammas position
+	float		NeutronRadius;		// average distance between hits and the center
+//		Pair parameters
+	float		gtDiff;			// time difference in us between positron and neutron
+	float		Distance;		// distance between neutron and positron, cm
+	float		DistanceZ;		// in Z, cm
+//		Environment
+	float		gtFromPrevious;		// time from the previous hit before positron, us
+	float		gtToNext;		// time to the next hit after neutron, counted from positron, us
+	int		EventsBetween;		// Events between positron and neutron
 };
 
 //		248Cm analysis
