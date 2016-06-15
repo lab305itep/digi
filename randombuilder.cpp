@@ -45,6 +45,7 @@
 #define VETON		2	// number of hits
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
 #define VETOBLK		100.0	// us
+#define RSHIFT		5000.0	// us
 
 int IsNeutron(struct DanssEventStruct2 *DanssEvent)
 {
@@ -210,15 +211,16 @@ int main(int argc, char **argv)
 //	Get Neutron
 		if (IsNeutron(&DanssEvent)) {
 			memcpy(&Neutron, &DanssEvent, sizeof(struct DanssEventStruct));
-//	Now look backward for positron
+//	Now look backward for positron in the region [-5050, -5000] us
 			for (i=iEvt-1; i>=0; i--) {
 				EventChain->GetEntry(i);
-				if (Neutron.globalTime - DanssEvent.globalTime >= MAXTDIFF * GFREQ2US) break;
-				if (IsPositron(&DanssEvent)) break;
+				if (Neutron.globalTime - DanssEvent.globalTime >= (MAXTDIFF + RSHIFT) * GFREQ2US) break;		// not found
+				if (Neutron.globalTime - DanssEvent.globalTime >= RSHIFT * GFREQ2US && IsPositron(&DanssEvent)) break;	// found
 			}
-//	less than 500 us from neutron and more than 100 us from VETO
-			if (Neutron.globalTime - DanssEvent.globalTime < MAXTDIFF * GFREQ2US && i >= 0 && DanssEvent.globalTime - lastVeto >= VETOBLK * GFREQ2US) {
-				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct));			
+//	less than 50 us from neutron and more than 100 us from VETO
+			if (Neutron.globalTime - DanssEvent.globalTime < (MAXTDIFF + RSHIFT) * GFREQ2US && i >= 0 && DanssEvent.globalTime - lastVeto >= (VETOBLK - RSHIFT) * GFREQ2US) {
+				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct));
+				Positron.globalTime += RSHIFT * GFREQ2US;	// assume it here !!!
 				MakePair(&Neutron, &Positron, &DanssPair);
 				DanssPair.EventsBetween = iEvt - i - 1;
 //	look backward

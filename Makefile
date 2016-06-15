@@ -8,6 +8,9 @@ pairbuilder : pairbuilder.cpp
 pairbuilder2 : pairbuilder2.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
+randombuilder : randombuilder.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`
+
 mupairbuilder : mupairbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 

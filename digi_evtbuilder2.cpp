@@ -89,7 +89,7 @@ int					IsMc;				// MC run flag
 TFile *					OutputFile;
 TTree *					OutputTree;
 TTree *					InfoTree;
-struct DanssEventStruct2			DanssEvent;
+struct DanssEventStruct2		DanssEvent;
 struct DanssInfoStruct			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
@@ -313,15 +313,29 @@ void CleanByConfirmation2(ReadDigiDataUser *user)
 		if (j < N) continue;
 		HitFlag[i] = -1;
 	}
+
+	for (i=0; i<N; i++) if (HitFlag[i] == -100)
+	{
+		if (user->npix(i) >= MINSIPMPIXELS2) continue;		// that's enough
+		for (j=0; j<N; j++) if (HitFlag[j] >= 0 && user->type(j) == PmtHit && IsInModule(i, j, user)) break;
+		if (j < N) continue;
+		HitFlag[i] = -1;
+	}
 }
 
 void CleanByTime(ReadDigiDataUser *user)
 {
 	int i, N;
+	float tearly;
 	
-	if (DanssEvent.fineTime == NOFINETIME) return;
 	N = user->nhits();
-	for (i=0; i<N; i++) if (fabs(user->t(i) - DanssEvent.fineTime) > TCUT) HitFlag[i] = -1;
+	if (DanssEvent.fineTime != NOFINETIME) {
+		for (i=0; i<N; i++) if (fabs(user->t(i) - DanssEvent.fineTime) > TCUT) HitFlag[i] = -1;
+		tearly = DanssEvent.fineTime - SIPMEARLYTIME;
+	} else {
+		tearly = SOMEEARLYTIME;
+	}
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && fabs(user->t(i) - tearly) <= TCUT) HitFlag[i] = -100;	// mark early hit candidates
 }
 
 void DebugFullPrint(ReadDigiDataUser *user)
@@ -391,12 +405,6 @@ void FindFineTime(ReadDigiDataUser *user)
 		}
 	}
 	DanssEvent.fineTime = (asum > 0) ? tsum / asum : NOFINETIME;	// some large number if not usable hits found
-	tsum = (asum > 0) ? (tsum / asum - SIPMEARLYTIME) : SOMEEARLYTIME;
-
-	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && fabs(user->t(i) - tsum) <= TCUT) {
-		DanssEvent.SiPmEarlyHits++;
-		DanssEvent.SiPmEarlyEnergy += user->e(i);		
-	}
 }
 
 void SumClean(ReadDigiDataUser *user)
@@ -417,6 +425,11 @@ void SumClean(ReadDigiDataUser *user)
 		DanssEvent.VetoCleanHits++;
 		DanssEvent.VetoCleanEnergy += VetoEnergy(user->adcChan(i), user->signal(i));
 		break;
+	}
+
+	for (i=0; i<N; i++) if (HitFlag[i] == -100) {
+		DanssEvent.SiPmEarlyHits++;
+		DanssEvent.SiPmEarlyEnergy += user->e(i);		
 	}
 }
 
