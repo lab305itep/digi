@@ -77,6 +77,7 @@ int IsVeto(struct DanssEventStruct2 *Event)
 
 void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *SavedEvent, struct DanssPairStruct2 *DanssPair)
 {
+	memset(DanssPair, 0, sizeof(struct DanssPairStruct2));
 	DanssPair->number[0] = SavedEvent->number;
 	DanssPair->number[1] = DanssEvent->number;
 	DanssPair->unixTime = DanssEvent->unixTime;
@@ -222,11 +223,15 @@ int main(int argc, char **argv)
 				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct));
 				Positron.globalTime += RSHIFT * GFREQ2US;	// assume it here !!!
 				MakePair(&Neutron, &Positron, &DanssPair);
-				DanssPair.EventsBetween = iEvt - i - 1;
 //	look backward
-				if (i>0) {
-					EventChain->GetEntry(i-1);
-					DanssPair.gtFromPrevious = (Positron.globalTime - DanssEvent.globalTime) / GFREQ2US;
+				for (i=iEvt-1;i>=0;i--) {
+					EventChain->GetEntry(i);
+					if (DanssEvent.globalTime >= Positron.globalTime) {
+						DanssPair.EventsBetween++;						
+					} else {
+						DanssPair.gtFromPrevious = (Positron.globalTime - DanssEvent.globalTime) / GFREQ2US;
+						break;
+					}
 				}
 //	look forward
 				if (iEvt + 1 < nEvt) {

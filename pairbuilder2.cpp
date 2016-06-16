@@ -76,6 +76,7 @@ int IsVeto(struct DanssEventStruct2 *Event)
 
 void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *SavedEvent, struct DanssPairStruct2 *DanssPair)
 {
+	memset(DanssPair, 0, sizeof(struct DanssPairStruct2));
 	DanssPair->number[0] = SavedEvent->number;
 	DanssPair->number[1] = DanssEvent->number;
 	DanssPair->unixTime = DanssEvent->unixTime;
