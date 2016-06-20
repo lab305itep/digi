@@ -2,8 +2,14 @@
 
 export DANSSRAWREC_HOME=/usr/local/digi/
 
+BUILDER=./digi_evtbuilder2
+if [ "X"$1 == "X-1" ] ; then
+	BUILDER=./digi_evtbuilder
+	shift
+fi
+
 if [ "X"$1 == "X" ] ; then
-	echo "Usage ./evtbuilder run_number [flags] [root_dir]"
+	echo "Usage ./evtbuilder [-1] run_number [flags] [root_dir]"
 	exit 10
 fi
 
@@ -39,6 +45,6 @@ else
 	TCALIB=tcalib_cmnew_ss.calib
 fi
 
-./digi_evtbuilder2 -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
+$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
 rm $LISTFILE
 

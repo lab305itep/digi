@@ -313,7 +313,7 @@ void CleanByConfirmation2(ReadDigiDataUser *user)
 		if (j < N) continue;
 		HitFlag[i] = -1;
 	}
-
+//		"early" hits
 	for (i=0; i<N; i++) if (HitFlag[i] == -100)
 	{
 		if (user->npix(i) >= MINSIPMPIXELS2) continue;		// that's enough
@@ -653,7 +653,7 @@ int ReadDigiDataUser::processUserEvent()
   	if( ttype() != 1 ) return 0;
 	
 	memset(HitFlag, 0, nhits() * sizeof(int));
-	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct));
+	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct2));
 
 	fileLastTime = globalTime();
 	DanssInfo.stopTime = absTime();

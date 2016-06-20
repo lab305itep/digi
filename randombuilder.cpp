@@ -75,7 +75,7 @@ int IsVeto(struct DanssEventStruct2 *Event)
 	return 0;
 }
 
-void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *SavedEvent, struct DanssPairStruct2 *DanssPair)
+void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *SavedEvent, struct DanssEventStruct2 *VetoEvent, struct DanssPairStruct2 *DanssPair)
 {
 	memset(DanssPair, 0, sizeof(struct DanssPairStruct2));
 	DanssPair->number[0] = SavedEvent->number;
@@ -105,6 +105,11 @@ void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *Sa
 		(DanssEvent->NeutronX[2] - SavedEvent->PositronX[2]) * (DanssEvent->NeutronX[2] - SavedEvent->PositronX[2])
 	);
 	DanssPair->DistanceZ = DanssEvent->NeutronX[2] - SavedEvent->PositronX[2];
+
+	DanssPair->gtFromVeto = (SavedEvent->globalTime - VetoEvent->globalTime) / GFREQ2US;
+	DanssPair->VetoHits = VetoEvent->VetoCleanHits;
+	DanssPair->VetoEnergy = VetoEvent->VetoCleanEnergy;
+	DanssPair->DanssEnergy = (VetoEvent->SiPmCleanEnergy + VetoEvent->PmtCleanEnergy) / 2;
 }
 
 int main(int argc, char **argv)
@@ -113,6 +118,7 @@ int main(int argc, char **argv)
 	struct DanssPairStruct2			DanssPair;
 	struct DanssEventStruct2		Neutron;
 	struct DanssEventStruct2		Positron;
+	struct DanssEventStruct2		Veto;
 	struct DanssInfoStruct			DanssInfo;
 	struct DanssInfoStruct			SumInfo;
 
@@ -124,7 +130,6 @@ int main(int argc, char **argv)
 	FILE *fList;
 	char str[1024];
 	long long iEvt, nEvt;
-	long long lastVeto;
 	int PairReady;
 	int PairCnt;
 	int i;
@@ -167,7 +172,12 @@ int main(int argc, char **argv)
 //		Environment
 		"gtFromPrevious/F:"	// time from the previous hit before positron, us
 		"gtToNext/F:"		// time to the next hit after neutron, counted from positron, us
-		"EventsBetween/I"	// Events between positron and neutron
+		"EventsBetween/I:"	// Events between positron and neutron
+//		Veto
+		"gtFromVeto/F:"		// time from the last Veto event
+		"VetoHits/I:"		// hits in Veto counters
+		"VetoEnergy/F:"		// Energy in Veto counters
+		"DanssEnergy/F"		// Veto Energy in Danss (Pmt + SiPm)/2
 	);
 	
 	InfoOut = new TTree("SumInfo", "Summary information");
@@ -201,17 +211,16 @@ int main(int argc, char **argv)
 
 	nEvt = EventChain->GetEntries();
 	PairCnt = 0;
-	lastVeto = -GLOBALFREQ;
 	for (iEvt =0; iEvt < nEvt; iEvt++) {
 		EventChain->GetEntry(iEvt);
 //	Veto
-		if (IsVeto(&DanssEvent)) lastVeto = DanssEvent.globalTime;
-		if (DanssEvent.globalTime - lastVeto < VETOBLK * GFREQ2US) {
-			continue;	// Veto is active
+		if (IsVeto(&DanssEvent)) {
+			memcpy(&Veto, &DanssEvent, sizeof(struct DanssEventStruct2));
+			continue;
 		}
 //	Get Neutron
 		if (IsNeutron(&DanssEvent)) {
-			memcpy(&Neutron, &DanssEvent, sizeof(struct DanssEventStruct));
+			memcpy(&Neutron, &DanssEvent, sizeof(struct DanssEventStruct2));
 //	Now look backward for positron in the region [-5050, -5000] us
 			for (i=iEvt-1; i>=0; i--) {
 				EventChain->GetEntry(i);
@@ -219,10 +228,10 @@ int main(int argc, char **argv)
 				if (Neutron.globalTime - DanssEvent.globalTime >= RSHIFT * GFREQ2US && IsPositron(&DanssEvent)) break;	// found
 			}
 //	less than 50 us from neutron and more than 100 us from VETO
-			if (Neutron.globalTime - DanssEvent.globalTime < (MAXTDIFF + RSHIFT) * GFREQ2US && i >= 0 && DanssEvent.globalTime - lastVeto >= (VETOBLK - RSHIFT) * GFREQ2US) {
-				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct));
+			if (Neutron.globalTime - DanssEvent.globalTime < (MAXTDIFF + RSHIFT) * GFREQ2US && i >= 0) {
+				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct2));
 				Positron.globalTime += RSHIFT * GFREQ2US;	// assume it here !!!
-				MakePair(&Neutron, &Positron, &DanssPair);
+				MakePair(&Neutron, &Positron, &Veto, &DanssPair);
 //	look backward
 				for (i=iEvt-1;i>=0;i--) {
 					EventChain->GetEntry(i);

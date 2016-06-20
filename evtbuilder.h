@@ -140,6 +140,11 @@ struct DanssPairStruct2 {
 	float		gtFromPrevious;		// time from the previous hit before positron, us
 	float		gtToNext;		// time to the next hit after neutron, counted from positron, us
 	int		EventsBetween;		// Events between positron and neutron
+//		Veto
+	float		gtFromVeto;		// time from the last Veto event
+	int		VetoHits;		// hits in Veto counters
+	float		VetoEnergy;		// Energy in Veto counters
+	float		DanssEnergy;		// Veto Energy in Danss (Pmt + SiPm)/2
 };
 
 //		248Cm analysis
