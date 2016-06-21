@@ -57,7 +57,7 @@ void digi_stattitle(void)
 
 void digi_statlist(void)
 {
-	const int runs[] = {2320, 2400, 2600, 2750, 2375, 2550, 2700, 2500, 2650, 2800, 3000, 3500};
+	const int runs[] = {2320, 2400, 2600, 2750, 2375, 2550, 2700, 2500, 2650, 2800, 3001, 3500};
 	int i;
 	
 	digi_stattitle();

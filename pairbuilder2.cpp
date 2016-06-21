@@ -224,9 +224,11 @@ int main(int argc, char **argv)
 			for (i=iEvt-1; i>=0; i--) {
 				EventChain->GetEntry(i);
 				if (Neutron.globalTime - DanssEvent.globalTime >= MAXTDIFF * GFREQ2US) break;
+				if (Neutron.globalTime - DanssEvent.globalTime < 0) break;
 				if (IsPositron(&DanssEvent)) break;
 			}
-//	less than 500 us from neutron and more than 100 us from VETO
+			if (Neutron.globalTime - DanssEvent.globalTime < 0) break;	// 125 MHz counter was restarted
+//	less than 50 us from neutron
 			if (Neutron.globalTime - DanssEvent.globalTime < MAXTDIFF * GFREQ2US && i >= 0) {
 				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct2));		
 				MakePair(&Neutron, &Positron, &Veto, &DanssPair);

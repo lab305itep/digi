@@ -58,7 +58,7 @@ void use_random(char *fname, char *rname)
 	struct DanssPairStruct2 pair;
 	float ksum;
 //		constants
-	const char cs[] = "EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6";
+	const char cs[] = "EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6 && gtFromVeto > 100";
 	const enum EColor colors[] = {kBlue, kRed, kGreen, kBlack};
 //		Root settings
 	gROOT->SetStyle("Plain");
@@ -189,7 +189,7 @@ void use_random(char *fname, char *rname)
 void k_draw(char *fname, char *rname)
 {
 	TH1D *hk[3];
-	const char cs[] = "EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6";
+	const char cs[] = "EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6 && gtFromVeto > 100";
 //		Hists
 	hk[0] = new TH1D("hk0", "K-distribution", 100, -20, 0);
 	hk[1] = new TH1D("hk1", "K-distribution", 100, -20, 0);
@@ -253,7 +253,7 @@ void posi_draw(char *fname, char *rname, char *cut)
 	hp[0]->SetLineColor(kBlue);
 	hp[1]->SetLineColor(kRed);
 	hp[2]->SetLineColor(kGreen);
-	TCut cs("EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6");
+	TCut cs("EventsBetween == 0 && gtFromPrevious > 50 && gtToNext > 100 && gtDiff > 0.6 && gtFromVeto > 100");
 //		Files and trees
 	TFile *fs = new TFile(fname);
 	if (!fs->IsOpen()) {
@@ -295,8 +295,19 @@ void posi_draw(char *fname, char *rname, char *cut)
 	hp[0]->Sumw2();
 	hp[1]->Sumw2();	
 	hp[2]->Add(hp[0], hp[1], 1, -1);
-	hp[0]->Draw("hist");
-	hp[1]->Draw("hist,same");
-	hp[2]->Draw("same");
+	
+	TCanvas *cp = new TCanvas("CP", "Positron", 1200, 800);
+	cp->Divide(2, 1);
+	cp->cd(1);
+	hp[0]->SetStats(0);
+	hp[1]->SetStats(0);
+	hp[2]->SetStats(0);
+	hp[0]->DrawCopy("hist");
+	hp[1]->DrawCopy("hist,same");
+	hp[2]->DrawCopy("same");
+	cp->cd(2);
+	gStyle->SetOptStat(1000000);
+	hp[2]->UseCurrentStyle();
+	hp[2]->DrawCopy();	
 }
 

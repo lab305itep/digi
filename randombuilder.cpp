@@ -46,6 +46,7 @@
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
 #define VETOBLK		100.0	// us
 #define RSHIFT		5000.0	// us
+#define NRANDOM		16	// increase random statistics
 
 int IsNeutron(struct DanssEventStruct2 *DanssEvent)
 {
@@ -133,6 +134,8 @@ int main(int argc, char **argv)
 	int PairReady;
 	int PairCnt;
 	int i;
+	int iLoop;
+	float tShift;
 	char *ptr;
 	
 	if (argc < 3) {
@@ -221,34 +224,39 @@ int main(int argc, char **argv)
 //	Get Neutron
 		if (IsNeutron(&DanssEvent)) {
 			memcpy(&Neutron, &DanssEvent, sizeof(struct DanssEventStruct2));
-//	Now look backward for positron in the region [-5050, -5000] us
-			for (i=iEvt-1; i>=0; i--) {
-				EventChain->GetEntry(i);
-				if (Neutron.globalTime - DanssEvent.globalTime >= (MAXTDIFF + RSHIFT) * GFREQ2US) break;		// not found
-				if (Neutron.globalTime - DanssEvent.globalTime >= RSHIFT * GFREQ2US && IsPositron(&DanssEvent)) break;	// found
-			}
-//	less than 50 us from neutron and more than 100 us from VETO
-			if (Neutron.globalTime - DanssEvent.globalTime < (MAXTDIFF + RSHIFT) * GFREQ2US && i >= 0) {
-				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct2));
-				Positron.globalTime += RSHIFT * GFREQ2US;	// assume it here !!!
-				MakePair(&Neutron, &Positron, &Veto, &DanssPair);
-//	look backward
-				for (i=iEvt-1;i>=0;i--) {
+			for (iLoop = 1; iLoop <= NRANDOM; iLoop++) {
+				tShift = iLoop * RSHIFT;
+//	Now look backward for positron in the region ([-50, 0] - iLoop*RSHIFT) us
+				for (i=iEvt-1; i>=0; i--) {
 					EventChain->GetEntry(i);
-					if (DanssEvent.globalTime >= Positron.globalTime) {
-						DanssPair.EventsBetween++;						
-					} else {
-						DanssPair.gtFromPrevious = (Positron.globalTime - DanssEvent.globalTime) / GFREQ2US;
-						break;
+					if (Neutron.globalTime - DanssEvent.globalTime >= (MAXTDIFF + tShift) * GFREQ2US) break;		// not found
+					if (Neutron.globalTime - DanssEvent.globalTime >= tShift * GFREQ2US && IsPositron(&DanssEvent)) break;	// found
+					if (Neutron.globalTime - DanssEvent.globalTime < 0) break;
+				}
+				if (Neutron.globalTime - DanssEvent.globalTime < 0) break;
+//	less than 50 us from neutron
+				if (Neutron.globalTime - DanssEvent.globalTime < (MAXTDIFF + tShift) * GFREQ2US && i >= 0) {
+					memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct2));
+					Positron.globalTime += tShift * GFREQ2US;	// assume it here !!!
+					MakePair(&Neutron, &Positron, &Veto, &DanssPair);
+//	look backward
+					for (i=iEvt-1;i>=0;i--) {
+						EventChain->GetEntry(i);
+						if (DanssEvent.globalTime >= Positron.globalTime) {
+							DanssPair.EventsBetween++;						
+						} else {
+							DanssPair.gtFromPrevious = (Positron.globalTime - DanssEvent.globalTime) / GFREQ2US;
+							break;
+						}
 					}
-				}
 //	look forward
-				if (iEvt + 1 < nEvt) {
-					EventChain->GetEntry(iEvt+1);
-					DanssPair.gtToNext = (DanssEvent.globalTime - Positron.globalTime) / GFREQ2US;
+					if (iEvt + 1 < nEvt) {
+						EventChain->GetEntry(iEvt+1);
+						DanssPair.gtToNext = (DanssEvent.globalTime - Positron.globalTime) / GFREQ2US;
+					}
+					tOut->Fill();
+					PairCnt++;
 				}
-				tOut->Fill();
-				PairCnt++;
 			}
 		}
 	}
@@ -262,7 +270,7 @@ int main(int argc, char **argv)
 	}
 	InfoOut->Fill();	
 
-	printf("%Ld events processed - %d pairs found. Aquired time %f7.0 s\n", iEvt, PairCnt, SumInfo.upTime / GLOBALFREQ);
+	printf("%Ld events processed with %d randomizing loops - %d pairs found. Aquired time %f7.0 s\n", iEvt, NRANDOM, PairCnt, SumInfo.upTime / GLOBALFREQ);
 fin:
 	delete EventChain;
 	delete InfoChain;
