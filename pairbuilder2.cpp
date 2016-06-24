@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 				if (Neutron.globalTime - DanssEvent.globalTime < 0) break;
 				if (IsPositron(&DanssEvent)) break;
 			}
-			if (Neutron.globalTime - DanssEvent.globalTime < 0) break;	// 125 MHz counter was restarted
+			if (Neutron.globalTime - DanssEvent.globalTime < 0) continue;	// 125 MHz counter was restarted
 //	less than 50 us from neutron
 			if (Neutron.globalTime - DanssEvent.globalTime < MAXTDIFF * GFREQ2US && i >= 0) {
 				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct2));		

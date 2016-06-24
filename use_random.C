@@ -9,6 +9,8 @@
 #include <TTree.h>
 #include "evtbuilder.h"
 
+#define NRANDOM	16
+
 TH1D *hrat[6][4];
 
 struct RTabStruct {
@@ -120,6 +122,7 @@ void use_random(char *fname, char *rname)
 	for (j=0; j<6; j++) {
 		hrat[j][0]->Sumw2();
 		hrat[j][1]->Sumw2();
+		hrat[j][1]->Scale(1.0/NRANDOM);
 		hrat[j][2]->Add(hrat[j][0], hrat[j][1], 1, -1);
 		hrat[j][3]->Divide(hrat[j][2], hrat[j][0]);
 	}
@@ -237,6 +240,7 @@ void k_draw(char *fname, char *rname)
 
 	hk[0]->Sumw2();	
 	hk[1]->Sumw2();	
+	hk[1]->Scale(1.0/NRANDOM);
 	hk[2]->Add(hk[0], hk[1], 1, -1);
 	hk[0]->Draw("hist");
 	hk[1]->Draw("hist,same");
@@ -293,7 +297,8 @@ void posi_draw(char *fname, char *rname, char *cut)
 	tr->Project("hp1", "PositronEnergy", cs && cut);
 
 	hp[0]->Sumw2();
-	hp[1]->Sumw2();	
+	hp[1]->Sumw2();
+	hp[1]->Scale(1.0/NRANDOM);
 	hp[2]->Add(hp[0], hp[1], 1, -1);
 	
 	TCanvas *cp = new TCanvas("CP", "Positron", 1200, 800);
@@ -308,6 +313,6 @@ void posi_draw(char *fname, char *rname, char *cut)
 	cp->cd(2);
 	gStyle->SetOptStat(1000000);
 	hp[2]->UseCurrentStyle();
-	hp[2]->DrawCopy();	
+	hp[2]->DrawCopy();
 }
 
