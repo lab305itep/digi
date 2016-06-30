@@ -659,7 +659,7 @@ int ReadDigiDataUser::processUserEvent()
 	DanssInfo.stopTime = absTime();
 	if (fileFirstTime < 0) {
 		fileFirstTime = fileLastTime;
-		DanssInfo.startTime = absTime();
+		DanssInfo.startTime = DanssInfo.stopTime;
 		DanssInfo.events = 0;
 	}
   	iNevtTotal++;

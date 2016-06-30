@@ -1,22 +1,15 @@
+#include <stdio.h>
+#include <TCut.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TLeaf.h>
+#include <TROOT.h>
+#include <TTree.h>
+#include "HPainter.h"
+
 #define NRANDOM	16
 
-class HPainter {
-private:
-	TFile *fSig;
-	TFile *fRand;
-	TTree *tSig;
-	TTree *tRand;
-	float upTime;
-public:
-	HPainter(char *base);
-	HPainter(char *sname, char *rname);
-	~HPainter(void);
-	void Init(char *sname, char *rname);
-	inline int IsOpen(void) { return tSig && tRand; };
-	void Project(TH1 *hist, char *what, TCut &cut);
-};
-
-HPainter::HPainter(char *base)
+HPainter::HPainter(const char *base)
 {
 	char strs[2048], strr[2048];
 
@@ -26,12 +19,12 @@ HPainter::HPainter(char *base)
 	Init(strs, strr);
 }
 
-HPainter::HPainter(char *sname, char *rname)
+HPainter::HPainter(const char *sname, const char *rname)
 {
 	Init(sname, rname);
 }
 
-HPainter::Init(char *sname, char *rname)
+void HPainter::Init(const char *sname, const char *rname)
 {
 	TTree *info;
 
@@ -65,7 +58,7 @@ HPainter::~HPainter(void)
 	fRand->Close();
 }
 
-void HPainter::Project(TH1 *hist, char *what, TCut &cut)
+void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 {
 	TH1 *hSig;
 	TH1 *hRand;
@@ -75,8 +68,8 @@ void HPainter::Project(TH1 *hist, char *what, TCut &cut)
 	hSig = (TH1 *) hist->Clone("_sigtmp");
 	hRand = (TH1 *) hist->Clone("_randtmp");
 	
-	tSig->Project("_sigtmp", what, cut);
-	tRand->Project("_randtmp", what, cut);
+	tSig->Project("_sigtmp", what, cut.GetTitle());
+	tRand->Project("_randtmp", what, cut.GetTitle());
 	
 	hSig->Sumw2();
 	hRand->Sumw2();
@@ -88,3 +81,4 @@ void HPainter::Project(TH1 *hist, char *what, TCut &cut)
 	delete hSig;
 	delete hRand;
 }
+

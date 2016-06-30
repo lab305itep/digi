@@ -47,6 +47,16 @@
 #define VETOBLK		100.0	// us
 #define RSHIFT		5000.0	// us
 #define NRANDOM		16	// increase random statistics
+#define ATTENUATION	0.00342	// Signal attenuation for positron energy correction
+
+//	Correction based on the neutron position if this was not done before based on the positron position
+void acorr(struct DanssPairStruct2 *DanssPair) {
+	if (DanssPair->PositronX[0] < 0 && DanssPair->NeutronX[0] >= 0) {
+		DanssPair->PositronEnergy *= exp(ATTENUATION * (DanssPair->NeutronX[0] - 50.0));
+	} else if (DanssPair->PositronX[1] < 0 && DanssPair->NeutronX[1] >= 0) {
+		DanssPair->PositronEnergy *= exp(ATTENUATION * (DanssPair->NeutronX[1] - 50.0));
+	}
+}
 
 int IsNeutron(struct DanssEventStruct2 *DanssEvent)
 {
@@ -111,6 +121,8 @@ void MakePair(struct DanssEventStruct2 *DanssEvent, struct DanssEventStruct2 *Sa
 	DanssPair->VetoHits = VetoEvent->VetoCleanHits;
 	DanssPair->VetoEnergy = VetoEvent->VetoCleanEnergy;
 	DanssPair->DanssEnergy = (VetoEvent->SiPmCleanEnergy + VetoEvent->PmtCleanEnergy) / 2;
+
+	acorr(DanssPair);
 }
 
 int main(int argc, char **argv)

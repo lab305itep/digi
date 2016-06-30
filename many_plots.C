@@ -26,7 +26,6 @@ void many_plots(char *base)
 	TCut cxy("PositronX[0]>=0 && PositronX[1]>=0");
 	TCut cn5("NeutronEnergy > 5 && NeutronHits >= 5");
 	TCut cgamma("AnnihilationEnergy < 1.2 && AnnihilationGammas > 0");
-	TF1 *fdec = new TF1("FDEC", "expo(0) - expo(2)", 4);
 
 	for (i=0; i<2; i++) {
 		sprintf(str, "hR%d", i);
@@ -40,7 +39,7 @@ void many_plots(char *base)
 		sprintf(str, "hY%d", i);
 		h[4][i] = new TH1D(str, "Positron vertex Y;Y, cm;mHz", 25, 0, 100);
 		sprintf(str, "hZ%d", i);
-		h[5][i] = new TH1D(str, "Positron vertex Z;Z, cm;mHz", 25, 0, 100);
+		h[5][i] = new TH1D(str, "Positron vertex Z;Z, cm;mHz", 100, 0, 100);
 		sprintf(str, "hNE%d", i);
 		h[6][i] = new TH1D(str, "Energy detected in neutron capture;E_{n}, MeV;mHz", 50, 0, 10);
 		sprintf(str, "hNN%d", i);
@@ -101,9 +100,13 @@ void many_plots(char *base)
 		h[i][1]->SetMinimum(0);
 	}
 
-	h[1][0]->Fit("gaus", "", "0");
-	h[1][1]->Fit("gaus", "", "0");
-	h[2][0]->Fit("FDEC", "", "0");
+//	h[1][0]->Fit("gaus", "0");
+//	h[1][1]->Fit("gaus", "0");
+	
+//	TF1 *fdec = new TF1("FDEC", "[0]*(exp(-x/[1]) - exp(-x/[2]))", 3);
+//	fdec->SetParNames("Const", "t_{CAPTURE}", "t_{THERM}");
+//	fdec->SetParameters(h[2][0]->Integral()/4, 15, 5);
+//	h[2][0]->Fit("FDEC", "0", "", 2, 50);
 
 	for (i=0; i<2; i++) {
 		sprintf(str, "CV%d", i);
@@ -127,6 +130,7 @@ void many_plots(char *base)
 				st->SetLineColor(kRed);
 				st->SetTextColor(kRed);
 				st->SetX1NDC(0.72);
+				st->SetY2NDC(y);
 				st->SetY1NDC(y - dy);
 			} else {
 				st = (TPaveStats *) h[6*i+j][0]->FindObject("stats");
