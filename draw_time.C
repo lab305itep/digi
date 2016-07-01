@@ -1,4 +1,4 @@
-void draw_time(char *base)
+void draw_time(char *base, TCut cut)
 {
 	TH1D *h[2];
 	char str[64];
@@ -32,7 +32,7 @@ void draw_time(char *base)
 	TCut cg06("gtDiff > 0.6");
 	TCut cgamma("AnnihilationEnergy < 1.5 && AnnihilationGammas < 9");
 
-	cf = cg06 && cr && cgamma && cex && cey && cez && chot;
+	cf = cg06 && cr && cgamma && cex && cey && cez && chot && cut;
 	
 	p->Project(h[0], "gtDiff", cs && cf);
 	p->Project(h[1], "gtDiff", (!cs) && cf);
