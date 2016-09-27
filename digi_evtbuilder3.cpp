@@ -1,6 +1,6 @@
 /***
  *
- * Version:       2.1
+ * Version:       3.0
  *
  * Package:       DANSS SiPm Signal Processing and Calibration
  *
@@ -38,15 +38,12 @@
 #include "TF1.h"
 #include "TH1.h"
 #include "TH2.h"
-//#include "TSpectrum.h"
 
 #include "readDigiData.h"
 #include "danssGlobals.h"
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
-//	Veto
-#define VETO2MEV	0.002			// Translate corrected VETO signal to MeV
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -87,24 +84,19 @@ int					IsMc;				// MC run flag
 TFile *					OutputFile;
 TTree *					OutputTree;
 TTree *					InfoTree;
-struct DanssEventStruct2		DanssEvent;
-struct DanssInfoStruct			DanssInfo;
+struct DanssEventStruct3		DanssEvent;
+struct DanssInfoStruct3			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
 
+/********************************************************************************************************************/
 /************************	Analysis functions					*****************************/
-//				Auxillary
-float VetoEnergy(int chan, float amp)
-{
-//	We use here on-line coefficiencies
-        const float TrigCoef[64] = {
-		0.417, 1.429, 0.714, 1.786, 0.714, 0.526, 0.714, 1.316, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-		0.152, 0.294, 0.185, 0.217, 0.227, 0.083, 0.192, 0.263, 0.152, 0.161, 0.139, 0.227, 0.185, 0.156, 0.200, 0.156,
-		0.091, 0.179, 0.150, 0.083, 0.172, 0.152, 0.156, 0.200, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
-		0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000};
-	return amp * TrigCoef[chan] * VETO2MEV;
-}
+/********************************************************************************************************************/
 
+//	int SiPm - hit number in SiPM
+//	int Pmt  - hit number in PMT
+//	ReadDigiDataUser *user - event reader
+//	return true if SiPM is read by this PMT
 int IsInModule(int SiPm, int Pmt, ReadDigiDataUser *user)
 {
 	int SiPmXY, PmtXY;
@@ -120,6 +112,10 @@ int IsInModule(int SiPm, int Pmt, ReadDigiDataUser *user)
 	return true;
 }
 
+
+//	int hitA, hitB - hits in SiPM
+//	ReadDigiDataUser *user - event reader
+//	return true if the SiPMs are neighbors or coinside
 int IsNeighbor(int hitA, int hitB, ReadDigiDataUser *user)
 {
 	if (user->zCoord(hitA) == user->zCoord(hitB) && abs(user->firstCoord(hitA) - user->firstCoord(hitB)) <= 1) return 1;
@@ -127,34 +123,38 @@ int IsNeighbor(int hitA, int hitB, ReadDigiDataUser *user)
 	return 0;
 }
 
-float acorr(float energy, float dist, int side)
+//	float energy - measured energy
+//	float dist - distance from zero coordinate
+//	return corrected energy
+float acorr(float energy, float dist)
 {
 	float C;
 
 	if (dist >= 0) {
-		if (IsMc) {
-			C = exp(MCATTENUATION * (dist - 50.0));	// 50 cm is the middle
-		 	if (side) C = 1/C;			// side = 1 - X
-		} else {
-			C = exp(ATTENUATION * (dist - 50.0));	// 50 cm is the middle
-		}
+		C = exp(ATTENUATION * (dist - 50.0));	// 50 cm is the middle
 	} else {
 		C = 1;
 	}
 	return C * energy;
 }
 
-//				Main analysis
+/********************************************************************************************************************/
+/************************		Main analysis					*****************************/
+/********************************************************************************************************************/
 
+// Calculate parameters assuming positron-like event
 void CalculatePositron(ReadDigiDataUser *user)
 {
+#include "clust_table.h"
 	int i, j, N;
 	float A;
 	float x, y, z;
 	float nx, ny;
 	int maxHit;
-	int clHits;
 	int repeat;
+	int clusterHits[10];		// Maximum possible cluster 5x2
+	int xmin, xmax, ymin, ymax, zmin, zmax;
+	int xy;
 
 	N = user->nhits();
 //		Find the maximum hit
@@ -176,6 +176,36 @@ void CalculatePositron(ReadDigiDataUser *user)
 		}
 		if (!repeat) break;
 	}
+//		Check cluster
+//	Step 1: find cluster range
+	xmin = ymin = zmin = 200;
+	xmax = ymax = zmax = -1;
+	for (i=0; i<N; i++) if (HitFlag[i] >= 10 && user->type(i) == SiPmHit) {
+		if (user->zCoord(i) > zmax) zmax = user->zCoord(i);
+		if (user->zCoord(i) < zmin) zmin = user->zCoord(i);
+		if (user->side(i) == 'X') {
+			if (user->firstCoord(i) > xmax) xmax = user->firstCoord(i);			
+			if (user->firstCoord(i) < xmin) xmin = user->firstCoord(i);			
+		} else {
+			if (user->firstCoord(i) > ymax) ymax = user->firstCoord(i);
+			if (user->firstCoord(i) < ymin) ymin = user->firstCoord(i);
+		}		
+	}
+	if (xmax - xmin > 1 || ymax - ymin > 1 || zmax - zmin > 4) {	// Maximum cluster is 5x2 
+		DanssEvent.PositronValid = -10000;	// too large
+	} else {
+//	Step 2: fill clust array
+		memset(clusterHits, 0, sizeof(clusterHits));
+		for (i=0; i<N; i++) if (HitFlag[i] >= 10 && user->type(i) == SiPmHit) {
+			xy = user->firstCoord(i) - ((user->side(i) == 'X') ? xmin : ymin);
+			clusterHits[2*(user->zCoord(i)-zmin) + xy]++;
+		}
+//	Step 3: look for forbidden combinations
+		j = 0;
+		for (i=0; i<10; i++) if (clusterHits[i]) j |= 1 << i;
+		if (!cTable[j]) j = -j;		// zero is also bad value
+		DanssEvent.PositronValid = j;
+	}
 //		Find cluster position
 	x = y = z = 0;
 	nx = ny = 0;
@@ -195,22 +225,34 @@ void CalculatePositron(ReadDigiDataUser *user)
 	DanssEvent.PositronX[1] = (ny > 0) ? y / ny : -1;		// 50 cm is DANSS center
 	DanssEvent.PositronX[2] = (nx + ny > 0) ? z / (nx + ny) : -1;	// 50 cm is DANSS center
 //		Find corrected energy
+//	Step 1: Count SiPM
 	for (i=0; i<N; i++) if (HitFlag[i] >= 10) {
 		if (user->side(i) == 'X') {
-			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 1);
+			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[1]);
 		} else {
-			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 0);
+			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[0]);
 		}
 	}
+//	Step 2: Count PMT
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == PmtHit) {
 		for (j=0; j<N; j++) if (IsInModule(j, i, user) && HitFlag[j] >= 10) break;
 		if (j >= N) continue;
+		HitFlag[i] = 5;
 		if (user->side(i) == 'X') {
-			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 1);
+			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[1]);
 		} else {
-			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 0);
+			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[0]);
 		}
 	}
+//	Step 3: Subtract gammas in PMT
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
+		for (j=0; j<N; j++) if (IsInModule(i, j, user) && HitFlag[j] == 5) break;
+		if (j >= N) continue;
+		DanssEvent.PositronEnergy -= user->e(i);
+	}
+//	Step 4: Divide by 2, because we count SiPM + PMT
+	DanssEvent.PositronEnergy /= 2;
+//
 //		Count possible gammas
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
 		DanssEvent.AnnihilationGammas++;
@@ -276,7 +318,7 @@ void CleanNoise(ReadDigiDataUser *user)
 		if (user->e(i) < MINPMTENERGY) HitFlag[i] = -1;
 		break;
 	case VetoHit:
-		if (VetoEnergy(user->adcChan(i), user->signal(i)) < MINVETOENERGY) HitFlag[i] = -1;
+		if (user->e(i) < MINVETOENERGY) HitFlag[i] = -1;
 		break;
 	}
 }
@@ -368,7 +410,7 @@ void DebugFullPrint(ReadDigiDataUser *user)
 			break;
 		case VetoHit:
 			printf("%4d VETO     %7.1f %4.1f %5.1f %2d.%2.2d    -  xx xx  %c\n", i+1, user->signal(i),
-				VetoEnergy(user->adcChan(i), user->signal(i)), user->t(i), user->adc(i), user->adcChan(i),
+				user->e(i), user->t(i), user->adc(i), user->adcChan(i),
 				(HitFlag[i]<0) ? 'X' : ' ');
 			break;
 		}
@@ -391,10 +433,8 @@ void FindFineTime(ReadDigiDataUser *user)
 			if (user->npix(i) < MINSIPMPIXELS) e = 0;
 			break;
 		case PmtHit:
-			e = user->e(i);
-			break;
 		case VetoHit:
-			e = VetoEnergy(user->adcChan(i), user->signal(i));
+			e = user->e(i);
 			break;
 		}
 		if (e > MINENERGY4TIME) {
@@ -421,7 +461,7 @@ void SumClean(ReadDigiDataUser *user)
 		break;
 	case VetoHit:
 		DanssEvent.VetoCleanHits++;
-		DanssEvent.VetoCleanEnergy += VetoEnergy(user->adcChan(i), user->signal(i));
+		DanssEvent.VetoCleanEnergy += user->e(i);
 		break;
 	}
 
@@ -447,7 +487,7 @@ void SumEverything(ReadDigiDataUser *user)
 		break;
 	case VetoHit:
 		DanssEvent.VetoHits++;
-		DanssEvent.VetoEnergy += VetoEnergy(user->adcChan(i), user->signal(i));
+		DanssEvent.VetoEnergy += user->e(i);
 		break;
 	}
 }
@@ -582,6 +622,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 //		Common parameters
 		"globalTime/L:"		// time in terms of 125 MHz
 		"number/L:"		// event number in the file
+		"runNumber/I:"		// the run number
 		"unixTime/I:"		// linux time, seconds
 		"fineTime/F:"		// fine time of the event (for hit selection)
 //		Veto parameters
@@ -603,8 +644,8 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"SiPmEarlyEnergy/F:"		
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
-		"PositronSiPmEnergy/F:"	// Energy sum of the cluster, corrected (SiPM)
-		"PositronPmtEnergy/F:"	// Energy sum of the cluster, corrected (PMT)
+		"PositronValid/I:"	// Negative or zero for invalid clusters.
+		"PositronEnergy/F:"	// Energy sum of the cluster, corrected, (SiPM + PMT) / 2
 		"MaxHitEnergy/F:"	// Energy of the maximum hit
 		"PositronX[3]/F:"	// cluster position
 		"AnnihilationGammas/I:"	// number of possible annihilation gammas
@@ -621,6 +662,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	InfoTree = new TTree("DanssInfo", "Run info tree");	
 	InfoTree->Branch("Info", &DanssInfo,  
 		"gTime/L:"		// running time in terms of 125 MHz
+		"runNumber/I:"		// the run number
 		"startTime/I:"		// linux start time, seconds
 		"stopTime/I:"		// linux stop time, seconds
 		"events/I"		// number of events
@@ -665,6 +707,7 @@ int ReadDigiDataUser::processUserEvent()
 
 	DanssEvent.globalTime = globalTime();
 	DanssEvent.number     = nevt();
+	DanssEvent.runNumber  = runnumber();
 	DanssEvent.unixTime   = absTime();
 
 	CleanZeroes(this);
@@ -721,6 +764,7 @@ void ReadDigiDataUser::finishUserProc()
 int ReadDigiDataUser::userActionAtFileChange()
 {
 	DanssInfo.upTime = fileLastTime - fileFirstTime;
+	DanssInfo.runNumber = runnumber();
 	InfoTree->Fill();
 	upTime += DanssInfo.upTime;
 	fileFirstTime = -1;
