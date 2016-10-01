@@ -18,9 +18,9 @@ if [ ${1:0:2} == "-m" ] ; then
 	LISTFILE=".mc.list"
 	echo $RUN > $LISTFILE
 	OUTFILE=$ROOT_DIR/`basename $RUN`
-	CALIB="danss_data_002101-17_calib.txt"
+#	CALIB="danss_data_002101-17_calib.txt"
 
-	$BUILDER -calib $CALIB -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata
+	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata -alen 285.0
 else
 	RUNNUMBER=`printf "%6.6d" $1`
 	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec_*digi* -print -quit 2>/dev/null`

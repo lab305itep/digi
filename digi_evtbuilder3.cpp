@@ -44,6 +44,7 @@
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
+#define MYVERSION	"3.01"
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -55,9 +56,6 @@
 #define MINENERGY4TIME	0.25			// Minimum energy to use for fine time averaging
 #define TCUT		15			// fine time cut, ns
 #define NOFINETIME	10000			// something out of range
-//	Positron
-#define ATTENUATION	0.00342			// Signal attenuation for positron energy correction
-#define MCATTENUATION	0.005			// Signal attenuation for positron energy correction MC
 //	Flags
 #define FLG_PRINTALL		1
 #define FLG_NOCLEANNOISE 	0x10000
@@ -79,6 +77,7 @@ char *					chOutputFile;
 int					iFlags;
 int					MaxEvents;
 int					IsMc;				// MC run flag
+double					AttenuationLength;
 
 
 TFile *					OutputFile;
@@ -131,7 +130,7 @@ float acorr(float energy, float dist)
 	float C;
 
 	if (dist >= 0) {
-		C = exp(ATTENUATION * (dist - 50.0));	// 50 cm is the middle
+		C = exp((dist - 50.0) / AttenuationLength);	// 50 cm is the middle
 	} else {
 		C = 1;
 	}
@@ -191,6 +190,11 @@ void CalculatePositron(ReadDigiDataUser *user)
 			if (user->firstCoord(i) < ymin) ymin = user->firstCoord(i);
 		}		
 	}
+	A = 0;
+	if (xmax - xmin > 1) A += fStripWidth  * fStripWidth  * (xmax - xmin - 1) * (xmax - xmin - 1);
+	if (ymax - ymin > 1) A += fStripWidth  * fStripWidth  * (ymax - ymin - 1) * (ymax - ymin - 1);
+	if (zmax - zmin > 1) A += fStripHeight * fStripHeight * (zmax - zmin - 1) * (zmax - zmin - 1);
+	DanssEvent.PositronMinLen = sqrt(A);
 	if (xmax - xmin > 1 || ymax - ymin > 1 || zmax - zmin > 4) {	// Maximum cluster is 5x2 
 		DanssEvent.PositronValid = -10000;	// too large
 	} else {
@@ -566,6 +570,26 @@ void ReadDigiDataUser::init_Tds()
 
 //------------------------------->
 
+void Help(void)
+{
+	printf("\tDANSS offline: digi event builder. Version %s\n", MYVERSION);
+	printf("Process events and create root-tree with event parameters.\n");
+	printf("\tOptions:\n");
+	printf("-alen AttenuationLength --- signal attenuation length in cm. Default - 300 cm.\n");
+	printf("-calib filename.txt --- file with energy calibration. No default.\n");
+	printf("-events number --- stop after processing this number of events. Default - do not stop.\n");
+	printf("-file filename.txt --- file with a list of files for processing. No default.\n");
+	printf("-flag FLAGS --- analysis flag mask. Default - 0. Recognized flags:\n");
+	printf("\t1       --- do debugging printout of events;\n");
+	printf("\t0x10000 --- do not clean small energies;\n");
+	printf("\t0x20000 --- do not do time cut;\n");
+	printf("\t0x40000 --- do not require confirmation for all hits;\n");
+	printf("\t0x80000 --- do not require confirmation for SiPM single pixel hits.\n");
+	printf("-help --- print this message and exit.\n");
+	printf("-mcdata --- this is Monte Carlo data - create McTruth branch.\n");
+	printf("-output filename.root --- output file name. Default - add .root to the input data file name.\n");
+	printf("-tcalib filename.txt --- file with the time calibration.\n");
+}
 
 /***
  *
@@ -583,6 +607,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	char strs[128];
 	char strl[1024];
 
+	AttenuationLength = 300;
 	progStartTime = time(NULL);
 	chOutputFile = NULL;
 	chTimeCalibration = NULL;
@@ -605,6 +630,12 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 			MaxEvents = strtol(argv[i], NULL, 0);
 		} else if (!strcmp(argv[i], "-mcdata")) {
 			IsMc = 1;
+		} else if (!strcmp(argv[i], "-alen")) {
+			i++;
+			AttenuationLength = strtod(argv[i], NULL);
+		} else if (!strcmp(argv[i], "-help")) {
+			Help();
+			exit(0);
 		}
 	}
 
@@ -645,6 +676,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
 		"PositronValid/I:"	// Negative or zero for invalid clusters.
+		"PositronMinLen/F:"	// Minimum track length to create the cluster
 		"PositronEnergy/F:"	// Energy sum of the cluster, corrected, (SiPM + PMT) / 2
 		"MaxHitEnergy/F:"	// Energy of the maximum hit
 		"PositronX[3]/F:"	// cluster position

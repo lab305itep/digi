@@ -108,6 +108,7 @@ struct DanssEventStruct3 {
 //		"positron cluster" parameters
 	int		PositronHits;		// hits in the cluster
 	int		PositronValid;		// Negative or zero for invalid clusters.
+	float		PositronMinLen;		// Minimum track length to create the cluster
 	float		PositronEnergy;		// Energy sum of the cluster, corrected (SiPM+PMT)
 	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
 	float		PositronX[3];		// cluster position
