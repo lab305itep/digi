@@ -57,11 +57,12 @@
 #define TCUT		15			// fine time cut, ns
 #define NOFINETIME	10000			// something out of range
 //	Flags
-#define FLG_PRINTALL		1
-#define FLG_NOCLEANNOISE 	0x10000
-#define FLG_NOTIMECUT		0x20000
-#define FLG_NOCONFIRM		0x40000
-#define FLG_NOCONFIRM2		0x80000
+#define FLG_PRINTALL		       1
+#define FLG_NOCLEANNOISE 	 0x10000
+#define FLG_NOTIMECUT		 0x20000
+#define FLG_NOCONFIRM		 0x40000
+#define FLG_NOCONFIRM2		 0x80000
+#define FLG_NOPMTCORR		0x100000
 
 using namespace std;
 
@@ -249,7 +250,7 @@ void CalculatePositron(ReadDigiDataUser *user)
 		}
 	}
 //	Step 3: Subtract gammas in PMT
-	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
+	if (!(iFlags & FLG_NOPMTCORR)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
 		for (j=0; j<N; j++) if (IsInModule(i, j, user) && HitFlag[j] == 5) break;
 		if (j >= N) continue;
 		DanssEvent.PositronEnergy -= user->e(i);
