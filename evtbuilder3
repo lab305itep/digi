@@ -5,25 +5,34 @@ export DANSSRAWREC_HOME=/usr/local/digi/
 BUILDER=./digi_evtbuilder3
 
 if [ "X"$1 == "X" ] ; then
-	echo "Usage ./evtbuilder3 run_number|-mfilename [flags] [root_dir]"
+	echo "Usage ./evtbuilder3 run_number|filename [flags] [root_dir] [other options]"
 	exit 10
 fi
 
+
+FN=$1
 FLAGS=${2:-"0x50000"}
 ROOT_DIR=${3:-"danss_root3"}
+ARGS=""
 
-if [ ${1:0:2} == "-m" ] ; then
-	RUN=${1/-m/}
+if [ $# -gt 3 ] ; then
+	shift 3
+	ARGS="$@"
+fi
+
+if [ ${FN:0:1} == "/" ] ; then
+	RUN=$FN
 
 	LISTFILE=".mc.list"
 	echo $RUN > $LISTFILE
 	OUTFILE=$ROOT_DIR/`basename $RUN`
 #	CALIB="danss_data_002101-17_calib.txt"
 
-	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata -alen 285.0
+	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
 else
-	RUNNUMBER=`printf "%6.6d" $1`
-	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec_*digi* -print -quit 2>/dev/null`
+	RUNNUMBER=`printf "%6.6d" $FN`
+	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec*digi* -print -quit 2>/dev/null`
+	TMPFILE=tmp/${RUNNUMBER}.digi
 
 	if [ "x$RUN" == "x" ] ; then
     		echo Run $RUNNUMBER not found
@@ -31,12 +40,13 @@ else
 	fi
 
 	if [ $RUN != ${RUN/.bz2} ] ; then
-		bzip2 -d -k $RUN
-		RUN=${RUN/.bz2}
+		bzip2 -d -k -c > $TMPFILE
+	else 
+		cp $RUN $TMPFILE
 	fi
 
 	LISTFILE="${RUNNUMBER}.list"
-	echo $RUN > $LISTFILE
+	echo $TMPFILE > $LISTFILE
 
 	RUNDIR=`dirname $RUN`
 	CALIB=`find $RUNDIR -name "*calib.txt" -print`
@@ -48,15 +58,15 @@ else
 
 	if [ $RUNNUMBER -lt 2066 ] ; then
 		TCALIB=tcalib_1000_ss.calib
-	else
+	elif [ $RUNNUMBER -lt 5469 ] ; then
 		TCALIB=tcalib_cmnew_ss.calib
+	else
+		TCALIB=tcalib_5512_ss.calib
 	fi
 
-	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS
+	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS $ARGS
+	
+	rm $TMPFILE
 fi
 
 rm $LISTFILE
-
-if [ -f ${RUN}.bz2 ] ; then
-	echo rm ${RUN}
-fi

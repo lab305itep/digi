@@ -57,12 +57,13 @@
 #define TCUT		15			// fine time cut, ns
 #define NOFINETIME	10000			// something out of range
 //	Flags
-#define FLG_PRINTALL		       1
-#define FLG_NOCLEANNOISE 	 0x10000
-#define FLG_NOTIMECUT		 0x20000
-#define FLG_NOCONFIRM		 0x40000
-#define FLG_NOCONFIRM2		 0x80000
-#define FLG_NOPMTCORR		0x100000
+#define FLG_PRINTALL		       1	// do large debuggging printout
+#define FLG_DTHIST		       2	// create time delta histogramms
+#define FLG_NOCLEANNOISE 	 0x10000	// do not clean low energy signals
+#define FLG_NOTIMECUT		 0x20000	// do not clean signals by time
+#define FLG_NOCONFIRM		 0x40000	// do not search PMT confirmation for SiPM and vice versa
+#define FLG_NOCONFIRM2		 0x80000	// do not search PMT confirmation for 1 pixel SiPM signals
+#define FLG_NOPMTCORR		0x100000	// do not correct PMT energy of cluster for out of cluster SiPM hits
 
 using namespace std;
 
@@ -88,6 +89,7 @@ struct DanssEventStruct3		DanssEvent;
 struct DanssInfoStruct3			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
+TH1D *					hTimeDelta[iMaxAddress_AdcBoard][iNChannels_AdcBoard];
 
 /********************************************************************************************************************/
 /************************	Analysis functions					*****************************/
@@ -307,7 +309,7 @@ void CleanZeroes(ReadDigiDataUser *user)
 	int i, N;
 	
 	N = user->nhits();
-	for (i=0; i<N; i++) if (user->type(i) == SiPmHit && user->npix(i) <= 0) HitFlag[i] = -1;
+	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || user->e(i) <= 0 || user->t(i) < -1000) HitFlag[i] = -1;
 }
 
 void CleanNoise(ReadDigiDataUser *user)
@@ -442,12 +444,14 @@ void FindFineTime(ReadDigiDataUser *user)
 			e = user->e(i);
 			break;
 		}
-		if (e > MINENERGY4TIME) {
+		if (e > MINENERGY4TIME && user->t(i) > 0) {
 			tsum += user->t(i) * e;
 			asum += e;
 		}
 	}
 	DanssEvent.fineTime = (asum > 0) ? tsum / asum : NOFINETIME;	// some large number if not usable hits found
+	if (asum > 0 && (iFlags & FLG_DTHIST)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && !(user->type(i) == SiPmHit && user->npix(i) < MINSIPMPIXELS2)) 
+		hTimeDelta[user->adc(i)-1][user->adcChan(i)]->Fill(user->t(i) - DanssEvent.fineTime);
 }
 
 void SumClean(ReadDigiDataUser *user)
@@ -581,11 +585,13 @@ void Help(void)
 	printf("-events number --- stop after processing this number of events. Default - do not stop.\n");
 	printf("-file filename.txt --- file with a list of files for processing. No default.\n");
 	printf("-flag FLAGS --- analysis flag mask. Default - 0. Recognized flags:\n");
-	printf("\t1       --- do debugging printout of events;\n");
-	printf("\t0x10000 --- do not clean small energies;\n");
-	printf("\t0x20000 --- do not do time cut;\n");
-	printf("\t0x40000 --- do not require confirmation for all hits;\n");
-	printf("\t0x80000 --- do not require confirmation for SiPM single pixel hits.\n");
+	printf("\t       1 --- do debugging printout of events;\n");
+	printf("\t       2 --- create delta time histograms;\n");
+	printf("\t 0x10000 --- do not clean small energies;\n");
+	printf("\t 0x20000 --- do not do time cut;\n");
+	printf("\t 0x40000 --- do not require confirmation for all hits;\n");
+	printf("\t 0x80000 --- do not require confirmation for SiPM single pixel hits;\n");
+	printf("\t0x100000 --- do not correct PMT cluster energy for out of cluster SiPM hits.\n");
 	printf("-help --- print this message and exit.\n");
 	printf("-mcdata --- this is Monte Carlo data - create McTruth branch.\n");
 	printf("-output filename.root --- output file name. Default - add .root to the input data file name.\n");
@@ -705,6 +711,12 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	fileFirstTime = -1;
 	fileLastTime = -1;
 	memset(&DanssInfo, 0, sizeof(struct DanssInfoStruct));
+	
+	if (iFlags & FLG_DTHIST) for (i=0; i<iMaxAddress_AdcBoard; i++) for (j=0; j<iNChannels_AdcBoard; j++) {
+		sprintf(strs, "hDT%2.2dc%2.2d", i+1, j);
+		sprintf(strl, "Time delta distribution for channel %2.2d.%2.2d;ns", i+1, j);
+		hTimeDelta[i][j] = new TH1D(strs, strl, 250, -25, 25);
+	}
 }
 
 //------------------------------->
@@ -777,12 +789,19 @@ int ReadDigiDataUser::processUserEvent()
 
 void ReadDigiDataUser::finishUserProc()
 {
+	int i, j;
+
 	if (fileFirstTime > 0) {
 		DanssInfo.upTime = fileLastTime - fileFirstTime;
 		InfoTree->Fill();
 	}
+
+	OutputFile->cd();
+
 	OutputTree->Write();
-	InfoTree->Write();	
+	InfoTree->Write();
+	if (iFlags & FLG_DTHIST) for (i=0; i<iMaxAddress_AdcBoard; i++) for (j=0; j<iNChannels_AdcBoard; j++) hTimeDelta[i][j]->Write();
+
   	OutputFile->Close();
   
 	printf("Total up time        %Ld seconds\n", upTime / (long long) GLOBALFREQ);

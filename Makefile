@@ -1,6 +1,6 @@
-CFLAGS = -g `root-config --cflags` -I/usr/local/digi -g
-CXXFLAGS = -g `root-config --cflags` -I/usr/local/digi
-LDFLAGS = -g `root-config --glibs` -L/usr/local/digi -lReadDigiData
+CFLAGS = `root-config --cflags` -I/usr/local/digi -g
+CXXFLAGS = `root-config --cflags` -I/usr/local/digi
+LDFLAGS = `root-config --glibs` -L/usr/local/digi -lReadDigiData
 
 pairbuilder : pairbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
@@ -8,7 +8,13 @@ pairbuilder : pairbuilder.cpp
 pairbuilder2 : pairbuilder2.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
+pairbuilder3 : pairbuilder3.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`
+
 randombuilder : randombuilder.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`
+
+randombuilder3 : randombuilder3.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
 mupairbuilder : mupairbuilder.cpp
