@@ -4,14 +4,14 @@ void digi_statone(int num)
 	double tm;
 	char start[64], stop[64];
 	
-	sprintf(fname, "danss_root/danss_%6.6d.root", num);
+	sprintf(fname, "danss_root3/danss_%6.6d.root", num);
 	TFile *f = new TFile(fname);
 	if (!f->IsOpen()) {
 		printf("File %s not found\n", fname);
 		return;
 	}
 
-	TTree *info = f->Get("DanssInfo");
+	TTree *info = (TTree *) f->Get("DanssInfo");
 	if (!info) {
 		printf("File %s - no info\n", fname);
 		return;
@@ -21,7 +21,7 @@ void digi_statone(int num)
 //	time_t tStart = info->GetLeaf("startTime")->GetValue();
 	time_t tStop = info->GetLeaf("stopTime")->GetValue();
 	
-	TTree *evt = f->Get("DanssEvent");
+	TTree *evt = (TTree *) f->Get("DanssEvent");
 	if (!evt) {
 		printf("File %s - no events\n", fname);
 		return;
@@ -39,7 +39,7 @@ void digi_statone(int num)
 	int gt1MeV = evt->GetEntries("PmtCleanEnergy + SiPmCleanEnergy > 2");
 	int gt3MeV = evt->GetEntries("PmtCleanEnergy + SiPmCleanEnergy > 6");
 	int gt20MeV = evt->GetEntries("PmtCleanEnergy + SiPmCleanEnergy > 40");
-	int positrons = evt->GetEntries("PositronPmtEnergy + PositronSiPmEnergy > 2 && PositronPmtEnergy + PositronSiPmEnergy < 16");
+	int positrons = evt->GetEntries("PositronEnergy > 1 && PositronEnergy < 8");
 	int neutrons = evt->GetEntries("PmtCleanEnergy + SiPmCleanEnergy > 6 && PmtCleanEnergy + SiPmCleanEnergy < 20 && SiPmCleanHits > 2");
 //	
 	strftime(start, sizeof(start), "%F %R", localtime(&tStart));
