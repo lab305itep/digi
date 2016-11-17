@@ -123,7 +123,7 @@ struct DanssInfoStruct {
 	long long	upTime;			// running time in terms of 125 MHz
 	int		startTime;		// linux start time, seconds
 	int		stopTime;		// linux stop time, seconds
-	int		events;			// number of events
+	long long	events;			// number of events
 };
 
 struct DanssInfoStruct3 {

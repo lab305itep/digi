@@ -30,6 +30,8 @@ void HPainter::Init(const char *sname, const char *rname)
 
 	tSig = tRand = NULL;
 	upTime = 0;
+	tBegin = 0;
+	tEnd = 0;
 	
 	fSig = new TFile(sname);
 	if (!fSig->IsOpen()) {
@@ -62,14 +64,22 @@ void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 {
 	TH1 *hSig;
 	TH1 *hRand;
+	TCut ct;
+	char str[256];
 	
 	if (!IsOpen()) return;
 	
 	hSig = (TH1 *) hist->Clone("_sigtmp");
 	hRand = (TH1 *) hist->Clone("_randtmp");
-	
-	tSig->Project("_sigtmp", what, cut.GetTitle());
-	tRand->Project("_randtmp", what, cut.GetTitle());
+	if (tBegin < tEnd) {
+		sprintf(str, "unixTime > %d && unixTime < %d", tBegin, tEnd);
+		ct = cut && str;
+		tSig->Project("_sigtmp", what, ct);
+		tRand->Project("_randtmp", what, ct);
+	} else {
+		tSig->Project("_sigtmp", what, cut.GetTitle());
+		tRand->Project("_randtmp", what, cut.GetTitle());
+	}
 	
 	hSig->Sumw2();
 	hRand->Sumw2();
@@ -80,5 +90,19 @@ void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 	
 	delete hSig;
 	delete hRand;
+}
+
+void HPainter::SetUpTime(unsigned int t0, unsigned int t1)
+{
+	int i, N, S;
+
+	tBegin = t0;
+	tEnd = t1;
+	N = (t1 - t0) / 100;
+	TH1S *h = new TH1S("_tmp_utime", "unix time", N, tBegin, tBegin + 100*N);
+	tSig->Project("_tmp_utime", "unixTime");
+	S = 0;
+	for (i=0; i<N; i++) if (h->GetBinContent(i+1)) S++;
+	upTime = S*100;
 }
 
