@@ -44,7 +44,7 @@
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
-#define MYVERSION	"3.01"
+#define MYVERSION	"3.02"
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -52,6 +52,8 @@
 #define MINVETOENERGY	0.1			// Minimum VETO energy for a hit
 #define SIPMEARLYTIME	45			// ns - shift from fine time
 #define SOMEEARLYTIME	130			// ns - absolute if fineTime is not defined
+#define MAXPOSITRONENERGY	20		// Maximum Total clean energy to calculate positron parameters
+#define MAXCLUSTITER		10		// Maximum number of iterations in cluster search
 //	fine time
 #define MINENERGY4TIME	0.25			// Minimum energy to use for fine time averaging
 #define TCUT		15			// fine time cut, ns
@@ -148,7 +150,7 @@ float acorr(float energy, float dist)
 void CalculatePositron(ReadDigiDataUser *user)
 {
 #include "clust_table.h"
-	int i, j, N;
+	int i, j, k, N;
 	float A;
 	float x, y, z;
 	float nx, ny;
@@ -157,6 +159,8 @@ void CalculatePositron(ReadDigiDataUser *user)
 	int clusterHits[10];		// Maximum possible cluster 5x2
 	int xmin, xmax, ymin, ymax, zmin, zmax;
 	int xy;
+
+	if (DanssEvent.SiPmCleanEnergy + DanssEvent.PmtCleanEnergy > 2 * MAXPOSITRONENERGY) return;
 
 	N = user->nhits();
 //		Find the maximum hit
@@ -170,7 +174,7 @@ void CalculatePositron(ReadDigiDataUser *user)
 	HitFlag[maxHit] = 10;
 	DanssEvent.MaxHitEnergy = A;
 //		Find cluster
-	for (;;) {
+	for (k=0; k<MAXCLUSTITER; k++) {
 		repeat = 0;
 		for (i=0; i<N; i++) if (HitFlag[i] >= 10) for (j=0; j<N; j++) if (HitFlag[j] >= 0 && HitFlag[j] < 10 && user->type(j) == SiPmHit && IsNeighbor(i, j, user)) {
 			HitFlag[j] = 20;
@@ -710,7 +714,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	upTime = 0;
 	fileFirstTime = -1;
 	fileLastTime = -1;
-	memset(&DanssInfo, 0, sizeof(struct DanssInfoStruct));
+	memset(&DanssInfo, 0, sizeof(struct DanssInfoStruct3));
 	
 	if (iFlags & FLG_DTHIST) for (i=0; i<iMaxAddress_AdcBoard; i++) for (j=0; j<iNChannels_AdcBoard; j++) {
 		sprintf(strs, "hDT%2.2dc%2.2d", i+1, j);
@@ -738,7 +742,7 @@ int ReadDigiDataUser::processUserEvent()
   	if( ttype() != 1 ) return 0;
 	
 	memset(HitFlag, 0, nhits() * sizeof(int));
-	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct2));
+	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct3));
 
 	fileLastTime = globalTime();
 	DanssInfo.stopTime = absTime();
