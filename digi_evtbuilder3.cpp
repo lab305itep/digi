@@ -751,8 +751,6 @@ int ReadDigiDataUser::processUserEvent()
 		DanssInfo.startTime = DanssInfo.stopTime;
 		DanssInfo.events = 0;
 	}
-  	iNevtTotal++;
-	DanssInfo.events++;
 
 	DanssEvent.globalTime = globalTime();
 	DanssEvent.number     = nevt();
@@ -773,7 +771,11 @@ int ReadDigiDataUser::processUserEvent()
 
 	if (IsMc) mcTruth(DanssMc.Energy, DanssMc.X[0], DanssMc.X[1], DanssMc.X[2]);
 
-	OutputTree->Fill();
+  	if ((DanssEvent.SiPmCleanHits > 0 && DanssEvent.PmtCleanHits > 0) || DanssEvent.VetoCleanHits > 0) {	// remove pure pickup noise
+		iNevtTotal++;
+		DanssInfo.events++;
+		OutputTree->Fill();
+	}
 
 	if (MaxEvents > 0 && iNevtTotal >= MaxEvents) return -1;
   	return 0;
