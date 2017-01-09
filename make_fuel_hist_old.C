@@ -1,4 +1,4 @@
-void make_fuel_hist(void)
+void make_fuel_hist_old(void)
 {
 	TFile *f;
 	TFile *fout;
@@ -16,12 +16,12 @@ void make_fuel_hist(void)
 	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
 	
-	fout = new TFile("fuel_hist.root", "RECREATE");
+	fout = new TFile("fuel_hist_old.root", "RECREATE");
 	for (i=0; i<4; i++) {
 		sprintf(strs, "PositronEnergy_%s", fuel[i]);
 		sprintf(strl, "Positron spectrum for %s;MeV", fuel[i]);
 		h[i] = new TH1D(strs, strl, 35, 1, 8);
-		sprintf(strl, "danss_root3/mc_positron_%s_simple_newScale.root", fuel[i]);
+		sprintf(strl, "danss_root3/mc_positron_%s_simple.root", fuel[i]);
 		f = new TFile(strl);
 		if (!f->IsOpen()) {
 			printf("File not found %s\n", strl);
@@ -33,7 +33,7 @@ void make_fuel_hist(void)
 			continue;
 		}
 		fout->cd();
-		t->Project(h[i]->GetName(), "PositronEnergy", cX && cY && cZ);	// renormalize
+		t->Project(h[i]->GetName(), "PositronEnergy*32.0/38.0", cX && cY && cZ);	// renormalize
 		h[i]->Sumw2();
 		fout->cd();
 		h[i]->Write();
@@ -52,7 +52,7 @@ void make_fuel_hist(void)
 	hm[0]->Write();
 	hm[1]->Write();
 
-	hr = new TH1D("Ratio", "Positron spectra ratio begin to middle;MeV", 35, 1, 8);
+	hr = new TH1D("Ratio", "Positron spectra ratio middle to begin;MeV", 35, 1, 8);
 
 	hr->Divide(hm[0], hm[1]);
 	fout->cd();

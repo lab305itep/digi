@@ -48,6 +48,7 @@ Channel=01.47  DT= -30.6
 Channel=01.48  DT= -26.6
 Channel=01.49  DT= -25.7
 Channel=01.50  DT= -25.7
+Channel=01.51  DT= -30.7
 Channel=02.00  DT=  17.1
 Channel=02.01  DT=  17.3
 Channel=02.02  DT=  15.6
@@ -144,6 +145,7 @@ Channel=03.36  DT= -120.4
 Channel=03.37  DT= -120.0
 Channel=03.38  DT= -120.0
 Channel=03.39  DT= -117.5
+Channel=03.40  DT= -120.0
 Channel=05.00  DT=  13.3
 Channel=05.01  DT=  14.2
 Channel=05.02  DT=  13.2

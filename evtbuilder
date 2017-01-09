@@ -36,7 +36,7 @@ LISTFILE="${RUNNUMBER}.list"
 echo $RUN > $LISTFILE
 
 RUNDIR=`dirname $RUN`
-CALIB=`find $RUNDIR -name "*calib.txt" -print`
+CALIB=`find $RUNDIR -name "*calib*.txt" -print`
 CALIB=${CALIB:-/data/DANSS/digi_rawProc/v1.0/002086-2148/danss_data_002101-17_calib.txt}
 
 if [ $RUNNUMBER -lt 2066 ] ; then

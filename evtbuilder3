@@ -31,7 +31,7 @@ if [ ${FN:0:1} == "/" ] ; then
 	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
 else
 	RUNNUMBER=`printf "%6.6d" $FN`
-	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec*digi* -print -quit 2>/dev/null`
+	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec.digi* -print -quit 2>/dev/null`
 	TMPFILE=tmp/${RUNNUMBER}.digi
 
 	if [ "x$RUN" == "x" ] ; then
@@ -40,7 +40,7 @@ else
 	fi
 
 	if [ $RUN != ${RUN/.bz2} ] ; then
-		bzip2 -d -k -c > $TMPFILE
+		bzip2 -d -k -c $RUN > $TMPFILE
 	else 
 		cp $RUN $TMPFILE
 	fi
@@ -49,7 +49,7 @@ else
 	echo $TMPFILE > $LISTFILE
 
 	RUNDIR=`dirname $RUN`
-	CALIB=`find $RUNDIR -name "*calib.txt" -print`
+	CALIB=`find $RUNDIR -name "*calib*.txt" -print`
 
 	if [ "x$CALIB" == "x" ] ; then
 		echo "No calibration found in $RUNDIR - using default"
