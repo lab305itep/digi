@@ -1,6 +1,6 @@
 #include "HPainter.h"
 
-TH1D *spectr3(const char *name, const char *namer, const char *resname, unsigned int t0 = 0, unsigned int t1 = 0)
+TH1D *spectr3(const char *name, const char *namer, const char *resname, unsigned int t0 = 0, unsigned int t1 = 0, double bgnd = 0.05)
 {
 //	gROOT->ProcessLine(".L HPainter.cpp+");
 //	gROOT->ProcessLine(".x cuts-nov16.C");
@@ -16,9 +16,12 @@ TH1D *spectr3(const char *name, const char *namer, const char *resname, unsigned
 	ptr->Project(hSig,  "PositronEnergy", cSig);
 	ptr->Project(hBgnd, "PositronEnergy", cBgnd);
 
-	hRes->Add(hSig, hBgnd, 1, -0.05);
+	hRes->Add(hSig, hBgnd, 1, -bgnd);
 	hRes->Draw();
 	printf("Running time = %g s\n", ptr->GetUpTime());
+	delete hSig;
+	delete hBgnd;
+	delete ptr;
 	return hRes;
 }
 
