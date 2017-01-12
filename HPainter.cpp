@@ -95,11 +95,13 @@ void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 void HPainter::SetUpTime(unsigned int t0, unsigned int t1)
 {
 	int i, N, S;
-
+	TH1S *h;
 	tBegin = t0;
 	tEnd = t1;
 	N = (t1 - t0) / 100;
-	TH1S *h = new TH1S("_tmp_utime", "unix time", N, tBegin, tBegin + 100*N);
+	h = (TH1S*) gROOT->FindObject("_tmp_utime");
+	if (h) delete h;
+	h = new TH1S("_tmp_utime", "unix time", N, tBegin, tBegin + 100*N);
 	tSig->Project("_tmp_utime", "unixTime");
 	S = 0;
 	for (i=0; i<N; i++) if (h->GetBinContent(i+1)) S++;

@@ -45,6 +45,8 @@
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
 #define VETOBLK		100.0	// us
 #define ATTENUATION	0.00342	// Signal attenuation for positron energy correction
+#define CORR_P0		0.179	// Positron energy correction from MC
+#define CORR_P1		0.929	// Positron energy correction from MC
 
 //	Correction based on the neutron position if this was not done before based on the positron position
 void acorr(struct DanssPairStruct3 *DanssPair) {
@@ -119,7 +121,8 @@ void MakePair(struct DanssEventStruct3 *DanssEvent, struct DanssEventStruct3 *Sa
 	DanssPair->VetoEnergy = VetoEvent->VetoCleanEnergy;
 	DanssPair->DanssEnergy = (VetoEvent->SiPmCleanEnergy + VetoEvent->PmtCleanEnergy) / 2;
 	
-	acorr(DanssPair);
+	acorr(DanssPair);		// correct positron energy based on neutron position if only one coordinate of positron cluster is available
+	DanssPair->PositronEnergy = (DanssPair->PositronEnergy - CORR_P0) / CORR_P1;
 }
 
 int main(int argc, char **argv)

@@ -47,6 +47,8 @@
 #define RSHIFT		5000.0	// us
 #define NRANDOM		16	// increase random statistics
 #define ATTENUATION	0.00342	// Signal attenuation for positron energy correction
+#define CORR_P0		0.179	// Positron energy correction from MC
+#define CORR_P1		0.929	// Positron energy correction from MC
 
 //	Correction based on the neutron position if this was not done before based on the positron position
 void acorr(struct DanssPairStruct3 *DanssPair) {
@@ -122,6 +124,7 @@ void MakePair(struct DanssEventStruct3 *DanssEvent, struct DanssEventStruct3 *Sa
 	DanssPair->DanssEnergy = (VetoEvent->SiPmCleanEnergy + VetoEvent->PmtCleanEnergy) / 2;
 
 	acorr(DanssPair);
+	DanssPair->PositronEnergy = (DanssPair->PositronEnergy - CORR_P0) / CORR_P1;
 }
 
 int main(int argc, char **argv)

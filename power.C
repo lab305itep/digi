@@ -14,6 +14,7 @@ void power(void)
     char * tok;
     double pnorm, s;
 
+
     unsigned long periods[][2] = {
 	{1475218800, 1475398300},
 	{1475398300, 1475577800},
@@ -23,6 +24,8 @@ void power(void)
 	{1476261900, 1476457100},
 	{1476458100, 1476696500},
 	{1476697500, 1476875600}};
+
+
     
     int np = sizeof(periods)/sizeof(periods[0]);
     
@@ -33,6 +36,7 @@ void power(void)
 
     memset(avpow, '\0', sizeof(avpow));
     
+/*
     double data[][2] = {
          {44.32, 0.91},
          {44.32, 0.91},
@@ -42,6 +46,17 @@ void power(void)
          {27.02, 0.79},
          {3.74,  0.60},
          {2.90,  0.74}};
+*/
+
+    double data[][2] = {
+	{43.6, 0.9},
+	{43.5, 0.9},
+	{41.4, 0.9},
+	{59.3, 1.0},
+	{25.2, 0.8},
+	{ 2.1, 0.6},
+	{ 1.8, 0.7}};
+
          
     double const up = 1.0;
     double const mid = (11.7/10.7)*(11.7/10.7);
@@ -110,12 +125,13 @@ void power(void)
 	dpow->SetPointError(j, 0., data[j][1]*pnorm);
     }
 
-    gStyle->SetTimeOffset(0);
+    gStyle->SetTimeOffset(10800);	// -3 hours to convert back from GMT
     gStyle->SetEndErrorSize(7);
+    gStyle->SetOptStat(0);
     hpow->GetXaxis()->SetTimeDisplay(1);
-    hpow->GetXaxis()->SetTimeFormat("%d/%m");
+    hpow->GetXaxis()->SetTimeFormat("%d/%m %H:%M");
     hpow->GetXaxis()->SetNdivisions(710);
-    hpow->GetXaxis()->SetTitle("Date day/month");
+    hpow->GetXaxis()->SetTitle("Date day/month hr:min");
     hpow->SetLineColor(kBlue);
     hpow->SetLineWidth(2);
     apow->SetLineColor(kRed);
