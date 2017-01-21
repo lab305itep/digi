@@ -31,7 +31,7 @@ if [ ${FN:0:1} == "/" ] ; then
 	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
 else
 	RUNNUMBER=`printf "%6.6d" $FN`
-	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec.digi* -print -quit 2>/dev/null`
+	RUN=`find /space/digi -name danss*${RUNNUMBER}_rawrec*.digi* -print -quit 2>/dev/null`
 	TMPFILE=tmp/${RUNNUMBER}.digi
 
 	if [ "x$RUN" == "x" ] ; then

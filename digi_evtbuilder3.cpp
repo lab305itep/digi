@@ -66,6 +66,7 @@
 #define FLG_NOCONFIRM		 0x40000	// do not search PMT confirmation for SiPM and vice versa
 #define FLG_NOCONFIRM2		 0x80000	// do not search PMT confirmation for 1 pixel SiPM signals
 #define FLG_NOPMTCORR		0x100000	// do not correct PMT energy of cluster for out of cluster SiPM hits
+#define FLG_PMTTIMECUT		0x200000	// Cut PMT and Veto by time
 
 using namespace std;
 
@@ -381,7 +382,8 @@ void CleanByTime(ReadDigiDataUser *user)
 	
 	N = user->nhits();
 	if (DanssEvent.fineTime != NOFINETIME) {
-		for (i=0; i<N; i++) if (fabs(user->t(i) - DanssEvent.fineTime) > TCUT) HitFlag[i] = -1;
+		for (i=0; i<N; i++) 
+			if (fabs(user->t(i) - DanssEvent.fineTime) > TCUT && ((iFlags & FLG_PMTTIMECUT) || user->type(i) == SiPmHit)) HitFlag[i] = -1;
 		tearly = DanssEvent.fineTime - SIPMEARLYTIME;
 	} else {
 		tearly = SOMEEARLYTIME;
@@ -433,9 +435,10 @@ void FindFineTime(ReadDigiDataUser *user)
 	float tsum;
 	float asum;
 	float e;
-	int i, N;
+	int i, k, N;
 	
 	tsum = asum = 0;
+	k = 0;
 	N = user->nhits();
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0) {
 		switch(user->type(i)) {
@@ -451,10 +454,11 @@ void FindFineTime(ReadDigiDataUser *user)
 		if (e > MINENERGY4TIME && user->t(i) > 0) {
 			tsum += user->t(i) * e;
 			asum += e;
+			k++;
 		}
 	}
 	DanssEvent.fineTime = (asum > 0) ? tsum / asum : NOFINETIME;	// some large number if not usable hits found
-	if (asum > 0 && (iFlags & FLG_DTHIST)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && !(user->type(i) == SiPmHit && user->npix(i) < MINSIPMPIXELS2)) 
+	if (k > 1 && (iFlags & FLG_DTHIST)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && !(user->type(i) == SiPmHit && user->npix(i) < MINSIPMPIXELS2)) 
 		hTimeDelta[user->adc(i)-1][user->adcChan(i)]->Fill(user->t(i) - DanssEvent.fineTime);
 }
 

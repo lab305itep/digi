@@ -1,13 +1,24 @@
 int UnitNumber;
 int ChannelNumber;
 TFile *RootFile;
+FILE *RepFile;
 TCanvas *cv;
 
-void Open(const char *name)
+int Open(const char *name)
 {
+	char str[1024];
+	char *ptr;
+
+	strncpy(str, name, sizeof(str)-10);
+	ptr = strrchr(str, '.');
+	if (!ptr) ptr = strchr(str, '\0');
+	strcpy(ptr, ".log");
 	RootFile = new TFile(name);
+	if (!RootFile->IsOpen()) return -1;
+	RepFile = fopen(str, "wt");
 	UnitNumber = 1;
 	ChannelNumber = 0;
+	return 0;
 }
 
 void Draw(int update = 1)
@@ -26,6 +37,8 @@ void Draw(int update = 1)
 		sprintf(str, "hDT%2.2dc%2.2d", UnitNumber, ChannelNumber + i);
 		h = (TH1 *) RootFile->Get(str);
 		if (h) h->Draw();
+		if (fabs(h->GetMean()) > 2.5 && h->GetEntries() > 1000 && RepFile) 
+			fprintf(RepFile, "%2.2dc%2.2d: Mean = %7.2f\n", UnitNumber, ChannelNumber + i, h->GetMean());
 	}
 	if (update) cv->Update();
 }
@@ -76,6 +89,7 @@ void Print(const char *name)
 
 void drawtimehists(const char *name)
 {
-	Open(name);
+	if (Open(name)) return;
 	Print(name);
+	if (RepFile) fclose(RepFile);
 }
