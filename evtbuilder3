@@ -61,9 +61,10 @@ else
 	elif [ $RUNNUMBER -lt 5469 ] ; then
 		TCALIB=tcalib_cmnew_ss.calib
 	else
-		TCALIB=tcalib_5512_ss.calib
+		TCALIB=tcalib_5512_ss-b.calib
 	fi
-
+	echo "TCALIB=$TCALIB"
+	
 	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS $ARGS
 	
 	rm $TMPFILE

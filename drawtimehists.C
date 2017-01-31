@@ -37,8 +37,8 @@ void Draw(int update = 1)
 		sprintf(str, "hDT%2.2dc%2.2d", UnitNumber, ChannelNumber + i);
 		h = (TH1 *) RootFile->Get(str);
 		if (h) h->Draw();
-		if (fabs(h->GetMean()) > 2.5 && h->GetEntries() > 1000 && RepFile) 
-			fprintf(RepFile, "%2.2dc%2.2d: Mean = %7.2f\n", UnitNumber, ChannelNumber + i, h->GetMean());
+		if (h->GetEntries() > 1000 && RepFile) 
+			fprintf(RepFile, "Channel=%2.2d.%2.2d  DT=%6.1f\n", UnitNumber, ChannelNumber + i, h->GetMean());
 	}
 	if (update) cv->Update();
 }

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 
-void drawstat(char * fname = "stat_all.txt", int col = 8, int mask = 0xFFFFFFFF, char * listpref = "danss_root/") {
+void drawstat(char * fname = "stat_all.txt", int startfile=5540, int col = 8, int mask = 0xFFFFFFFF, char * listpref = "danss_root/") {
     FILE *f, *fl;
     char line[1024];
     char * ptr;
@@ -30,7 +30,8 @@ void drawstat(char * fname = "stat_all.txt", int col = 8, int mask = 0xFFFFFFFF,
 	(int)kBlue-6,
 	(int)kYellow-6,
 	(int)kMagenta-6,
-	(int)kCyan-6
+	(int)kCyan-6,
+	(int)kGray-6
     };
 
     const char tit[][50] = {
@@ -64,10 +65,11 @@ void drawstat(char * fname = "stat_all.txt", int col = 8, int mask = 0xFFFFFFFF,
 	"Source Cm",
 	"Source Na",
 	"Source Co",
-	"Test LED"
+	"Test LED",
+	"Raised 23 cm"
     };
     
-    printf("Usage: drawstat(<statfile>=\"stat_all.txt\", <column>=8(>20Mev), <mask>=0xFFFFFFFF, <listpref>=\"danss_root/\")\n");
+    printf("Usage: drawstat(<statfile>=\"stat_all.txt\", <startfile>=5540, <column>=8(>20Mev), <mask>=0xFFFFFFFF, <listpref>=\"danss_root/\")\n");
 
     if (col < 0 || col >= sizeof(tit)/sizeof(tit[0])) return;
     
@@ -91,7 +93,9 @@ void drawstat(char * fname = "stat_all.txt", int col = 8, int mask = 0xFFFFFFFF,
 	if (strlen(line) < 2 || line[0] == '*') continue;
 	// run #
 	ptr = strtok(line, " \t");
+	if (!ptr) continue;
 	n = strtol(ptr, NULL, 10);
+	if (n < startfile) continue;
 	// type
 	ptr = strtok(NULL, " \t");
 	type = strtol(ptr, NULL, 10);

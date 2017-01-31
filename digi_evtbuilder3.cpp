@@ -458,7 +458,8 @@ void FindFineTime(ReadDigiDataUser *user)
 		}
 	}
 	DanssEvent.fineTime = (asum > 0) ? tsum / asum : NOFINETIME;	// some large number if not usable hits found
-	if (k > 1 && (iFlags & FLG_DTHIST)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && !(user->type(i) == SiPmHit && user->npix(i) < MINSIPMPIXELS2)) 
+	if (k > 1 && (iFlags & FLG_DTHIST)) for (i=0; i<N; i++) 
+		if (HitFlag[i] >= 0 && !(user->type(i) == SiPmHit && user->npix(i) < MINSIPMPIXELS2) && user->e(i) > MINENERGY4TIME && user->t(i) > 0) 
 		hTimeDelta[user->adc(i)-1][user->adcChan(i)]->Fill(user->t(i) - DanssEvent.fineTime);
 }
 
