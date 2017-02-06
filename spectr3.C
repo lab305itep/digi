@@ -17,8 +17,8 @@ TH1D *spectr3(const char *name, const char *namer, const char *resname, unsigned
 	ptr->Project(hBgnd, "PositronEnergy", cBgnd);
 
 	hRes->Add(hSig, hBgnd, 1, -bgnd);
-	hRes->Draw();
-	printf("Running time = %g s\n", ptr->GetUpTime());
+//	hRes->Draw();
+//	printf("Running time = %g s\n", ptr->GetUpTime());
 	delete hSig;
 	delete hBgnd;
 	delete ptr;
