@@ -45,22 +45,21 @@
 #define SOURCEZ		50.0	// cm
 #define DELTA		15.0	// cm
 
-int IsFission(struct DanssEventStruct *DanssEvent)
+int IsFission(struct DanssEventStruct3 *DanssEvent)
 {
-	if (DanssEvent->PmtCleanEnergy < MINTRIGE || DanssEvent->PmtCleanEnergy > MAXTRIGE) return 0;
-	if (DanssEvent->SiPmCleanEnergy < MINTRIGE || DanssEvent->SiPmCleanEnergy > MAXTRIGE) return 0;
+	if (DanssEvent->PmtCleanEnergy + DanssEvent->SiPmCleanEnergy < 2*MINTRIGE || DanssEvent->PmtCleanEnergy + DanssEvent->SiPmCleanEnergy > 2*MAXTRIGE) return 0;
 //	if (fabs(DanssEvent->NeutronX[0] - SOURCEX) > DELTA) return 0;
-	if (fabs(DanssEvent->PositronX[2] - SOURCEZ) > DELTA) return 0;
+//	if (fabs(DanssEvent->PositronX[2] - SOURCEZ) > DELTA) return 0;
 	return 1;
 }
 
-int IsVeto(struct DanssEventStruct *Event)
+int IsVeto(struct DanssEventStruct3 *Event)
 {
 	if (Event->VetoCleanEnergy > MINVETOE || Event->VetoCleanHits > VETON || Event->PmtCleanEnergy > DANSSVETOE || Event->SiPmCleanEnergy > DANSSVETOE) return 1;
 	return 0;
 }
 
-void Add2Cm(struct DanssEventStruct *DanssEvent, struct DanssCmStruct *DanssCm, int num, long long globalTime)
+void Add2Cm(struct DanssEventStruct3 *DanssEvent, struct DanssCmStruct *DanssCm, int num, long long globalTime)
 {
 	if (num >= 10) return;
 	DanssCm->number[num] = DanssEvent->number;
@@ -69,13 +68,14 @@ void Add2Cm(struct DanssEventStruct *DanssEvent, struct DanssCmStruct *DanssCm, 
 	DanssCm->PmtCleanEnergy[num] = DanssEvent->PmtCleanEnergy;
 
 	DanssCm->Hits[num] = DanssEvent->SiPmCleanHits;
-	DanssCm->NeutronHits[num] = DanssEvent->NeutronHits;
-	DanssCm->NeutronEnergy[num] = DanssEvent->NeutronSiPmEnergy;
+//	DanssCm->NeutronHits[num] = DanssEvent->SiPmCleanHits;
+	DanssCm->NeutronEnergy[num] = (DanssEvent->SiPmCleanEnergy + DanssEvent->PmtCleanEnergy) / 2;
 	memcpy(DanssCm->NeutronX[num], DanssEvent->NeutronX, sizeof(DanssEvent->NeutronX));
 	memcpy(DanssCm->PositronX[num], DanssEvent->PositronX, sizeof(DanssEvent->PositronX));
-	memcpy(DanssCm->NeutronGammaEnergy[num], DanssEvent->NeutronGammaEnergy, sizeof(DanssEvent->NeutronGammaEnergy));
-	memcpy(DanssCm->NeutronGammaDistance[num], DanssEvent->NeutronGammaDistance, sizeof(DanssEvent->NeutronGammaDistance));
+//	memcpy(DanssCm->NeutronGammaEnergy[num], DanssEvent->NeutronGammaEnergy, sizeof(DanssEvent->NeutronGammaEnergy));
+//	memcpy(DanssCm->NeutronGammaDistance[num], DanssEvent->NeutronGammaDistance, sizeof(DanssEvent->NeutronGammaDistance));
 	DanssCm->NeutronRadius[num] = DanssEvent->NeutronRadius;
+	DanssCm->PositronEnergy[num] = DanssEvent->PositronEnergy;
 	
 	DanssCm->gtDiff[num] = DanssEvent->globalTime - globalTime;
 	DanssCm->Distance[num] = sqrt(
@@ -88,11 +88,11 @@ void Add2Cm(struct DanssEventStruct *DanssEvent, struct DanssCmStruct *DanssCm, 
 
 int main(int argc, char **argv)
 {
-	struct DanssEventStruct			DanssEvent;
+	struct DanssEventStruct3		DanssEvent;
 	struct DanssCmStruct			DanssCm;
-	struct DanssEventStruct			SavedEvent;
-	struct DanssInfoStruct			DanssInfo;
-	struct DanssInfoStruct			SumInfo;
+	struct DanssEventStruct3		SavedEvent;
+	struct DanssInfoStruct3			DanssInfo;
+	struct DanssInfoStruct3			SumInfo;
 
 	TChain *EventChain;
 	TChain *InfoChain;
@@ -129,12 +129,13 @@ int main(int argc, char **argv)
 		"PmtCleanEnergy[10]/F:"	// Full Clean energy Pmt
 //		"neutron" parameters
 		"Hits[10]/I:"		// SiPm clean hits
-		"NeutronHits[10]/I:"	// number of hits considered as neutron capture gammas
+//		"NeutronHits[10]/I:"	// number of hits considered as neutron capture gammas
 		"NeutronEnergy[10]/F:"	// Energy sum of above (SiPM)
 		"NeutronX[10][3]/F:"	// center of gammas position
 		"PositronX[10][3]/F:"	// maximum hit clusters
-		"NeutronGammaEnergy[10][5]/F:"	// sorted list of the 5 most energetic gammas
-		"NeutronGammaDistance[10][5]/F:"	// distances for the gammas above to the "neutron" center
+//		"NeutronGammaEnergy[10][5]/F:"	// sorted list of the 5 most energetic gammas
+//		"NeutronGammaDistance[10][5]/F:"	// distances for the gammas above to the "neutron" center
+		"PositronEnergy[10]/F:"	// maximum hit clusters
 		"NeutronRadius[10]/F:"	// average distance between hits and the center
 //		Pair parameters
 		"gtDiff[10]/F:"		// time difference in us (from 125 MHz clock)
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
 		"stopTime/I:"		// linux stop time, seconds
 		"events/I"		// number of events
 	);
-	memset(&SumInfo, 0, sizeof(struct DanssInfoStruct));
+	memset(&SumInfo, 0, sizeof(struct DanssInfoStruct3));
 	memset(&DanssCm, 0, sizeof(struct DanssCmStruct));
 
 	EventChain = new TChain("DanssEvent");

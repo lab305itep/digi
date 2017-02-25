@@ -237,13 +237,14 @@ struct DanssCmStruct {
 	float		PmtCleanEnergy[10];	// Full Clean energy Pmt
 //		"neutron" parameters
 	int		Hits[10];
-	int		NeutronHits[10];	// number of hits considered as neutron capture gammas
-	float		NeutronEnergy[10];	// Energy sum of above (SiPM)
+//	int		NeutronHits[10];	// number of hits considered as neutron capture gammas
+	float		NeutronEnergy[10];	// Energy sum of above (SiPM + PMT)
 	float		NeutronX[10][3];	// center of gammas position
-	float		PositronX[10][3];	// center of maximum hit clusters
-	float		NeutronGammaEnergy[10][5];	// sorted list of the 5 most energetic gammas
-	float		NeutronGammaDistance[10][5];	// distances for the gammas above to the "neutron" center
-	float		NeutronRadius[10];		// average distance between hits and the center
+	float		PositronX[10][3];	// center of maximum hit cluster
+//	float		NeutronGammaEnergy[10][5];	// sorted list of the 5 most energetic gammas
+//	float		NeutronGammaDistance[10][5];	// distances for the gammas above to the "neutron" center
+	float		PositronEnergy[10];	// maximum hit cluster energy
+	float		NeutronRadius[10];	// average distance between hits and the center
 //		Pair parameters
 	float		gtDiff[10];		// time difference in us (from 125 MHz clock)
 	float		Distance[10];		// distance between neutron and positron, cm
