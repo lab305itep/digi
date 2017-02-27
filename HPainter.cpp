@@ -9,6 +9,15 @@
 
 #define NRANDOM	16
 
+//	We need that even zero bins have reasonable errors. 
+//	We assume that one sigma range fits in 0 and use Poisson distribution: sigma=0.3817
+void MakeNonZeroErrors(TH1 *h)
+{
+	int i, N;
+	N = h->GetNbinsX();
+	for (i=0; i<N; i++) if (!h->GetBinError(i+1)) h->SetBinError(i+1, 0.3817);
+}
+
 HPainter::HPainter(const char *base)
 {
 	char strs[2048], strr[2048];
@@ -198,6 +207,8 @@ void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 	
 	hSig->Sumw2();
 	hRand->Sumw2();
+	MakeNonZeroErrors(hSig);
+	MakeNonZeroErrors(hRand);
 	hRand->Scale(1.0/NRANDOM);
 	
 	hDiff->Add(hSig, hRand, 1.0, -1.0);
