@@ -18,9 +18,15 @@ TH1D *spectr5(const char *prefix, int mask, int run_from, int run_to, double bgn
         TCut cPe("PositronEnergy > 1");
 	TCut cSel = cX && cY && cZ && cR && c20 && cGamma && cPe;
 	TCut cSig = cSel && cVeto && cIso;
-	TCut cBgnd = cSel && (!cVeto);
-
+	TCut cBgnd = cSel && (!cVeto) && (cIso || "gtFromPrevious == gtFromVeto");
+#ifdef STRONG_CUTS
+        TCut cStrong("NeutronEnergy > 4 && gtDiff < 20");
+        cSig = cSig && cStrong;
+        cBgnd = cBgnd && cStrong;
+	fRoot = new TFile ("danss_report_strong.root", "UPDATE");
+#else
 	fRoot = new TFile ("danss_report.root", "UPDATE");
+#endif
 
 	sprintf(str, "%s_hSig", prefix);
 	TH1D *hSig  = new TH1D(str,  "Positron Energy;MeV;mHz", 35, 1, 8);
@@ -64,11 +70,10 @@ void spectr_all(void)
 		{ "down_29.04.16",   2733, 2788, 0.05},
 		{ "mid_30.04.16",    2791, 2832, 0.05},
 		{ "stuck_01.05.16",  2836, 3399, 0.05},
-		{ "stuck_10.05.16",  3400, 3788, 0.10},
-		{ "up_03.06.16",     4261, 4400, 0.05},
-		{ "down_06.06.16",   4403, 4439, 0.05},
-		{ "up_08.06.16",     4508, 4601, 0.05},
-		{ "down_10.06.16",   4604, 4643, 0.05},
+		{ "stuck_10.05.16",  3400, 3788, 0.05},
+		{ "up_03.06.16",     4261, 4400, 0.1},
+		{ "down_06.06.16",   4403, 4439, 0.1},
+		{ "up_08.06.16",     4508, 4601, 0.1},
 		{ "raised_30.09.16", 5540, 5807, 0.05},
 		{ "raised_04.10.16", 5808, 5903, 0.025},	// veto corners on
 		{ "mid_05.10.16",    5907, 5995, 0.025},

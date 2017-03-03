@@ -1,7 +1,13 @@
+//#define STRONG_CUTS
 void danss_draw_report(void)
 {
+#ifdef STRONG_CUTS
+	const char fname[] = "danss_report_strong.root";
+	const char pname[] = "danss_report_strong.pdf";
+#else
 	const char fname[] = "danss_report.root";
 	const char pname[] = "danss_report.pdf";
+#endif
 	const struct {
 		char name[32];
 		int first;
@@ -19,11 +25,10 @@ void danss_draw_report(void)
 		{ "down_29.04.16",   2733, 2788, 0.05},
 		{ "mid_30.04.16",    2791, 2832, 0.05},
 		{ "stuck_01.05.16",  2836, 3399, 0.05},
-		{ "stuck_10.05.16",  3400, 3788, 0.1},
-		{ "up_03.06.16",     4261, 4400, 0.05},
-		{ "down_06.06.16",   4403, 4439, 0.05},
-		{ "up_08.06.16",     4508, 4601, 0.05},
-		{ "down_10.06.16",   4604, 4643, 0.05},
+		{ "stuck_10.05.16",  3400, 3788, 0.05},
+		{ "up_03.06.16",     4261, 4400, 0.1},
+		{ "down_06.06.16",   4403, 4439, 0.1},
+		{ "up_08.06.16",     4508, 4601, 0.1},
 		{ "raised_30.09.16", 5540, 5807, 0.05},
 		{ "raised_04.10.16", 5808, 5903, 0.025},	// veto corners on
 		{ "mid_05.10.16",    5907, 5995, 0.025},
@@ -180,7 +185,7 @@ void danss_draw_report(void)
 		h->SetTitle(str);
 		h->Draw();
 		val = h->IntegralAndError(1, 35, err);
-		sprintf(str, "Neutrio = %5.2f+-%4.2f mHz", val, err);
+		sprintf(str, "Neutrino = %5.2f+-%4.2f mHz", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.3, 0.85, str);
 		sprintf(str, "%s_hCosm", positions[i].name);

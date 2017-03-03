@@ -1,75 +1,12 @@
-	const struct {
-		char name[32];
-		int first;
-		int last;
-		double bgnd;
-	} positions[] = {
-		{ "down_21.04.16",   2307, 2361, 5.},
-		{ "up_22.04.16",     2366, 2387, 5.},
-		{ "down_23.04.16",   2399, 2445, 5.},
-		{ "mid_24.04.16",    2449, 2512, 5.},
-		{ "up_25.04.16",     2514, 2562, 5.},
-		{ "down_26.04.16",   2564, 2609, 5.},
-		{ "mid_27.04.16",    2620, 2685, 5.},
-		{ "up_28.04.16",     2687, 2730, 5.},
-		{ "down_29.04.16",   2733, 2788, 5.},
-		{ "mid_30.04.16",    2791, 2832, 5.},
-		{ "stuck_01.05.16",  2836, 3399, 5.},
-		{ "stuck_10.05.16",  3400, 3788, 10.},
-		{ "up_03.06.16",     4261, 4400, 5.},
-		{ "down_06.06.16",   4403, 4439, 5.},
-		{ "up_08.06.16",     4508, 4601, 5.},
-		{ "down_10.06.16",   4604, 4643, 5.},
-		{ "raised_30.09.16", 5540, 5807, 5.},
-		{ "raised_04.10.16", 5808, 5903, 2.5},	// veto corners on
-		{ "mid_05.10.16",    5907, 5995, 2.5},
-		{ "up_10.10.16",     6007, 6130, 2.5},
-		{ "mid_12.10.16",    6136, 6275, 2.5},
-		{ "down_14.10.16",   6278, 6467, 2.5},
-		{ "up_17.10.16",     6469, 6570, 2.5},
-		{ "mid_21.10.16",    6573, 6582, 2.5},
-		{ "down_21.10.16",   6587, 6745, 2.5},
-		{ "up_24.10.16",     6757, 6815, 2.5},
-		{ "mid_27.10.16",    6842, 6909, 2.5},	// was 6923
-		{ "down_28.10.16",   6926, 7095, 2.5},
-		{ "up_31.10.16",     7106, 7364, 2.5},
-		{ "mid_11.11.16",    7387, 7406, 2.5},
-		{ "down_11.11.16",   7418, 7458, 2.5},
-		{ "up_14.11.16",     7478, 7579, 2.5},
-		{ "mid_16.11.16",    7581, 7717, 2.5},
-		{ "down_18.11.16",   7727, 7913, 2.5},
-		{ "up_21.11.16",     7922, 8042, 2.5},
-		{ "mid_23.11.16",    8048, 8179, 2.5},
-		{ "down_25.11.16",   8185, 8353, 2.5},
-		{ "up_28.11.16",     8357, 8430, 2.5},
-		{ "mid_01.12.16",    8470, 8571, 2.5},
-		{ "down_02.12.16",   8574, 8738, 2.5},
-		{ "up_05.12.16",     8741, 8869, 2.5},
-		{ "mid_07.12.16",    8873, 9009, 2.5},
-		{ "up_12.12.16",     9012, 9112, 2.5},
-		{ "mid_14.12.16",    9116, 9245, 2.5},
-		{ "down_16.12.16",   9253, 9470, 2.5},
-		{ "up_19.12.16",     9475, 9600, 2.5},
-		{ "mid_21.12.16",    9603, 9712, 2.5},
-		{ "down_23.12.16",   9715, 9869, 2.5},
-		{ "up_26.12.16",     9871, 10019, 2.5},
-		{ "mid_28.12.16",    10021, 10171, 2.5},
-		{ "down_30.12.16",   10175, 10307, 2.5},
-		{ "down_02.01.17",   10308, 10356, 2.5},
-		{ "down_03.01.17",   10357, 10424, 2.5},
-		{ "up_04.01.17",     10433, 10832, 2.5},
-		{ "mid_11.01.17",    10834, 10973, 2.5},
-		{ "down_13.01.17",   10979, 11147, 2.5},
-		{ "up_16.01.17",     11150, 11267, 2.5},
-		{ "mid_18.01.17",    11271, 11401, 2.5},
-		{ "down_20.01.17",   11404, 11563, 2.5},
-		{ "up_23.01.17",     11570, 11619, 2.5}
-	};
-
 void danss_calc_ratio(void)
 {
+#ifdef STRONG_CUTS
+	const char fname[] = "danss_report_strong.root";
+	const char pname[] = "danss_ratio_strong.pdf";
+#else
 	const char fname[] = "danss_report.root";
 	const char pname[] = "danss_ratio.pdf";
+#endif
 	const struct {
 		char name[32];
 		int first;
@@ -89,8 +26,7 @@ void danss_calc_ratio(void)
 		{ "stuck_10.05.16",  3400, 3788},
 		{ "up_03.06.16",     4261, 4400},	// [12] - 3+
 		{ "down_06.06.16",   4403, 4439},	// [13] - 3-
-		{ "up_08.06.16",     4508, 4601},	// [14] - 4+
-		{ "down_10.06.16",   4604, 4643},	// [15] - 4-
+		{ "up_08.06.16",     4508, 4601},	// [14] - 3+
 		{ "raised_30.09.16", 5540, 5807},
 		{ "raised_04.10.16", 5808, 5903},	// veto corners on
 		{ "mid_05.10.16",    5907, 5995},	// [17]
@@ -115,7 +51,7 @@ void danss_calc_ratio(void)
 		{ "up_28.11.16",     8357, 8430},	// [27] - 8+
 		{ "mid_01.12.16",    8470, 8571},	// [28]
 		{ "down_02.12.16",   8574, 8738},	// [29] - 8-
-		{ "up_05.12.16",     8741, 8869},	// [30] - 9+
+		{ "up_05.12.16",     8741, 8869},	// [30] - 8+
 		{ "mid_07.12.16",    8873, 9009},	// [31]
 		{ "up_12.12.16",     9012, 9112},	// [32] - 9+
 		{ "mid_14.12.16",    9116, 9245},	// [33]
@@ -141,13 +77,14 @@ void danss_calc_ratio(void)
 	TCanvas *cv;
 	TFile *f;
 	TH1 *h[sizeof(positions) / sizeof(positions[0])];
-	TH1 *hSum[6];
-	TH1 *hRatio[4];
+	TH1 *hSum[12];
+	TH1 *hRatio[7];
 	TH1 *hTmp[3];
 	char str[1024];
 	TLatex *txt;
 	double val, err;
 	TVirtualPad *pd;
+	const char periods[3][30] = {"April-June", "October-November", "December-January"};
 	
 	gStyle->SetOptStat(0);
 	gStyle->SetOptFit(1);
@@ -175,15 +112,24 @@ void danss_calc_ratio(void)
 	hSum[3] = (TH1 *) h[0]->Clone("hSum");
 	hSum[4] = (TH1 *) h[0]->Clone("hSum_first");
 	hSum[5] = (TH1 *) h[0]->Clone("hSum_last");
+	hSum[6] = (TH1 *) h[0]->Clone("hUpAprilJune");
+	hSum[7] = (TH1 *) h[0]->Clone("hDownAprilJune");
+	hSum[8] = (TH1 *) h[0]->Clone("hUpOctoberNovember");
+	hSum[9] = (TH1 *) h[0]->Clone("hDownOctoberNovember");
+	hSum[10] = (TH1 *) h[0]->Clone("hUpDecemberJanuary");
+	hSum[11] = (TH1 *) h[0]->Clone("hDownDecemberJanuary");
 	hRatio[0] = (TH1 *) h[0]->Clone("hRatio");
 	hRatio[1] = (TH1 *) h[0]->Clone("hMix");
 	hRatio[2] = (TH1 *) h[0]->Clone("hRatio2");
 	hRatio[3] = (TH1 *) h[0]->Clone("hRatioMidUp");
+	hRatio[4] = (TH1 *) h[0]->Clone("hRatioAprilJune");
+	hRatio[5] = (TH1 *) h[0]->Clone("hRatioOctoberNovember");
+	hRatio[6] = (TH1 *) h[0]->Clone("hRatioDecemberJanuary");
 	hTmp[0] = (TH1 *) h[0]->Clone("hTmpUp");
 	hTmp[1] = (TH1 *) h[0]->Clone("hTmpDown");
 	hTmp[2] = (TH1 *) h[0]->Clone("hTmpRatio");
-	for (i=0; i<4; i++) hSum[i]->Reset();
-	for (i=0; i<4; i++) hSum[i]->SetLineWidth(2);
+	for (i=0; i<12; i++) hSum[i]->Reset();
+	for (i=0; i<12; i++) hSum[i]->SetLineWidth(2);
 	
 	for (i=0; i<N; i++) {
 		switch (positions[i].name[0]) {
@@ -194,12 +140,13 @@ void danss_calc_ratio(void)
 		}
 		if (j >= 0) hSum[j]->Add(h[i]);
 		hSum[(i < N/2) ? 4 : 5]->Add(h[i]);
+		hSum[3]->Add(h[i]);
 	}
-	for (i=0; i<3; i++) hSum[3]->Add(hSum[i]);
+//	for (i=0; i<3; i++) hSum[3]->Add(hSum[i]);
 	hRatio[0]->Divide(hSum[1], hSum[0]);
 	hRatio[1]->Divide(hSum[5], hSum[4]);
 	hRatio[3]->Divide(hSum[2], hSum[0]);
-	
+//	Ratio from short ratios
 	hRatio[2]->Reset();
 	hRatio[2]->SetBit(TH1::kIsAverage);
 //	0+2 / 1
@@ -212,11 +159,9 @@ void danss_calc_ratio(void)
 //	8 / 7
 	hTmp[2]->Divide(h[8], h[7]);
 	hRatio[2]->Add(hTmp[2]);
-//	13 / 12
-	hTmp[2]->Divide(h[13], h[12]);
-	hRatio[2]->Add(hTmp[2]);
-//	15 / 14
-	hTmp[2]->Divide(h[15], h[14]);
+//	13 / 12 + 14
+	hTmp[0]->Add(h[12], h[14]);
+	hTmp[2]->Divide(h[13], hTmp[0]);
 	hRatio[2]->Add(hTmp[2]);
 //	21 / 18+19
 	hTmp[0]->Add(h[18], h[19]);
@@ -228,12 +173,12 @@ void danss_calc_ratio(void)
 //	26 / 24
 	hTmp[2]->Divide(h[26], h[24]);
 	hRatio[2]->Add(hTmp[2]);
-//	29 / 27
-	hTmp[2]->Divide(h[29], h[27]);
+//	29 / 27 + 30
+	hTmp[0]->Add(h[27], h[30]);
+	hTmp[2]->Divide(h[29], hTmp[0]);
 	hRatio[2]->Add(hTmp[2]);
-//	34 / 30 + 32
-	hTmp[0]->Add(h[30], h[32]);
-	hTmp[2]->Divide(h[34], hTmp[0]);
+//	34 / 32
+	hTmp[2]->Divide(h[34], h[32]);
 	hRatio[2]->Add(hTmp[2]);
 //	37 / 35
 	hTmp[2]->Divide(h[37], h[35]);
@@ -242,9 +187,41 @@ void danss_calc_ratio(void)
 	hTmp[0]->Add(h[38], h[41]);
 	hTmp[2]->Divide(h[40], hTmp[0]);
 	hRatio[2]->Add(hTmp[2]);
-	
+//	AprilJune (0 + 2 + 5 + 8 + 13) / (1 + 4 + 7 + 12 + 14)
+	hSum[6]->Add(h[1]);
+	hSum[6]->Add(h[4]);
+	hSum[6]->Add(h[7]);
+	hSum[6]->Add(h[12]);
+	hSum[6]->Add(h[14]);
+	hSum[7]->Add(h[0]);
+	hSum[7]->Add(h[2]);
+	hSum[7]->Add(h[5]);
+	hSum[7]->Add(h[8]);
+	hSum[7]->Add(h[13]);
+	hRatio[4]->Divide(hSum[7], hSum[6]);
+//	OctoberNovember (21 + 23 + 26 + 29) / (18 + 19 + 22 + 24 + 27 + 30)
+	hSum[8]->Add(h[18]);
+	hSum[8]->Add(h[19]);
+	hSum[8]->Add(h[22]);
+	hSum[8]->Add(h[24]);
+	hSum[8]->Add(h[27]);
+	hSum[8]->Add(h[30]);
+	hSum[9]->Add(h[21]);
+	hSum[9]->Add(h[23]);
+	hSum[9]->Add(h[26]);
+	hSum[9]->Add(h[29]);
+	hRatio[5]->Divide(hSum[9], hSum[8]);
+//	DecemberJanuary (34 + 37 + 40) / (32 + 35 + 38 + 41)
+	hSum[10]->Add(h[32]);
+	hSum[10]->Add(h[35]);
+	hSum[10]->Add(h[38]);
+	hSum[10]->Add(h[41]);
+	hSum[11]->Add(h[34]);
+	hSum[11]->Add(h[37]);
+	hSum[11]->Add(h[40]);
+	hRatio[6]->Divide(hSum[11], hSum[10]);
 	cv->Divide(2, 1);
-	
+
 	pd = cv->cd(1);
 	pd->Divide(1, 2);
 	pd->cd(1);
@@ -315,10 +292,25 @@ void danss_calc_ratio(void)
 	cv->Update();
 	cv->Print(pname);
 
+	cv->Clear();
+	cv->Divide(2, 2);
+	for (i=0; i<3; i++) {
+		cv->cd(i+1);
+		sprintf(str, "Down/Up all by all for %s;MeV;", periods[i]);
+		hRatio[4+i]->SetTitle(str);
+		hRatio[4+i]->SetLineColor(kBlack);
+		hRatio[4+i]->SetLineWidth(2);
+		hRatio[4+i]->SetMinimum(0.5);
+		hRatio[4+i]->SetMaximum(1.0);
+		hRatio[4+i]->Fit("pol0", "", "", 1, 7);
+	}
+	cv->Update();
+	cv->Print(pname);
+
 	sprintf(str, "%s]", pname);
 	cv->Print(str);
-	for (i=0; i<6; i++) hSum[i]->Write();
-	for (i=0; i<3; i++) hRatio[i]->Write();
+	for (i=0; i<12; i++) hSum[i]->Write();
+	for (i=0; i<7; i++) hRatio[i]->Write();
 	f->Close();
 	delete cv;
 }
