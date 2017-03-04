@@ -1,13 +1,22 @@
 #include <stdio.h>
+#include <TChain.h>
 #include <TCut.h>
 #include <TFile.h>
 #include <TH1.h>
 #include <TLeaf.h>
 #include <TROOT.h>
-#include <TTree.h>
 #include "HPainter.h"
 
 #define NRANDOM	16
+
+//	We need that even zero bins have reasonable errors. 
+//	We assume that one sigma range fits in 0 and use Poisson distribution: sigma=0.3817
+void MakeNonZeroErrors(TH1 *h)
+{
+	int i, N;
+	N = h->GetNbinsX();
+	for (i=0; i<N; i++) if (!h->GetBinError(i+1)) h->SetBinError(i+1, 0.3817);
+}
 
 HPainter::HPainter(const char *base)
 {
@@ -24,31 +33,71 @@ HPainter::HPainter(const char *sname, const char *rname)
 	Init(sname, rname);
 }
 
-void HPainter::Init(const char *sname, const char *rname)
+HPainter::HPainter(int mask, int run_from, int run_to)
 {
-	TTree *info;
+	TChain *info;
 
+	fRes = NULL;
+	ClosefRes = 0;
 	tSig = tRand = NULL;
 	upTime = 0;
 	tBegin = 0;
 	tEnd = 0;
+	int *list;
+	int lsize;
+	int i, num;
+	char str[1024];
 	
-	fSig = new TFile(sname);
-	if (!fSig->IsOpen()) {
-		printf("No file %s\n", sname);
+	lsize = run_to - run_from + 1;
+	if (lsize <= 0) {
+		printf("Nothing to do!\n");
 		return;
 	}
-	
-	fRand = new TFile(rname);
-	if (!fRand->IsOpen()) {
-		printf("No file %s\n", rname);
+	list = (int *) malloc(lsize * sizeof(int));
+	num = Make_file_list(list, lsize, mask, run_from, run_to);
+	if (num <= 0) {
+		printf("No runs found!\n");
 		return;
 	}
+
+	tSig = new TChain("DanssPair", "SignalPair");
+	tRand = new TChain("DanssPair", "RandomPair");
+	info = new TChain("SumInfo", "Info");
+
+	for (i=0; i<num; i++) {
+		sprintf(str, "danss_root2/pair_%6.6d.root", list[i]);
+		tSig->Add(str);
+		info->Add(str);
+		sprintf(str, "danss_root2/random_%6.6d.root", list[i]);
+		tRand->Add(str);
+	}
 	
-	tSig = (TTree *) fSig->Get("DanssPair");
-	tRand = (TTree *) fRand->Get("DanssPair");
-	
-	info = (TTree *) fSig->Get("SumInfo");
+	for (i=0; i<num; i++) {
+		info->GetEntry(i);
+		upTime += info->GetLeaf("gTime")->GetValue() / 125E6;
+	}
+	gROOT->cd();
+}
+
+void HPainter::Init(const char *sname, const char *rname)
+{
+	TChain *info;
+
+	fRes = NULL;
+	tSig = tRand = NULL;
+	upTime = 0;
+	tBegin = 0;
+	tEnd = 0;
+	ClosefRes = 0;
+
+	tSig = new TChain("DanssPair", "SignalPair");
+	tRand = new TChain("DanssPair", "RandomPair");
+	info = new TChain("SumInfo", "Info");
+
+	tSig->Add(sname);
+	tRand->Add(rname);
+	info->Add(sname);	
+
 	info->GetEntry(0);
 	upTime = info->GetLeaf("gTime")->GetValue() / 125E6;
 	gROOT->cd();
@@ -56,40 +105,127 @@ void HPainter::Init(const char *sname, const char *rname)
 
 HPainter::~HPainter(void)
 {
-	fSig->Close();
-	fRand->Close();
+	if (ClosefRes && fRes) fRes->Close();
+	delete tSig;
+	delete tRand;
+}
+
+void HPainter::OpenFile(const char *name)
+{
+	if (fRes) return;
+	fRes = new TFile(name, "UPDATE");
+	if (!fRes->IsOpen()) {
+		fRes = NULL;
+	} else {
+		ClosefRes = 1;
+	}
+	
+}
+
+/*
+	Make list of runs for analysis
+	Return number of runs found, negative on error
+	int *list - allocated array to accept the run list
+	int size  - size of allocated array
+	int mask  - mask of possible conditions
+	int run_from, int run_to - runs range to consider
+*/
+int HPainter::Make_file_list(int *list, int size, int mask, int run_from, int run_to)
+{
+	const char stat_file_name[] = "stat_all.txt";
+	int N;
+	FILE *f;
+	char str[1024];
+	char *ptr;
+	int i, num, cond;
+
+	f = fopen(stat_file_name, "rt");
+	if (!f) {
+		printf("Stat file %s not found: %m\n", stat_file_name);
+		return -1;
+	}
+
+	N = 0;
+	for(i=0;;i++) {
+		ptr = fgets(str, sizeof(str), f);
+		if (!ptr || feof(f)) break;
+		ptr = strtok(str, " \t");
+		if (!isdigit(ptr[0])) continue;
+		num = strtol(ptr, NULL, 10);
+		ptr = strtok(NULL, " \t");
+		if (!ptr) {
+			printf("Strange record at line %d\n", i);
+			continue;
+		}
+		cond = strtol(ptr, NULL, 10);
+		if (num < run_from) continue;
+		if (num > run_to) break;
+		if (cond <= 0) continue;
+		if (mask & (1 << (cond - 1))) {
+			list[N] = num;
+			N++;
+			if (N >= size) break;
+		}
+	}
+
+	fclose(f);
+
+	return N;
 }
 
 void HPainter::Project(TH1 *hist, const char *what, TCut cut)
 {
 	TH1 *hSig;
 	TH1 *hRand;
+	TH1 *hDiff;
 	TCut ct;
 	char str[256];
+	char csig[1024];
+	char crand[1024];
+	char cdiff[1024];
 	
 	if (!IsOpen()) return;
 	
-	hSig = (TH1 *) hist->Clone("_sigtmp");
-	hRand = (TH1 *) hist->Clone("_randtmp");
+	snprintf(csig, sizeof(csig), "%s-sig", hist->GetName());
+	snprintf(crand, sizeof(crand), "%s-rand", hist->GetName());
+	snprintf(cdiff, sizeof(cdiff), "%s-diff", hist->GetName());
+	hSig = (TH1 *) hist->Clone(csig);
+	hRand = (TH1 *) hist->Clone(crand);
+	hDiff = (TH1 *) hist->Clone(cdiff);
+	hSig->SetYTitle("Events");
+	hRand->SetYTitle("Events");
+	hDiff->SetYTitle("Events");
 	if (tBegin < tEnd) {
 		sprintf(str, "unixTime > %d && unixTime < %d", tBegin, tEnd);
 		ct = cut && str;
-		tSig->Project("_sigtmp", what, ct);
-		tRand->Project("_randtmp", what, ct);
+		tSig->Project(csig, what, ct);
+		tRand->Project(crand, what, ct);
 	} else {
-		tSig->Project("_sigtmp", what, cut.GetTitle());
-		tRand->Project("_randtmp", what, cut.GetTitle());
+		tSig->Project(csig, what, cut.GetTitle());
+		tRand->Project(crand, what, cut.GetTitle());
 	}
 	
 	hSig->Sumw2();
 	hRand->Sumw2();
+	MakeNonZeroErrors(hSig);
+	MakeNonZeroErrors(hRand);
 	hRand->Scale(1.0/NRANDOM);
 	
-	hist->Add(hSig, hRand, 1.0, -1.0);
-	hist->Scale(1000.0 / upTime);	// mHz
+	hDiff->Add(hSig, hRand, 1.0, -1.0);
+
+	hist->Reset();
+	hist->Add(hDiff, 1000.0 / upTime);	// mHz
+
+	if (fRes) {
+		fRes->cd();
+		hSig->Write();
+		hRand->Write();
+		hDiff->Write();
+	}
 	
 	delete hSig;
 	delete hRand;
+	delete hDiff;
 }
 
 void HPainter::SetUpTime(unsigned int t0, unsigned int t1)

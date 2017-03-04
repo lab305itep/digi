@@ -44,7 +44,7 @@
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
-#define MYVERSION	"3.02"
+#define MYVERSION	"3.03"
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -54,6 +54,7 @@
 #define SOMEEARLYTIME	130			// ns - absolute if fineTime is not defined
 #define MAXPOSITRONENERGY	20		// Maximum Total clean energy to calculate positron parameters
 #define MAXCLUSTITER		10		// Maximum number of iterations in cluster search
+#define EDGEPMARK		1.0		// Minimum energy to flag event with edge hits
 //	fine time
 #define MINENERGY4TIME	0.25			// Minimum energy to use for fine time averaging
 #define TCUT		15			// fine time cut, ns
@@ -83,7 +84,6 @@ int					iFlags;
 int					MaxEvents;
 int					IsMc;				// MC run flag
 double					AttenuationLength;
-
 
 TFile *					OutputFile;
 TTree *					OutputTree;
@@ -143,6 +143,37 @@ float acorr(float energy, float dist)
 	return C * energy;
 }
 
+int GetEdgeFlag(int hit, ReadDigiDataUser *user)
+{
+	int z;
+	int xy;
+	char side;
+	int flag;
+
+	flag = 0;
+	z = user->zCoord(hit);
+	xy = user->firstCoord(hit);
+	side = user->side(hit);
+
+	switch(z) {
+		case 0  : flag |= PFLAG_HIT_D1; break;
+		case 1  : flag |= PFLAG_HIT_D2; break;
+		case 2  :
+		case 3  : flag |= PFLAG_HIT_D34; break;
+		case 99 : flag |= PFLAG_HIT_U1; break;
+		case 98 : flag |= PFLAG_HIT_U2; break;
+		case 97 :
+		case 96 : flag |= PFLAG_HIT_U34; break;
+	}
+
+	switch(xy) {
+		case 0  : flag |= (side == 'X') ? PFLAG_HIT_E : PFLAG_HIT_N;
+		case 24 : flag |= (side == 'X') ? PFLAG_HIT_W : PFLAG_HIT_S;
+	}
+
+	return flag;
+}
+
 /********************************************************************************************************************/
 /************************		Main analysis					*****************************/
 /********************************************************************************************************************/
@@ -160,8 +191,12 @@ void CalculatePositron(ReadDigiDataUser *user)
 	int clusterHits[10];		// Maximum possible cluster 5x2
 	int xmin, xmax, ymin, ymax, zmin, zmax;
 	int xy;
+	int invalid;
 
-	if (DanssEvent.SiPmCleanEnergy + DanssEvent.PmtCleanEnergy > 2 * MAXPOSITRONENERGY) return;
+	if (DanssEvent.SiPmCleanEnergy + DanssEvent.PmtCleanEnergy > 2 * MAXPOSITRONENERGY) {
+		DanssEvent.PositronFlags |= PFLAG_MAXENERGY;
+		return;
+	}
 
 	N = user->nhits();
 //		Find the maximum hit
@@ -171,7 +206,10 @@ void CalculatePositron(ReadDigiDataUser *user)
 		A = user->e(i);
 		maxHit = i;
 	}
-	if (maxHit < 0) return;	// nothing to do - no usable SiPM hits
+	if (maxHit < 0) {	// nothing to do - no usable SiPM hits
+		DanssEvent.PositronFlags |= PFLAG_NOCLUSTER;
+		return;
+	}
 	HitFlag[maxHit] = 10;
 	DanssEvent.MaxHitEnergy = A;
 //		Find cluster
@@ -203,8 +241,9 @@ void CalculatePositron(ReadDigiDataUser *user)
 	if (ymax - ymin > 1) A += fStripWidth  * fStripWidth  * (ymax - ymin - 1) * (ymax - ymin - 1);
 	if (zmax - zmin > 1) A += fStripHeight * fStripHeight * (zmax - zmin - 1) * (zmax - zmin - 1);
 	DanssEvent.PositronMinLen = sqrt(A);
+	invalid = 0;
 	if (xmax - xmin > 1 || ymax - ymin > 1 || zmax - zmin > 4) {	// Maximum cluster is 5x2 
-		DanssEvent.PositronValid = -10000;	// too large
+		invalid = -10000;	// too large
 	} else {
 //	Step 2: fill clust array
 		memset(clusterHits, 0, sizeof(clusterHits));
@@ -216,8 +255,9 @@ void CalculatePositron(ReadDigiDataUser *user)
 		j = 0;
 		for (i=0; i<10; i++) if (clusterHits[i]) j |= 1 << i;
 		if (!cTable[j]) j = -j;		// zero is also bad value
-		DanssEvent.PositronValid = j;
+		invalid = j;
 	}
+	if (invalid <= 0) DanssEvent.PositronFlags |= PFLAG_INVCLUSTER;
 //		Find cluster position
 	x = y = z = 0;
 	nx = ny = 0;
@@ -270,6 +310,14 @@ void CalculatePositron(ReadDigiDataUser *user)
 		DanssEvent.AnnihilationGammas++;
 		DanssEvent.AnnihilationEnergy += user->e(i);
 	}
+//		Count hits on the edge with E > 1 MeV
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && user->e(i) > EDGEPMARK) {
+		j = GetEdgeFlag(i, user);
+		if (!j) continue;
+		DanssEvent.PositronFlags |= j;
+		if (HitFlag[i] >= 10) 	DanssEvent.PositronFlags |= j >> 12;
+
+	}
 }
 
 void CalculateNeutron(ReadDigiDataUser *user)
@@ -314,7 +362,8 @@ void CleanZeroes(ReadDigiDataUser *user)
 	int i, N;
 	
 	N = user->nhits();
-	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || user->e(i) <= 0 || user->t(i) < -1000) HitFlag[i] = -1;
+	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || 
+		user->e(i) <= 0 || user->t(i) < -1000 /* || user->isBadChannel(user->chanIndex(i)) */) HitFlag[i] = -1;
 }
 
 void CleanNoise(ReadDigiDataUser *user)
@@ -683,7 +732,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"PmtCleanHits/I:"
 		"PmtCleanEnergy/F:"
 //		SiPM parameters
-		"SiPmHits/I:"		// the same as above for PMT
+		"SiPmHits/I:"		// the same as above for SiPM
 		"SiPmEnergy/F:"
 		"SiPmCleanHits/I:"
 		"SiPmCleanEnergy/F:"
@@ -691,7 +740,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"SiPmEarlyEnergy/F:"		
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
-		"PositronValid/I:"	// Negative or zero for invalid clusters.
+		"PositronFlags/I:"	// flags
 		"PositronMinLen/F:"	// Minimum track length to create the cluster
 		"PositronEnergy/F:"	// Energy sum of the cluster, corrected, (SiPM + PMT) / 2
 		"MaxHitEnergy/F:"	// Energy of the maximum hit

@@ -107,7 +107,7 @@ struct DanssEventStruct3 {
 	float		SiPmEarlyEnergy;
 //		"positron cluster" parameters
 	int		PositronHits;		// hits in the cluster
-	int		PositronValid;		// Negative or zero for invalid clusters.
+	int		PositronFlags;		// Positron flags
 	float		PositronMinLen;		// Minimum track length to create the cluster
 	float		PositronEnergy;		// Energy sum of the cluster, corrected (SiPM+PMT)
 	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
@@ -118,6 +118,33 @@ struct DanssEventStruct3 {
 	float		NeutronX[3];		// center of gammas position
 	float		NeutronRadius;		// average distance between hits and the center
 };
+
+//	Positron flag masks
+#define PFLAG_MAXENERGY		1		// Too much energy in DANSS
+#define PFLAG_NOCLUSTER		2		// No cluster
+#define PFLAG_INVCLUSTER	4		// Invalid cluster
+#define PFLAG_CHIT		0x3FF0		// Cluster hit in an edge
+#define PFLAG_CHIT_U1		0x10		// Cluster hit in Upper edge 1
+#define PFLAG_CHIT_U2		0x20		// Cluster hit in Upper edge 2
+#define PFLAG_CHIT_U34		0x40		// Cluster hit in Upper edge 34
+#define PFLAG_CHIT_D1		0x80		// Cluster hit in Down edge 1
+#define PFLAG_CHIT_D2		0x100		// Cluster hit in Down edge 2
+#define PFLAG_CHIT_D34		0x200		// Cluster hit in Down edge 34
+#define PFLAG_CHIT_E		0x400		// Cluster hit in East edge
+#define PFLAG_CHIT_W		0x800		// Cluster hit in West edge
+#define PFLAG_CHIT_N		0x1000		// Cluster hit in North edge
+#define PFLAG_CHIT_S		0x2000		// Cluster hit in South edge
+#define PFLAG_HIT		0x3FF0000	// hit in an edge
+#define PFLAG_HIT_U1		0x10000		// hit in Upper edge 1
+#define PFLAG_HIT_U2		0x20000		// hit in Upper edge 2
+#define PFLAG_HIT_U34		0x40000		// hit in Upper edge 34
+#define PFLAG_HIT_D1		0x80000		// hit in Down edge 1
+#define PFLAG_HIT_D2		0x100000	// hit in Down edge 2
+#define PFLAG_HIT_D34		0x200000	// hit in Down edge 34
+#define PFLAG_HIT_E		0x400000	// hit in East edge
+#define PFLAG_HIT_W		0x800000	// hit in West edge
+#define PFLAG_HIT_N		0x1000000	// hit in North edge
+#define PFLAG_HIT_S		0x2000000	// hit in South edge
 
 struct DanssInfoStruct {
 	long long	upTime;			// running time in terms of 125 MHz
@@ -237,13 +264,14 @@ struct DanssCmStruct {
 	float		PmtCleanEnergy[10];	// Full Clean energy Pmt
 //		"neutron" parameters
 	int		Hits[10];
-	int		NeutronHits[10];	// number of hits considered as neutron capture gammas
-	float		NeutronEnergy[10];	// Energy sum of above (SiPM)
+//	int		NeutronHits[10];	// number of hits considered as neutron capture gammas
+	float		NeutronEnergy[10];	// Energy sum of above (SiPM + PMT)
 	float		NeutronX[10][3];	// center of gammas position
-	float		PositronX[10][3];	// center of maximum hit clusters
-	float		NeutronGammaEnergy[10][5];	// sorted list of the 5 most energetic gammas
-	float		NeutronGammaDistance[10][5];	// distances for the gammas above to the "neutron" center
-	float		NeutronRadius[10];		// average distance between hits and the center
+	float		PositronX[10][3];	// center of maximum hit cluster
+//	float		NeutronGammaEnergy[10][5];	// sorted list of the 5 most energetic gammas
+//	float		NeutronGammaDistance[10][5];	// distances for the gammas above to the "neutron" center
+	float		PositronEnergy[10];	// maximum hit cluster energy
+	float		NeutronRadius[10];	// average distance between hits and the center
 //		Pair parameters
 	float		gtDiff[10];		// time difference in us (from 125 MHz clock)
 	float		Distance[10];		// distance between neutron and positron, cm

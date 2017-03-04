@@ -63,7 +63,7 @@ else
 	if [ $RUNNUMBER -lt 2066 ] ; then
 		TCALIB=tcalib_1000_ss.calib
 	elif [ $RUNNUMBER -lt 5469 ] ; then
-		TCALIB=tcalib_cmnew_ss.calib
+		TCALIB=tcalib_cmnew_ss-b.calib
 	else
 		TCALIB=tcalib_5512_ss-b.calib
 	fi
