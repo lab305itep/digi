@@ -120,7 +120,9 @@ struct DanssEventStruct3 {
 };
 
 //	Positron flag masks
-#define PFLAG_INVCLUSTER	1
+#define PFLAG_MAXENERGY		1		// Too much energy in DANSS
+#define PFLAG_NOCLUSTER		2		// No cluster
+#define PFLAG_INVCLUSTER	4		// Invalid cluster
 #define PFLAG_CHIT		0x3FF0		// Cluster hit in an edge
 #define PFLAG_CHIT_U1		0x10		// Cluster hit in Upper edge 1
 #define PFLAG_CHIT_U2		0x20		// Cluster hit in Upper edge 2
