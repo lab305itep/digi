@@ -100,6 +100,7 @@ void drawstat(char * fname = "stat_all.txt", int startfile=5540, int col = 8, in
 	ptr = strtok(NULL, " \t");
 	type = strtol(ptr, NULL, 10);
 	if (type == 0) continue;	// no file
+	if (type < 0) type = -1;
 	if (!( ((type == -1) && (mask & 1)) || ((type > 0) && ((1 << type) & mask)) )) continue;
 	if (first < 0) first = n;
 	// skip times

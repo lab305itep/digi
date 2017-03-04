@@ -55,6 +55,10 @@ else
 		echo "No calibration found in $RUNDIR - using default"
 		CALIB="danss_data_002101-17_calib.txt"
 	fi
+#		Workaround bad cell 20.4
+	if [ $FN -ge 2835 -a $FN -lt 3400 ] ; then
+		CALIB=/space/digi/digi_Real/period2016_02-06/digi_rawProc/v1.0/003400-3778/danss_data_003550-9_calib.txt
+	fi
 
 	if [ $RUNNUMBER -lt 2066 ] ; then
 		TCALIB=tcalib_1000_ss.calib
