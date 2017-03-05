@@ -11,7 +11,7 @@ fi
 
 
 FN=$1
-FLAGS=${2:-"0x50000"}
+FLAGS=${2:-"0x50002"}
 ROOT_DIR=${3:-"danss_root3"}
 ARGS=""
 
@@ -39,14 +39,14 @@ else
 	    	exit 10
 	fi
 
-	if [ $RUN != ${RUN/.bz2} ] ; then
-		bzip2 -d -k -c $RUN > $TMPFILE
-	else 
-		cp $RUN $TMPFILE
-	fi
+#	if [ $RUN != ${RUN/.bz2} ] ; then
+#		bzip2 -d -k -c $RUN > $TMPFILE
+#	else 
+#		cp $RUN $TMPFILE
+#	fi
 
 	LISTFILE="${RUNNUMBER}.list"
-	echo $TMPFILE > $LISTFILE
+	echo $RUN > $LISTFILE
 
 	RUNDIR=`dirname $RUN`
 	CALIB=`find $RUNDIR -name "*calib*.txt" -print`
@@ -56,9 +56,9 @@ else
 		CALIB="danss_data_002101-17_calib.txt"
 	fi
 #		Workaround bad cell 20.4
-	if [ $FN -ge 2835 -a $FN -lt 3400 ] ; then
-		CALIB=/space/digi/digi_Real/period2016_02-06/digi_rawProc/v1.0/003400-3778/danss_data_003550-9_calib.txt
-	fi
+#	if [ $FN -ge 2835 -a $FN -lt 3400 ] ; then
+#		CALIB=/space/digi/digi_Real/period2016_02-06/digi_rawProc/v1.0/003400-3778/danss_data_003550-9_calib.txt
+#	fi
 
 	if [ $RUNNUMBER -lt 2066 ] ; then
 		TCALIB=tcalib_1000_ss.calib
@@ -71,7 +71,7 @@ else
 	
 	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS $ARGS
 	
-	rm $TMPFILE
+#	rm $TMPFILE
 fi
 
 rm $LISTFILE

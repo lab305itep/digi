@@ -362,8 +362,8 @@ void CleanZeroes(ReadDigiDataUser *user)
 	int i, N;
 	
 	N = user->nhits();
-	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || 
-		user->e(i) <= 0 || user->t(i) < -1000 /* || user->isBadChannel(user->chanIndex(i)) */) HitFlag[i] = -1;
+	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || (!isfinite(user->e(i))) ||
+		user->e(i) <= 0 || user->t(i) < -1000 || user->isBadChannel(user->chanIndex(i))) HitFlag[i] = -1;
 }
 
 void CleanNoise(ReadDigiDataUser *user)
