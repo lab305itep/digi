@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "X"$2 == "X" ] ; then
+	echo "Usage $0 first_number last_number [flags] [root_dir]"
+	exit 10
+fi
+
+
+FIRST=$1
+LAST=$2
+TOTAL=$(($LAST - $FIRST + 1))
+FLAGS=${3:-"0x50002"}
+ROOT_DIR=${4:-"danss_root3"}
+USECPU=4
+
+if [ $LAST -lt $FIRST ] ; then
+	echo Nothing to do !
+	exit 100
+fi
+
+if [ $TOTAL -lt $USECPU ] ; then
+	USECPU=$TOTAL
+fi
+
+portion=$(($TOTAL/$USECPU))
+rest=$(($TOTAL - $USECPU * $portion))
+
+for ((i=0; $i < $USECPU; i=$i+1)) ; do 
+	begin=$(($FIRST + $i * $portion))
+	end=$(($begin + $portion - 1))
+	if [ $i == $(($USECPU - 1)) ] ; then
+		end=$(($end+$rest))
+	fi
+	nohup ./run_evt $begin $end $FLAGS $ROOT_DIR &
+done

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+EVENTDIR="danss_root3"
+PAIRDIR="danss_root2"
+
+if [ "X"$2 == "X" ] ; then
+	echo "Usage $0 first_number last_number"
+	exit 10
+fi
+
+LOG_FILE="$1-$2-pairbuilder.log"
+rm -f $LOG_FILE 2> /dev/null
+
+for ((i=$1; $i < $2+1; i=$i+1)) ; do 
+	FN=`printf %6.6d $i`
+	FIN=$EVENTDIR"/danss_"$FN".root"
+	FOUT=$PAIRDIR"/pair_"$FN".root"
+	FOUTR=$PAIRDIR"/random_"$FN".root"
+	LISTFILE="list_"$FN".txt"
+	echo $FIN > $LISTFILE
+	./pairbuilder4 $LISTFILE $FOUT >> $LOG_FILE 2>&1
+	./randombuilder4 $LISTFILE $FOUTR >> $LOG_FILE 2>&1
+	rm -f $LISTFILE >> /dev/null 2>&1
+done
