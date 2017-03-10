@@ -8,6 +8,7 @@
 #include "HPainter.h"
 
 #define NRANDOM	16
+#define ROOT2DIR	"/space/danss_root2_old"
 
 //	We need that even zero bins have reasonable errors. 
 //	We assume that one sigma range fits in 0 and use Poisson distribution: sigma=0.3817
@@ -65,10 +66,10 @@ HPainter::HPainter(int mask, int run_from, int run_to)
 	info = new TChain("SumInfo", "Info");
 
 	for (i=0; i<num; i++) {
-		sprintf(str, "danss_root2/pair_%6.6d.root", list[i]);
+		sprintf(str, "%s/pair_%6.6d.root", ROOT2DIR, list[i]);
 		tSig->Add(str);
 		info->Add(str);
-		sprintf(str, "danss_root2/random_%6.6d.root", list[i]);
+		sprintf(str, "%s/random_%6.6d.root", ROOT2DIR, list[i]);
 		tRand->Add(str);
 	}
 	
