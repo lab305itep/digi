@@ -15,8 +15,8 @@ void danss_draw_report(const char *fname)
 	char *ptr;
 	
 	gStyle->SetOptStat(0);
-	strncpy(pname, sizeof(pname) - 5, fname);
-	ptr = strrchr(pname, ".");
+	strncpy(pname, fname, sizeof(pname) - 5);
+	ptr = strstr(pname, ".root");
 	if (ptr) *ptr = '\0';
 	strcat(pname, ".pdf");
 	N = sizeof(positions) / sizeof(positions[0]);
