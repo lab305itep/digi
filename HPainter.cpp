@@ -8,7 +8,7 @@
 #include "HPainter.h"
 
 #define NRANDOM	16
-#define ROOT2DIR	"/space/danss_root2_old"
+#define ROOT2DIR	"/space/danss_root2"
 
 //	We need that even zero bins have reasonable errors. 
 //	We assume that one sigma range fits in 0 and use Poisson distribution: sigma=0.3817

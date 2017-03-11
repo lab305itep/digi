@@ -176,6 +176,7 @@ int main(int argc, char **argv)
 		"unixTime/I:"		// linux time, seconds
 		"SiPmCleanEnergy[2]/F:"	// Full Clean energy SiPm
 		"PmtCleanEnergy[2]/F:"	// Full Clean energy Pmt
+		"PositronFlags[2]/I:"	// positron flags for both triggers
 //		"positron cluster" parameters
 		"PositronHits/I:"	// hits in the cluster
 		"PositronEnergy/F:"	// Energy sum of the cluster (SiPM)
