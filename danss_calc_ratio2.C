@@ -343,3 +343,56 @@ void danss_calc_ratio2(const char *fname)
 	fData->Close();
 	delete cv;
 }
+
+void danss_draw_sp2(const char *fname)
+{
+	TCanvas *cv;
+	TFile *f;
+	TFile *fOut;
+	char str[1024];
+	TLatex *txt;
+	double val, err;
+	char pname[1024];
+	TLegend *lg;
+	
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	gStyle->SetTitleXSize(0.06);
+	gStyle->SetTitleYSize(0.06);
+	gStyle->SetLabelSize(0.06);
+	gStyle->SetPadLeftMargin(0.16);
+	gStyle->SetPadBottomMargin(0.16);
+	gStyle->SetLineWidth(2);
+	
+	cv = new TCanvas("CV", "Results", 1200, 900);
+	fData = new TFile(fname);
+	if (!fData->IsOpen()) return;
+	change_file_suffix(pname, sizeof(pname), fname, ".root", "-sp2.png");
+	txt = new TLatex();
+	
+	lg = new TLegend(0.45, 0.75, 0.9, 0.9);
+	TH1D *hUp = new TH1D("hUp", "Positron spectrum April-January, UP;Positron energy, MeV;Events per day per 0.2 MeV", 35, 1, 8);
+	sum_of_spectra(hUp, "u", 14);
+	hUp->SetLineColor(kRed);
+	hUp->SetFillColor(kRed-10);
+	hUp->GetYaxis()->SetLabelSize(0.06);
+	hUp->SetTitle("");
+	hUp->Draw("hist,e");
+	val = hUp->IntegralAndError(1, 35, err);
+	sprintf(str, "Up:     %5.0f #pm %2.0f / day", val, err);
+	lg->AddEntry(hUp, str, "l");
+
+	TH1D *hDown = new TH1D("hDown", "Positron spectrum April-January, DOWN;Positron energy, MeV;Events per day per 0.2 MeV", 35, 1, 8);
+	sum_of_spectra(hDown, "d", 14);
+	hDown->SetLineColor(kBlue);
+	hDown->SetFillColor(kBlue-10);
+	hDown->Draw("same,hist,e");
+	val = hDown->IntegralAndError(1, 35, err);
+	sprintf(str, "Down: %5.0f #pm %2.0f / day", val, err);
+	lg->AddEntry(hDown, str, "l");
+
+	hUp->Draw("axis,same");
+	lg->Draw();
+//	cv->Update();
+	cv->Print(pname);
+}
