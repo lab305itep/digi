@@ -1,4 +1,4 @@
-void many_plots2(int first, int last, int mask = 0xFFFF)
+void many_plots2(int first = 5808, int last = 11688, int mask = 0x801E)
 {
 	TH1D *h[12][2];
 	int i, j;
@@ -19,20 +19,21 @@ void many_plots2(int first, int last, int mask = 0xFFFF)
 		printf("Something wrong with data files.\n");
 		return;
 	}
-	TCut cs("gtFromVeto > 60 && EventsBetween == 0 && gtFromPrevious > 45 && gtToNext > 80");	// standard Veto
-	TCut cg06("gtDiff > 0.6");									// dead time
-	TCut cg20("gtDiff > 2");									// sanity cut
-	// cut edges - more muon background there
-	TCut cx("(PositronX[0]>2 && PositronX[0]<94) || PositronX[0] < 0");
-	TCut cy("(PositronX[1]>2 && PositronX[1]<94) || PositronX[1] < 0");
-	TCut cz("PositronX[2]>3.5 && PositronX[2]<95.5");
-	TCut cg200("gtDiff < 20");									// strong cut
-	TCut cxy("PositronX[0]>=0 && PositronX[1]>=0");
-	TCut cn4("NeutronEnergy > 4 && NeutronHits >= 5");
-	TCut cgamma("AnnihilationEnergy < 1.5 && AnnihilationGammas < 9");
+	
+	TCut cVeto("gtFromVeto > 60");
+	TCut cIso("(gtFromPrevious > 45 && gtToNext > 80 && EventsBetween == 0) || (gtFromPrevious == gtFromVeto)");
+	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
+	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
+	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
+	TCut cXYZ = cX && cY && cZ;
 	TCut cR("Distance < 100 && DistanceZ > -40 && DistanceZ < 40");
+	TCut cT10("gtDiff > 1");
+	TCut cT20("gtDiff > 2");
+	TCut cT200("gtDiff < 20");						// strong cut
+        TCut cGamma("AnnihilationEnergy < 1.5 && AnnihilationGammas < 9");
         TCut cPe("PositronEnergy > 1");
-
+	TCut cXY("PositronX[0]>=0 && PositronX[1]>=0");
+	TCut cN4("NeutronEnergy > 4 && NeutronHits >= 5");
 
 	for (i=0; i<2; i++) {
 		sprintf(str, "hR%d", i);
@@ -63,40 +64,40 @@ void many_plots2(int first, int last, int mask = 0xFFFF)
 	
 	printf("Histograms are created\n");
 	
-	p->Project(h[0][0], "Distance", cs && cg20);
-	p->Project(h[0][1], "Distance", (!cs) && cg20);
+	p->Project(h[0][0], "Distance", cVeto && cIso && cT20 && cGamma && cPe && cXYZ);
+	p->Project(h[0][1], "Distance", !cVeto && cIso && cT20 && cGamma && cPe && cXYZ);
 	printf("Distance.\n");
-	p->Project(h[1][0], "DistanceZ", cs && cg20);
-	p->Project(h[1][1], "DistanceZ", (!cs) && cg20);
+	p->Project(h[1][0], "DistanceZ", cVeto && cIso && cT20 && cGamma && cPe && cXYZ);
+	p->Project(h[1][1], "DistanceZ", !cVeto && cIso && cT20 && cGamma && cPe && cXYZ);
 	printf("DistanceZ.\n");
-	p->Project(h[2][0], "gtDiff", cs && cg06);
-	p->Project(h[2][1], "gtDiff", (!cs) && cg06);
+	p->Project(h[2][0], "gtDiff", cVeto && cIso && cT10 && cGamma && cPe && cXYZ && cR);
+	p->Project(h[2][1], "gtDiff", !cVeto && cIso && cT10 && cGamma && cPe && cXYZ && cR);
 	printf("gtDiff.\n");
-	p->Project(h[3][0], "PositronX[0]", cs && cg20);
-	p->Project(h[3][1], "PositronX[0]", (!cs) && cg20);
+	p->Project(h[3][0], "PositronX[0]+2", cVeto && cIso && cT20 && cGamma && cPe && cY && cZ && cR && "PositronX[0] >= 0");
+	p->Project(h[3][1], "PositronX[0]+2", !cVeto && cIso && cT20 && cGamma && cPe && cY && cZ && cR && "PositronX[0] >= 0");
 	printf("X.\n");
-	p->Project(h[4][0], "PositronX[1]", cs && cg20);
-	p->Project(h[4][1], "PositronX[1]", (!cs) && cg20);
+	p->Project(h[4][0], "PositronX[1]+2", cVeto && cIso && cT20 && cGamma && cPe && cX && cZ && cR && "PositronX[1] >= 0");
+	p->Project(h[4][1], "PositronX[1]+2", !cVeto && cIso && cT20 && cGamma && cPe && cX && cZ && cR && "PositronX[1] >= 0");
 	printf("Y.\n");
-	p->Project(h[5][0], "PositronX[2]", cs && cg20);
-	p->Project(h[5][1], "PositronX[2]", (!cs) && cg20);
+	p->Project(h[5][0], "PositronX[2]+0.5", cVeto && cIso && cT20 && cGamma && cPe && cX && cY && cR);
+	p->Project(h[5][1], "PositronX[2]+0.5", !cVeto && cIso && cT20 && cGamma && cPe && cX && cY && cR);
 	printf("Z.\n");
-	p->Project(h[6][0], "NeutronEnergy", cs && cg20);
-	p->Project(h[6][1], "NeutronEnergy", (!cs) && cg20);
+	p->Project(h[6][0], "NeutronEnergy", cVeto && cIso && cT20 && cGamma && cPe && cY && cZ && cR);
+	p->Project(h[6][1], "NeutronEnergy", !cVeto && cIso && cT20 && cGamma && cPe && cY && cZ && cR);
 	printf("NE.\n");
-	p->Project(h[7][0], "NeutronHits", cs && cg20);
-	p->Project(h[7][1], "NeutronHits", (!cs) && cg20);
+	p->Project(h[7][0], "NeutronHits", cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR);
+	p->Project(h[7][1], "NeutronHits", !cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR);
 	printf("NN.\n");
-	p->Project(h[8][0], "AnnihilationEnergy", cs && cg20);
-	p->Project(h[8][1], "AnnihilationEnergy", (!cs) && cg20);
+	p->Project(h[8][0], "AnnihilationEnergy", cVeto && cIso && cT20 && cPe && cXYZ && cR);
+	p->Project(h[8][1], "AnnihilationEnergy", !cVeto && cIso && cT20 && cPe && cXYZ && cR);
 	printf("AE.\n");
-	p->Project(h[9][0], "AnnihilationGammas", cs && cg20);
-	p->Project(h[9][1], "AnnihilationGammas", (!cs) && cg20);
+	p->Project(h[9][0], "AnnihilationGammas", cVeto && cIso && cT20 && cPe && cXYZ && cR);
+	p->Project(h[9][1], "AnnihilationGammas", !cVeto && cIso && cT20 && cPe && cXYZ && cR);
 	printf("AG.\n");
-	p->Project(h[10][0], "PositronEnergy", cs && cg20);
-	p->Project(h[10][1], "PositronEnergy", (!cs) && cg20);
-	p->Project(h[11][0], "PositronEnergy", cs && cg200 && cn4 && cgamma);
-	p->Project(h[11][1], "PositronEnergy", (!cs) && cg200 && cn4 && cgamma);
+	p->Project(h[10][0], "PositronEnergy", cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR);
+	p->Project(h[10][1], "PositronEnergy", !cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR);
+	p->Project(h[11][0], "PositronEnergy", cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR && cN4 && cT200);
+	p->Project(h[11][1], "PositronEnergy", !cVeto && cIso && cT20 && cGamma && cPe && cXYZ && cR && cN4 && cT200);
 	
 	printf("Projections are done\n");
 	
@@ -104,6 +105,7 @@ void many_plots2(int first, int last, int mask = 0xFFFF)
 		for (j=0; j<2; j++) h[i][j]->SetLineWidth(4);
 		h[i][0]->SetLineColor(kGreen);
 		h[i][1]->SetLineColor(kRed);
+		h[i][0]->SetMinimum(0);
 		h[i][1]->SetMinimum(0);
 	}
 
@@ -121,8 +123,8 @@ void many_plots2(int first, int last, int mask = 0xFFFF)
 		cv[i]->Divide(3, 2);
 		for (j=0; j<6; j++) {
 			cv[i]->cd(j+1);
-			h[6*i+j][1]->Draw();
-			h[6*i+j][0]->Draw("sames");
+			h[6*i+j][0]->Draw();
+			h[6*i+j][1]->Draw("sames");
 			gPad->Update();
 			if (i == 0 && j == 1) {
 				st = (TPaveStats *) h[6*i+j][0]->FindObject("stats");
@@ -153,13 +155,18 @@ void many_plots2(int first, int last, int mask = 0xFFFF)
 				st->SetX1NDC(0.72);
 				st->SetY2NDC(y + dy/2);
 			}
-			h[6*i+j][1]->Draw();
-			h[6*i+j][0]->Draw("sames");
+			if (h[6*i+j][0]->GetMaximum() > h[6*i+j][1]->GetMaximum()) {
+				h[6*i+j][0]->Draw();
+				h[6*i+j][1]->Draw("sames");
+			} else {
+				h[6*i+j][1]->Draw();
+				h[6*i+j][0]->Draw("sames");
+			}
 			gPad->Update();
 		}
 		cv[i]->Update();
 	}
-	
+
 	fRoot->cd();
 	for (i=0; i<12; i++) for (j=0; j<2; j++) h[i][j]->Write();
 	fRoot->Close();

@@ -101,7 +101,7 @@ void positron_spectrum2mc(void)
 	hRatio->GetXaxis()->SetTitleSize(0.08);
 	hRatio->SetLineWidth(4);
 	hRatio->SetMinimum(0.92);
-	hRatio->SetMaximum(1.08);
+	hRatio->SetMaximum(1.15);
 	hRatio->Draw();
 	
 	TCanvas *cd = new TCanvas("CD", "Difference", 1200, 500);

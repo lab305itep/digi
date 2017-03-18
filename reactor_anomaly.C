@@ -65,7 +65,7 @@ void reactor_anomaly(void)
 
 	TLegend *lg = new TLegend(0.2, 0.75, 0.5, 0.9);
 	lg->AddEntry(hReno, "RENO data", "LP");
-	lg->AddEntry(hDanss1, "DANSS: 33%/#sqrt{E}", "LP");
+	lg->AddEntry(hDanss1, "Smeared by DANSS", "LP");
 //	lg->AddEntry(hDanss2, "45%/#sqrt{E}", "P");
 	lg->Draw();
 }
