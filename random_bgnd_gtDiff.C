@@ -81,11 +81,12 @@ void random_bgnd_gtDiff_calc(void)
 	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
 	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
-	TCut cR("Distance < 100 && DistanceZ > -40 && DistanceZ < 40");
-	TCut c20("gtDiff > 1");
+	TCut cR("Distance < 40 && DistanceZ > -40 && DistanceZ < 40");
+	TCut c10("gtDiff > 1");
+	TCut c20("gtDiff > 2");
         TCut cGamma("AnnihilationEnergy < 1.5 && AnnihilationGammas < 9");
         TCut cPe("PositronEnergy > 1");
-	TCut cSel = cX && cY && cZ && cR && c20 && cGamma && cPe;
+	TCut cSel = cX && cY && cZ && cR && c10 && cGamma && cPe;
 	TCut cSig = cSel && cVeto && cIso;
 
 	TH1D *hGt = new TH1D("hGt", ";us;", 50, 0, 50);
@@ -93,7 +94,18 @@ void random_bgnd_gtDiff_calc(void)
 	TFile *fRoot = new TFile("random_bgnd_gtDiff.root", "RECREATE");
 	hp->SetFile(fRoot);
 	hp->Project(hGt, "gtDiff", cSig);
+
+	TH1D *hR1 = new TH1D("hR1", ";cm;", 150, 0, 150);
+	TH1D *hR2 = new TH1D("hR2", ";cm;", 150, 0, 150);
+	TCut cR0 = cX && cY && cZ && c20 && cGamma && cPe && cVeto && cIso;
+	TCut cXY = ("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
+	hp->Project(hR1, "Distance", cR0 && !cXY);
+	hp->Project(hR2, "Distance", cR0 && cXY);
 	
+	fRoot->cd();
+	hGt->Write();
+	hR1->Write();
+	hR2->Write();
 	delete hp;
 	fRoot->Close();
 }

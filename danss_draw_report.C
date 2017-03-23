@@ -1,4 +1,4 @@
-void danss_draw_report(const char *fname)
+void danss_draw_report(const char *fname, double bgScale = 1.0)
 {
 #include "positions.h"
 	char pname[1024];
@@ -7,12 +7,16 @@ void danss_draw_report(const char *fname)
 	TCanvas *cv;
 	TFile *f;
 	TH1 *h;
+	TH1 *hb;
+	TH1 *h1;
+	TH1 *hb1;
 	char str[1024];
 	TVirtualPad *pd;
 	TLatex *txt;
 	double val, err;
 	double evnts, rate;
 	char *ptr;
+	TPad *subPad;
 	
 	gStyle->SetOptStat(0);
 	strncpy(pname, fname, sizeof(pname) - 5);
@@ -27,10 +31,13 @@ void danss_draw_report(const char *fname)
 	cv->Print(str);
 	txt = new TLatex();
 	txt->SetTextSize(0.05);
+//	subPad = new TPad("subPad", "", 0.75, 0.5, 0.9, 0.7);
 	
 	for (i=0; i<N; i++) {
 		cv->Clear();
+		cv->cd(0)->SetFillStyle(4000);
 		cv->Divide(2, 1);
+		cv->cd(0)->SetFillStyle(4000);
 		pd = cv->cd(1);
 		pd->Divide(1, 2);
 		pd->cd(1);
@@ -104,41 +111,58 @@ void danss_draw_report(const char *fname)
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.4, 0.6, str);
 		
-		cv->cd(2);
+		pd = cv->cd(2);
+		pd->SetFillStyle(4000);
 		sprintf(str, "%s_hSig", positions[i].name);
 		h = (TH1 *) f->Get(str);
 		if (!h) continue;
 		rate = h->Integral(1, 35);
-		sprintf(str, "%s_hRes", positions[i].name);
-		h = (TH1 *) f->Get(str);
-		if (!h) continue;
+//		sprintf(str, "%s_hRes", positions[i].name);
+//		h = (TH1 *) f->Get(str);
+//		if (!h) continue;
 		h->SetLineWidth(2);
 		h->SetLineColor(kRed);
 		sprintf(str, "%s (%d - %d)", positions[i].name, positions[i].first, positions[i].last);
 		h->SetTitle(str);
+		sprintf(str, "%s_hCosm", positions[i].name);
+		hb = (TH1 *) f->Get(str);
+		if (!hb) continue;
+		hb->SetLineWidth(2);
+		hb->SetLineColor(kBlue);
+		hb->SetFillStyle(kSolid);
+		hb->SetFillColor(kBlue);
+		hb->Scale(positions[i].bgnd * bgScale);
+		h->Add(hb, -1.0);
 		h->Draw();
 		val = h->IntegralAndError(1, 35, err);
 		sprintf(str, "Neutrino = %5.2f+-%4.2f mHz", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.3, 0.85, str);
-		sprintf(str, "%s_hCosm", positions[i].name);
-		h = (TH1 *) f->Get(str);
-		if (!h) continue;
-		h->SetLineWidth(2);
-		h->SetLineColor(kBlue);
-		h->SetFillStyle(kSolid);
-		h->SetFillColor(kBlue);
-		h->Scale(positions[i].bgnd);
-		h->Draw("same");
-		val = h->IntegralAndError(1, 35, err);
-		sprintf(str, "Cosm = %5.2f+-%4.2f mHz (%4.1f%%)", val, err, 100*positions[i].bgnd);
+		hb->Draw("same");
+		val = hb->IntegralAndError(1, 35, err);
+		sprintf(str, "Cosm = %5.2f+-%4.2f mHz (%4.1f%%)", val, err, 100*positions[i].bgnd * bgScale);
 		txt->SetTextColor(kBlue);
 		txt->DrawTextNDC(0.3, 0.8, str);
 		sprintf(str, "Time = %6.1f*10^3 s", evnts / rate);
 		txt->SetTextColor(kBlack);
 		txt->DrawTextNDC(0.3, 0.75, str);
+
+//		subPad = new TPad("subPad", "", 0.5, 0.5, 0.8, 0.7);
+//		subPad->cd();
 		cv->Update();
-//		getchar();
+		cv->Print(pname);
+		cv->Clear();
+		
+		sprintf(str, "%s_1", h->GetName());
+		h1 = (TH1*) h->Clone(str);
+		sprintf(str, "%s_1", hb->GetName());
+		hb1 = (TH1 *) hb->Clone(str);
+		if (h1->GetMinimum() > 0) h1->SetMinimum(0);
+		h1->GetXaxis()->SetRange(36, 55);
+		h1->Draw();
+		hb1->Draw("same");
+		
+		cv->Update();
 		cv->Print(pname);
 	}
 	sprintf(str, "%s]", pname);

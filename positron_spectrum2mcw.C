@@ -1,4 +1,4 @@
-void positron_spectrum2mc(void)
+void positron_spectrum2mcw(void)
 {
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
 	const Color_t fColor[4] = {kRed, kGreen, kBlue, kOrange};
@@ -9,12 +9,13 @@ void positron_spectrum2mc(void)
 		"/space/danss_root3/mc_positron_241Pu_simple_newScale.root"
 	};
 	const double fuelmid[4]  = {0.58, 0.07, 0.30, 0.05};
-	const char expname[] = "danss_report_v3-calc.root";
+	const char expname[] = "danss_report_v3w_dr_40_bg_5_6-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
 	TH1D *hMcMixt;
 	TFile *fExp;
+	TH1D *hExpw;
 	TH1D *hExp;
 	TH1D *hRatio;
 	TH1D *hDiff;
@@ -37,7 +38,13 @@ void positron_spectrum2mc(void)
 
 	fExp = new TFile(expname);
 	if (!fExp->IsOpen()) return;
-	hExp = (TH1D*) fExp->Get("hSum");
+	hExpw = (TH1D*) fExp->Get("hSum");
+	if (!hExpw) return;
+	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events per day per 0.2 MeV", 35, 1, 8);
+	for (i=0; i<35; i++) {
+		hExp->SetBinContent(i+1, hExpw->GetBinContent(i+1));
+		hExp->SetBinError(i+1, hExpw->GetBinError(i+1));
+	}
 	hExp->SetLineColor(kBlue);
 	hExp->SetMarkerColor(kBlue);
 	hExp->SetMarkerStyle(20);
@@ -61,9 +68,14 @@ void positron_spectrum2mc(void)
 	gROOT->cd();
 	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), "1.04*(PositronEnergy-0.179)/0.929", cXYZ);
 	for (i=0; i<4; i++) hMc[i]->Sumw2();
-	hMcMixt = (TH1D*) hMc[0]->Clone("hMcMixt");
+	hMcMixt = (TH1D*) hMc[0]->Clone("hMcMiddleMixt");
 	hMcMixt->Clear();
 	for (i=0; i<4; i++) hMcMixt->Add(hMc[i], fuelmid[i]);
+	TFile fSave("mc_fuel_middle.root", "RECREATE");
+	fSave.cd();
+	hMcMixt->SetName("hMcMiddleMixt");
+	hMcMixt->Write();
+	fSave.Close();
 	hMcMixt->Scale(hExp->Integral(3, 27) / hMcMixt->Integral(3, 27));
 	hMcMixt->SetLineColor(kBlack);
 	hMcMixt->SetLineWidth(2);

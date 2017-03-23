@@ -22,7 +22,7 @@ void reactor_anomaly(void)
 	gStyle->SetOptStat(0);
 	hReno = new TH1D("hReno", "RENO data on the ratio experiment to Monte-Carlo;MeV;Experiment to Monte-Carlo", 20, 1, 6);
 	hDanss1 = new TH1D("hDanss1", "RENO ratio spoiled by DANSS resolution 33%/#sqrt{E};MeV;Experiment to Monte-Carlo", 20, 1, 6);
-	hDanss2 = new TH1D("hDanss2", "RENO ratio spoiled by DANSS resolution 45%/#sqrt{E};MeV;Experiment to Monte-Carlo", 20, 1, 6);
+	hDanss2 = new TH1D("hDanss2", "RENO ratio spoiled by DANSS resolution 40%/#sqrt{E};MeV;Experiment to Monte-Carlo", 20, 1, 6);
 	for (i=0; i<20; i++) {
 		hDanss1->SetBinContent(i+1, 1);
 		hDanss2->SetBinContent(i+1, 1);
@@ -51,21 +51,20 @@ void reactor_anomaly(void)
 		fGaus->SetParameter(1, 1.125 + 0.25*i);	// position
 		fGaus->SetParameter(2, 0.33*sqrt(1.125 + 0.25*i));	// DANSS resolution: 33%/sqrt(E)
 		hDanss1->Add(fGaus, (reno[i]-1)*0.25/fGaus->Integral(-30.0, 30.0));
-		fGaus->SetParameter(2, 0.45*sqrt(1.125 + 0.25*i));	// DANSS resolution: 45%/sqrt(E)
+		fGaus->SetParameter(2, 0.40*sqrt(1.125 + 0.25*i));	// DANSS resolution: 40%/sqrt(E)
 		hDanss2->Add(fGaus, (reno[i]-1)*0.25/fGaus->Integral(-30.0, 30.0));
 	}
-//	hReno->SetMinimum(0.8);
 
 	hReno->SetTitle(";MeV;");
 //	hReno->SetMinimum(0.9);
 //	hReno->SetMaximum(1.2);
 	hReno->DrawCopy("P0");
 	hDanss1->DrawCopy("P0,same,smooth");
-//	hDanss2->DrawCopy("P0,same");
+	hDanss2->DrawCopy("P0,same");
 
 	TLegend *lg = new TLegend(0.2, 0.75, 0.5, 0.9);
 	lg->AddEntry(hReno, "RENO data", "LP");
 	lg->AddEntry(hDanss1, "Smeared by DANSS", "LP");
-//	lg->AddEntry(hDanss2, "45%/#sqrt{E}", "P");
+	lg->AddEntry(hDanss2, "40%/#sqrt{E}", "P");
 	lg->Draw();
 }

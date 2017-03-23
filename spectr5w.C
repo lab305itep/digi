@@ -52,7 +52,7 @@ TH1D *spectr5(const char *prefix, int mask, int run_from, int run_to, double bgn
 	return hRes;
 }
 
-void spectr_all(const char *fname = "danss_report.root", TCut cAux = (TCut)"")
+void spectr_all(const char *fname = "danss_report.root", TCut cAux = (TCut)"", double bgScale = 1)
 {
 #include "positions.h"
 	const int mask = 0x801E;
@@ -62,6 +62,6 @@ void spectr_all(const char *fname = "danss_report.root", TCut cAux = (TCut)"")
 	fRoot = new TFile (fname, "UPDATE");
 	N = sizeof(positions) / sizeof(positions[0]);
 	for (i=0; i<N; i++) 
-		spectr5(positions[i].name, mask, positions[i].first, positions[i].last, positions[i].bgnd, cAux);
+		spectr5(positions[i].name, mask, positions[i].first, positions[i].last, positions[i].bgnd * bgScale, cAux);
 	fRoot->Close();
 }
