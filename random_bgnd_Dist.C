@@ -67,7 +67,7 @@ void random_bgnd_Dist(void)
 	lg->AddEntry(hDiff2, "Neutrino events, X and Y", "P");
 	lg->AddEntry(hRand2, "Random background, X and Y", "P");
 	hRand1->SetTitle(";us;");
-	hRand1->SetMinimum(0);
+//	hRand1->SetMinimum(0);
 	hRand1->DrawCopy();
 	hDiff2->DrawCopy("same");
 	hRand2->DrawCopy("same");
