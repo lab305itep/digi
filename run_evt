@@ -5,7 +5,7 @@ if [ "X"$2 == "X" ] ; then
 	exit 10
 fi
 
-FLAGS=${3:-"0x50000"}
+FLAGS=${3:-"0x50002"}
 ROOT_DIR=${4:-"danss_root3"}
 LOG_FILE="$1-$2-evtbuilder.log"
 rm -f $LOG_FILE 2> /dev/null

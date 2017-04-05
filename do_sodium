@@ -1,0 +1,23 @@
+#!/bin/bash
+
+export DANSSRAWREC_HOME=/usr/local/digi/
+
+BUILDER=./digi_evtbuilder3
+
+FLAGS="0x50002"
+ROOT_DIR="/space/danss_root3"
+DIGI_DIR="/space/digi/digi_Real/period2016_02-06/digi_fullProc/v1.0/2016.04.19_sodium/"
+CALIB=${DIGI_DIR}"danss_data_002193_2203_calib_saturCorr.txt"
+TCALIB="tcalib_cmnew_ss-b.calib"
+
+for RUN in ${DIGI_DIR}danss_data_*_000.digi.bz2 ; do
+
+	LISTFILE="_tmp.list"
+	echo $RUN > $LISTFILE
+	ROOTFILE=`basename $RUN`
+	ROOTFILE=${ROOTFILE/.digi.bz2/.root}
+
+	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/$ROOTFILE -flag $FLAGS
+done
+
+rm $LISTFILE
