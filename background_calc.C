@@ -1,6 +1,6 @@
 #include "HPainter.h"
 #define NHISTS 18
-void background_calc(void)
+void background_calc(const char *fname = "background_plots.root", int run_first = 5808, int run_last = 11688)
 {
 	char strs[128];
 	char strl[1024];
@@ -28,7 +28,7 @@ void background_calc(void)
         TCut cR("Distance < 60 && fabs(DistanceZ) < 40");
         TCut ct;
 
-	TFile *fRoot = new TFile("background_plots.root", "RECREATE");
+	TFile *fRoot = new TFile(fname, "RECREATE");
 	for (i=0; i<NHISTS; i++) for (j=0; j<2; j++) {
 		sprintf(strs, "h%s%c", titles[i], (j) ? 'C' : 'N');
 		sprintf(strl, "%s: %s", (j) ? "Cosmic" : "Neutrino", titlel[i]);
@@ -80,7 +80,7 @@ void background_calc(void)
 		}
 	}
 
-	HPainter *hp = new HPainter(0x801E, 5808, 11688);
+	HPainter *hp = new HPainter(0x801E, run_first, run_last);
 	hp->SetFile(fRoot);
 
 	for (j=0; j<2; j++) {
