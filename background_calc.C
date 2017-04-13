@@ -288,3 +288,317 @@ void background_draw_all(const char *rootname = "background_plots.root")
 	fRoot->Close();
 }
 
+void background_calcgt(const char *fname = "background_plotsgt.root", int run_first = 5808, int run_last = 11688)
+{
+	char strs[128];
+	char strl[1024];
+	TH1D *h[3][2];
+	int i, j;
+	
+//		Main cuts
+	TCut cVeto("gtFromVeto > 60");
+	TCut cIso("(gtFromPrevious > 45 && gtToNext > 80 && EventsBetween == 0) || (gtFromPrevious == gtFromVeto)");
+	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
+	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
+	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
+	TCut cRXY("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
+	TCut c20("gtDiff > 2");
+        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+        TCut cPe("PositronEnergy > 1");
+        TCut cR60("Distance < 60");
+        TCut cR1("Distance < 45");
+        TCut cR2("Distance < 55");
+        TCut cRZ("fabs(DistanceZ) < 40");
+        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+        TCut cN("NeutronEnergy > 3.5");
+        TCut cN3("NeutronEnergy > 3.0");
+        TCut ct;
+
+	TFile *fRoot = new TFile(fname, "RECREATE");
+	for (i=0; i<3; i++) for (j=0; j<2; j++) {
+		sprintf(strs, "hgtDiff%c%c", 'A'+i, (j) ? 'C' : 'N');
+		sprintf(strl, "Time from positron to neutron: %s;us", (j) ? "Cosmic" : "Neutrino");
+		h[i][j] = new TH1D(strs, strl, 50, 0, 50.0);
+	}
+
+	HPainter *hp = new HPainter(0x801E, run_first, run_last);
+	hp->SetFile(fRoot);
+
+	for (j=0; j<2; j++) {
+		ct = cIso && cX && cY && cZ && cR60 && cRZ && cPe && cGamma && cN3;
+		hp->Project(h[0][j], "gtDiff", (j) ? (ct && !cVeto) : (ct && cVeto));
+		ct = cIso && cX && cY && cZ && cR && cPe && cGamma && cN3;
+		hp->Project(h[1][j], "gtDiff", (j) ? (ct && !cVeto) : (ct && cVeto));
+		ct = cIso && cX && cY && cZ && cR && cPe && cGamma && cN;
+		hp->Project(h[2][j], "gtDiff", (j) ? (ct && !cVeto) : (ct && cVeto));
+	}
+	
+	fRoot->cd();
+	for (i=0; i<3; i++) for (j=0; j<2; j++) h[i][j]->Write();
+	delete hp;
+	fRoot->Close();
+}
+
+void background_draw_gt(const char *rootname = "background_plotsgt.root")
+{
+	char strs[128];
+	char strl[1024];
+	char title[3][128] = {
+		"Old cuts: R < 60 cm && NeutronEnergy > 3.0 MeV",
+		"Diatance < 45 cm for 2D and Distance < 55 cm for 3 D, NeutronEnergy > 3.0 MeV",
+		"Diatance < 45 cm for 2D and Distance < 55 cm for 3 D, NeutronEnergy > 3.5 MeV"
+	};
+	const char suffix[3][10] = {"N-rand", "N-diff", "C-diff"};
+	const Color_t color[3] = {kGreen+2, kBlue, kRed};
+	const int marker[3] = {kFullStar, kFullCircle, kFullCross};
+	TH1D *h[3][3];
+	int i, j, k, kl, ku;
+	double hMax;
+	int iMax;
+	double total, totale;
+	double frac, frace;
+	char pdfname[1024];
+	char *ptr;
+
+	strcpy(pdfname, rootname);
+	ptr = strstr(pdfname, ".root");
+	if (ptr) {
+		strcpy(ptr, ".pdf");
+	} else {
+		strcat(pdfname, ".pdf");
+	}
+	
+	gROOT->SetStyle("Plain");
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	
+	gStyle->SetTitleXSize(0.05);
+	gStyle->SetTitleYSize(0.05);
+	gStyle->SetLabelSize(0.05);
+	gStyle->SetPadLeftMargin(0.16);
+	gStyle->SetPadBottomMargin(0.16);
+	
+	TFile *fRoot = new TFile(rootname);
+	if (!fRoot->IsOpen()) {
+		printf("root-file not found  - run background_calcgt() first!\n");
+		return;
+	}
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			sprintf(strs, "hgtDiff%c%s", 'A'+i, suffix[j]);
+			h[i][j] = (TH1D*) fRoot->Get(strs);
+			if (!h[i][j]) {
+				printf("%s not found  - rerun background_calc() to create all hists!\n", rootname);
+				fRoot->Close();
+				return;
+			}
+			h[i][j]->SetLineWidth(2);
+			h[i][j]->SetLineColor(color[j]);
+			h[i][j]->SetMarkerColor(color[j]);
+			h[i][j]->SetMarkerStyle(marker[j]);
+			h[i][j]->GetYaxis()->SetLabelSize(0.05);
+			h[i][j]->SetMinimum(0);
+			h[i][j]->GetYaxis()->SetTitle("");
+			h[i][j]->SetTitle(title[i]);
+		}
+	}
+	TCanvas *cv = new TCanvas("CV", "Background plots", 1200, 900);
+	TLegend *lg = new TLegend(0.7, 0.8, 0.95, 0.95);
+	lg->AddEntry(h[0][0], "Random", "LP");
+	lg->AddEntry(h[0][1], "Neutrino", "LP");
+	lg->AddEntry(h[0][2], "Cosmic", "LP");
+	
+	sprintf(strl, "%s[", pdfname);
+	cv->SaveAs(strl);
+	
+	for (i=0; i<3; i++) {
+		cv->Clear();
+		hMax = 0;
+		iMax = 0;
+		for (j=0; j<3; j++) if (h[i][j]->GetMaximum() > hMax) {
+			hMax = h[i][j]->GetMaximum();
+			iMax = j;
+		}
+		h[i][iMax]->Draw();
+		for (j=0; j<3; j++) if (j != iMax) h[i][j]->Draw("same");
+		lg->Draw();
+		
+		cv->SaveAs(pdfname);
+	}
+	
+	sprintf(strl, "%s]", pdfname);
+	cv->SaveAs(strl);
+	fRoot->Close();
+}
+
+void background_calcpe(const char *fname = "background_plotspe.root", int run_first = 5808, int run_last = 11688)
+{
+	char strs[128];
+	char strl[1024];
+	TH1D *h[3][2];
+	int i, j;
+	
+//		Main cuts
+	TCut cVeto("gtFromVeto > 60");
+	TCut cIso("(gtFromPrevious > 45 && gtToNext > 80 && EventsBetween == 0) || (gtFromPrevious == gtFromVeto)");
+	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
+	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
+	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
+	TCut cRXY("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
+	TCut cT20("gtDiff > 2");
+        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+        TCut cPe("PositronEnergy > 1");
+        TCut cR60("Distance < 60");
+        TCut cR1("Distance < 45");
+        TCut cR2("Distance < 55");
+        TCut cRZ("fabs(DistanceZ) < 40");
+        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+        TCut cN("NeutronEnergy > 3.5");
+        TCut cN3("NeutronEnergy > 3.0");
+        TCut ct;
+
+	TFile *fRoot = new TFile(fname, "RECREATE");
+	for (i=0; i<3; i++) for (j=0; j<2; j++) {
+		sprintf(strs, "hPosEnergy%c%c", 'A'+i, (j) ? 'C' : 'N');
+		sprintf(strl, "Positron Energy %s;MeV", (j) ? "Cosmic" : "Neutrino");
+		h[i][j] = new TH1D(strs, strl, 55, 1.0, 12.0);
+	}
+
+	HPainter *hp = new HPainter(0x801E, run_first, run_last);
+	hp->SetFile(fRoot);
+
+	for (j=0; j<2; j++) {
+		ct = cIso && cX && cY && cZ && cT20 && cR60 && cRZ && cPe && cGamma && cN3;
+		hp->Project(h[0][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
+		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN3;
+		hp->Project(h[1][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
+		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN;
+		hp->Project(h[2][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
+	}
+	
+	fRoot->cd();
+	for (i=0; i<3; i++) for (j=0; j<2; j++) h[i][j]->Write();
+	delete hp;
+	fRoot->Close();
+}
+
+void background_draw_pe(const char *rootname = "background_plotspe.root")
+{
+	char strs[128];
+	char strl[1024];
+	char title[3][128] = {
+		"Old cuts: R < 60 cm && NeutronEnergy > 3.0 MeV",
+		"Diatance < 45 cm for 2D and Distance < 55 cm for 3 D, NeutronEnergy > 3.0 MeV",
+		"Diatance < 45 cm for 2D and Distance < 55 cm for 3 D, NeutronEnergy > 3.5 MeV"
+	};
+	const char suffix[3][10] = {"N-rand", "N-diff", "C-diff"};
+	const Color_t color[3] = {kGreen+2, kBlue, kRed};
+	const int marker[3] = {kFullStar, kFullCircle, kFullCross};
+	TH1D *h[3][3];
+	TH1D *hr[3][2];
+	int i, j, k, kl, ku;
+	double hMax;
+	int iMax;
+	double total, totale;
+	double frac, frace;
+	char pdfname[1024];
+	char *ptr;
+
+	strcpy(pdfname, rootname);
+	ptr = strstr(pdfname, ".root");
+	if (ptr) {
+		strcpy(ptr, ".pdf");
+	} else {
+		strcat(pdfname, ".pdf");
+	}
+	
+	gROOT->SetStyle("Plain");
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	
+	gStyle->SetTitleXSize(0.05);
+	gStyle->SetTitleYSize(0.05);
+	gStyle->SetLabelSize(0.05);
+	gStyle->SetPadLeftMargin(0.16);
+	gStyle->SetPadBottomMargin(0.16);
+	
+	TFile *fRoot = new TFile(rootname);
+	if (!fRoot->IsOpen()) {
+		printf("root-file not found  - run background_calcgt() first!\n");
+		return;
+	}
+	for (i=0; i<3; i++) {
+		for (j=0; j<3; j++) {
+			sprintf(strs, "hPosEnergy%c%s", 'A'+i, suffix[j]);
+			h[i][j] = (TH1D*) fRoot->Get(strs);
+			if (!h[i][j]) {
+				printf("%s not found  - rerun background_calcpe() to create all hists!\n", rootname);
+				fRoot->Close();
+				return;
+			}
+			h[i][j]->SetLineWidth(2);
+			h[i][j]->SetLineColor(color[j]);
+			h[i][j]->SetMarkerColor(color[j]);
+			h[i][j]->SetMarkerStyle(marker[j]);
+			h[i][j]->GetYaxis()->SetLabelSize(0.05);
+			h[i][j]->SetMinimum(0);
+			h[i][j]->GetYaxis()->SetTitle("");
+			h[i][j]->SetTitle(title[i]);
+		}
+		for (j=0; j<2; j++) {
+			sprintf(strs, "hRPES%c%c", (j) ? 'C': 'R', 'A'+i);
+			hr[i][j] = (TH1D*)h[i][0]->Clone(strs);
+			hr[i][j]->Clear();
+			hr[i][j]->Divide(h[i][2*j], h[i][1]);
+			hr[i][j]->SetLineWidth(2);
+			hr[i][j]->SetLineColor(color[j]);
+			hr[i][j]->SetMarkerColor(color[j]);
+			hr[i][j]->SetMarkerStyle(marker[j]);
+			hr[i][j]->GetYaxis()->SetLabelSize(0.05);
+			hr[i][j]->SetMinimum(0);
+			hr[i][j]->SetMaximum(5);
+			hr[i][j]->GetYaxis()->SetTitle("");
+			hr[i][j]->SetTitle(title[i]);
+		}
+	}
+	TCanvas *cv = new TCanvas("CV", "Background plots", 1200, 900);
+	TLegend *lg1 = new TLegend(0.7, 0.8, 0.95, 0.95);
+	lg1->AddEntry(h[0][0], "Random", "LPE");
+	lg1->AddEntry(h[0][1], "Neutrino", "LPE");
+	lg1->AddEntry(h[0][2], "Cosmic", "LPE");
+	lg1->SetTextSize(0.04);
+	TLegend *lg2 = new TLegend(0.25, 0.8, 0.65, 0.9);
+	lg2->AddEntry(hr[0][0], "Random/Neutrino", "LPE");
+	lg2->AddEntry(hr[0][1], "Cosmic/Neutrino", "LPE");
+	lg2->SetTextSize(0.035);
+	
+	sprintf(strl, "%s[", pdfname);
+	cv->SaveAs(strl);
+	
+	for (i=0; i<3; i++) {
+		cv->Clear();
+		cv->Divide(2, 1);
+		
+		cv->cd(1);
+		hMax = 0;
+		iMax = 0;
+		for (j=0; j<3; j++) if (h[i][j]->GetMaximum() > hMax) {
+			hMax = h[i][j]->GetMaximum();
+			iMax = j;
+		}
+		h[i][iMax]->Draw();
+		for (j=0; j<3; j++) if (j != iMax) h[i][j]->Draw("same");
+		lg1->Draw();
+		
+		cv->cd(2);
+		hr[i][0]->Draw();
+		hr[i][1]->Draw("same");
+		lg2->Draw();
+		
+		cv->SaveAs(pdfname);
+	}
+	
+	sprintf(strl, "%s]", pdfname);
+	cv->SaveAs(strl);
+	fRoot->Close();
+}
