@@ -1,6 +1,6 @@
 #include "HPainter.h"
 #define NHISTS 18
-void background_calc(const char *fname = "background_plots.root", int run_first = 5808, int run_last = 11688)
+void background_calc(const char *fname = "background_plots.root", int run_first = 5808, int run_last = 15028)
 {
 	char strs[128];
 	char strl[1024];
@@ -288,7 +288,7 @@ void background_draw_all(const char *rootname = "background_plots.root")
 	fRoot->Close();
 }
 
-void background_calcgt(const char *fname = "background_plotsgt.root", int run_first = 5808, int run_last = 11688)
+void background_calcgt(const char *fname = "background_plotsgt.root", int run_first = 5808, int run_last = 15028)
 {
 	char strs[128];
 	char strl[1024];
@@ -431,7 +431,7 @@ void background_draw_gt(const char *rootname = "background_plotsgt.root")
 	fRoot->Close();
 }
 
-void background_calcpe(const char *fname = "background_plotspe.root", int run_first = 5808, int run_last = 11688)
+void background_calcpe(const char *fname = "background_plotspe.root", int run_first = 5808, int run_last = 15028)
 {
 	char strs[128];
 	char strl[1024];
@@ -461,7 +461,7 @@ void background_calcpe(const char *fname = "background_plotspe.root", int run_fi
 	for (i=0; i<3; i++) for (j=0; j<2; j++) {
 		sprintf(strs, "hPosEnergy%c%c", 'A'+i, (j) ? 'C' : 'N');
 		sprintf(strl, "Positron Energy %s;MeV", (j) ? "Cosmic" : "Neutrino");
-		h[i][j] = new TH1D(strs, strl, 55, 1.0, 12.0);
+		h[i][j] = new TH1D(strs, strl, 44, 1.0, 12.0);
 	}
 
 	HPainter *hp = new HPainter(0x801E, run_first, run_last);
@@ -495,6 +495,7 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 	const Color_t color[3] = {kGreen+2, kBlue, kRed};
 	const int marker[3] = {kFullStar, kFullCircle, kFullCross};
 	TH1D *h[3][3];
+	TH1D *hz[3][3];
 	TH1D *hr[3][2];
 	int i, j, k, kl, ku;
 	double hMax;
@@ -503,6 +504,8 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 	double frac, frace;
 	char pdfname[1024];
 	char *ptr;
+	TPad *pd;
+	TVirtualPad *pv;
 
 	strcpy(pdfname, rootname);
 	ptr = strstr(pdfname, ".root");
@@ -516,11 +519,11 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 	gStyle->SetOptStat(0);
 	gStyle->SetOptFit(1);
 	
-	gStyle->SetTitleXSize(0.05);
-	gStyle->SetTitleYSize(0.05);
-	gStyle->SetLabelSize(0.05);
-	gStyle->SetPadLeftMargin(0.16);
-	gStyle->SetPadBottomMargin(0.16);
+	gStyle->SetTitleXSize(0.06);
+	gStyle->SetTitleYSize(0.06);
+	gStyle->SetLabelSize(0.06);
+	gStyle->SetPadLeftMargin(0.15);
+	gStyle->SetPadBottomMargin(0.15);
 	
 	TFile *fRoot = new TFile(rootname);
 	if (!fRoot->IsOpen()) {
@@ -540,10 +543,17 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 			h[i][j]->SetLineColor(color[j]);
 			h[i][j]->SetMarkerColor(color[j]);
 			h[i][j]->SetMarkerStyle(marker[j]);
-			h[i][j]->GetYaxis()->SetLabelSize(0.05);
+			h[i][j]->GetXaxis()->SetTitleSize(0.06);
+			h[i][j]->GetYaxis()->SetTitleSize(0.06);
+			h[i][j]->GetXaxis()->SetLabelSize(0.06);
+			h[i][j]->GetYaxis()->SetLabelSize(0.06);
 			h[i][j]->SetMinimum(0);
 			h[i][j]->GetYaxis()->SetTitle("");
 			h[i][j]->SetTitle(title[i]);
+			sprintf(strs, "%s_z", h[i][j]->GetName());
+			hz[i][j] = (TH1D*)h[i][j]->Clone(strs);
+			hz[i][j]->SetTitle("");
+			hz[i][j]->GetXaxis()->SetRange(29, 44);
 		}
 		for (j=0; j<2; j++) {
 			sprintf(strs, "hRPES%c%c", (j) ? 'C': 'R', 'A'+i);
@@ -554,7 +564,10 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 			hr[i][j]->SetLineColor(color[j]);
 			hr[i][j]->SetMarkerColor(color[j]);
 			hr[i][j]->SetMarkerStyle(marker[j]);
-			hr[i][j]->GetYaxis()->SetLabelSize(0.05);
+			hr[i][j]->GetXaxis()->SetTitleSize(0.06);
+			hr[i][j]->GetYaxis()->SetTitleSize(0.06);
+			hr[i][j]->GetXaxis()->SetLabelSize(0.06);
+			hr[i][j]->GetYaxis()->SetLabelSize(0.06);
 			hr[i][j]->SetMinimum(0);
 			hr[i][j]->SetMaximum(5);
 			hr[i][j]->GetYaxis()->SetTitle("");
@@ -579,7 +592,9 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 		cv->Clear();
 		cv->Divide(2, 1);
 		
-		cv->cd(1);
+		pv = cv->cd(1);
+		pv->SetFillStyle(4000);
+
 		hMax = 0;
 		iMax = 0;
 		for (j=0; j<3; j++) if (h[i][j]->GetMaximum() > hMax) {
@@ -589,7 +604,24 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 		h[i][iMax]->Draw();
 		for (j=0; j<3; j++) if (j != iMax) h[i][j]->Draw("same");
 		lg1->Draw();
-		
+
+		pv->cd();
+		pd = new TPad("PD", "", 0.3, 0.35, 0.99, 0.79);
+		pd->SetTopMargin(0);
+		pd->SetRightMargin(0);
+		pd->Draw();
+		pd->cd();
+		hMax = 0;
+		iMax = 0;
+		for (j=0; j<3; j++) if (hz[i][j]->GetMaximum() > hMax) {
+			hMax = hz[i][j]->GetMaximum();
+			iMax = j;
+		}
+		hz[i][iMax]->Draw();
+		for (j=0; j<3; j++) if (j != iMax) hz[i][j]->Draw("same");
+		pv->SetFillStyle(4000);
+		pd->Draw();
+
 		cv->cd(2);
 		hr[i][0]->Draw();
 		hr[i][1]->Draw("same");
@@ -602,3 +634,4 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 	cv->SaveAs(strl);
 	fRoot->Close();
 }
+
