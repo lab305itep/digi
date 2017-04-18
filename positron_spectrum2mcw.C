@@ -1,3 +1,4 @@
+#define NBINS	28
 void positron_spectrum2mcw(void)
 {
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
@@ -9,7 +10,7 @@ void positron_spectrum2mcw(void)
 		"/space/danss_root3/mc_positron_241Pu_simple_newScale.root"
 	};
 	const double fuelmid[4]  = {0.58, 0.07, 0.30, 0.05};
-	const char expname[] = "danss_report_v3w_dr_40_bg_5_6-calc.root";
+	const char expname[] = "danss_report_4p-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
@@ -22,7 +23,8 @@ void positron_spectrum2mcw(void)
 	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
 	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
-	TCut cXYZ = cX && cY && cZ;
+        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+	TCut cXYZ = cX && cY && cZ && cGamma;
 	int i;
 	char strs[128];
 	char strl[1024];
@@ -40,8 +42,8 @@ void positron_spectrum2mcw(void)
 	if (!fExp->IsOpen()) return;
 	hExpw = (TH1D*) fExp->Get("hSum");
 	if (!hExpw) return;
-	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events per day per 0.2 MeV", 35, 1, 8);
-	for (i=0; i<35; i++) {
+	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", NBINS, 1, 8);
+	for (i=0; i<NBINS; i++) {
 		hExp->SetBinContent(i+1, hExpw->GetBinContent(i+1));
 		hExp->SetBinError(i+1, hExpw->GetBinError(i+1));
 	}
@@ -53,7 +55,7 @@ void positron_spectrum2mcw(void)
 	for (i=0; i<4; i++) {
 		sprintf(strs, "h%s", fuel[i]);
 		sprintf(strl, "Positron spectrum of %s;MeV", fuel[i]);
-		hMc[i] = new TH1D(strs, strl, 35, 1, 8);
+		hMc[i] = new TH1D(strs, strl, NBINS, 1, 8);
 		hMc[i]->SetLineColor(fColor[i]);
 	}
 	for (i=0; i<4; i++) {
@@ -76,11 +78,11 @@ void positron_spectrum2mcw(void)
 	hMcMixt->SetName("hMcMiddleMixt");
 	hMcMixt->Write();
 	fSave.Close();
-	hMcMixt->Scale(hExp->Integral(3, 27) / hMcMixt->Integral(3, 27));
+	hMcMixt->Scale(hExp->Integral(3, NBINS-5) / hMcMixt->Integral(3, NBINS-5));
 	hMcMixt->SetLineColor(kBlack);
 	hMcMixt->SetLineWidth(2);
 	hMcMixt->GetYaxis()->SetLabelSize(0.05);
-	hMcMixt->SetTitle(";Positron energy, MeV;Events per day per 0.2 MeV");
+	hMcMixt->SetTitle(";Positron energy, MeV;Events/(day*0.25 MeV)");
 	
 	hRatio = (TH1D *) hMcMixt->Clone("hRatioExpMc");
 	hRatio->Divide(hExp, hMcMixt);

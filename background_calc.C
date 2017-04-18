@@ -455,6 +455,7 @@ void background_calcpe(const char *fname = "background_plotspe.root", int run_fi
         TCut cR = cR2 && (cRXY || cR1) && cRZ;
         TCut cN("NeutronEnergy > 3.5");
         TCut cN3("NeutronEnergy > 3.0");
+//        TCut cPMT("fabs(SiPmCleanEnergy[0] - PmtCleanEnergy[0]) < 5");
         TCut ct;
 
 	TFile *fRoot = new TFile(fname, "RECREATE");
@@ -468,11 +469,11 @@ void background_calcpe(const char *fname = "background_plotspe.root", int run_fi
 	hp->SetFile(fRoot);
 
 	for (j=0; j<2; j++) {
-		ct = cIso && cX && cY && cZ && cT20 && cR60 && cRZ && cPe && cGamma && cN3;
+		ct = cIso && cX && cY && cZ && cT20 && cR60 && cRZ && cPe && cGamma && cN3 && cPMT;
 		hp->Project(h[0][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
-		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN3;
+		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN3 && cPMT;
 		hp->Project(h[1][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
-		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN;
+		ct = cIso && cX && cY && cZ && cT20 && cR && cPe && cGamma && cN && cPMT;
 		hp->Project(h[2][j], "PositronEnergy", (j) ? (ct && !cVeto) : (ct && cVeto));
 	}
 	

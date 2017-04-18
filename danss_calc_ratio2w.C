@@ -327,7 +327,7 @@ void danss_draw_sp2(const char *fname, double bgScale = 5.6/2.5)
 	txt = new TLatex();
 	
 	lg = new TLegend(0.45, 0.75, 0.9, 0.9);
-	TH1D *hUp = new TH1D("hUp", "Positron spectrum April-March, UP;Positron energy, MeV;Events / (day * 0.25 MeV)", 44, 1, 12);
+	TH1D *hUp = new TH1D("hUp", "Positron spectrum April-March, UP;Positron energy, MeV;Events/(day*0.25 MeV)", 44, 1, 12);
 	sum_of_spectra(hUp, "u", 30, bgScale);
 	hUp->SetLineColor(kRed);
 	hUp->SetFillColor(kRed-10);

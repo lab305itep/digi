@@ -26,6 +26,8 @@ public:
 	inline double GetUpTime(void) { return upTime; };
 	inline void SetUpTime(double tm) { upTime = tm; };
 	void SetUpTime(unsigned int t0, unsigned int t1);
+	inline TChain *GetPairChain(void) { return tSig;};
+	inline TChain *GetRandomChain(void) { return tRand;};
 };
 
 #endif
