@@ -9,6 +9,7 @@ TH1D *spectr5(const char *prefix, int mask, int run_from, int run_to, double bgn
 	gStyle->SetOptStat(1001100);
 //		Set cuts
 	TCut cVeto("gtFromVeto > 60");
+//	TCut cVeto("gtFromVeto > 200");
 	TCut cIso("(gtFromPrevious > 45 || gtFromPrevious == gtFromVeto) && gtToNext > 80 && EventsBetween == 0");
 	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
 	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
@@ -22,22 +23,28 @@ TH1D *spectr5(const char *prefix, int mask, int run_from, int run_to, double bgn
         TCut cRZ("fabs(DistanceZ) < 40");
         TCut cR = cR2 && (cRXY || cR1) && cRZ;
         TCut cN("NeutronEnergy > 3.5");
+//        TCut cN("NeutronEnergy > 3");
 	TCut cSel = cX && cY && cZ && cR && c20 && cGamma && cN && cPe && cIso && cAux;
 	TCut cSig = cSel && cVeto;
 	TCut cBgnd = cSel && (!cVeto);
+//		Background tail correction
+	TF1 fBgndN("fBgndN", "0.0163-0.0007*x", 0, 100);
+	TF1 fBgndC("fBgndC", "0.0722-0.0034*x", 0, 100);
 
 	sprintf(str, "%s_hSig", prefix);
-	TH1D *hSig  = new TH1D(str,  "Positron spectrum;MeV;mHz/0.25 MeV", 44, 1, 12);
+	TH1D *hSig  = new TH1D(str,  "Positron spectrum;MeV;mHz/0.25 MeV", 60, 1, 16);
 	sprintf(str, "%s_hCosm", prefix);
-	TH1D *hBgnd = new TH1D(str, "Positron spectrum;MeV;mHz/0.25 MeV", 44, 1, 12);
+	TH1D *hBgnd = new TH1D(str, "Positron spectrum;MeV;mHz/0.25 MeV", 60, 1, 16);
 	sprintf(str, "%s_hRes", prefix);
-	TH1D *hRes  = new TH1D(str,  "Positron spectrum;MeV;mHz/0.25 MeV", 44, 1, 12);
+	TH1D *hRes  = new TH1D(str,  "Positron spectrum;MeV;mHz/0.25 MeV", 60, 1, 16);
 	
 	HPainter *ptr = new HPainter(mask, run_from, run_to);
 	ptr->SetFile(fRoot);
 	ptr->Project(hSig,  "PositronEnergy", cSig);
 	ptr->Project(hBgnd, "PositronEnergy", cBgnd);
 
+	hSig->Add(&fBgndN, -1);
+	hBgnd->Add(&fBgndC, -1);
 	hRes->Add(hSig, hBgnd, 1, -bgnd);
 	fRoot->cd();
 	hSig->Write();

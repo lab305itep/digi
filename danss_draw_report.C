@@ -52,7 +52,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineColor(kBlue);
 		h->SetTitle("Neutrino events after veto");
 		h->Draw();
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Signal = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kBlue);
 		txt->DrawTextNDC(0.4, 0.8, str);
@@ -62,7 +62,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineWidth(2);
 		h->SetLineColor(kBlack);
 		h->Draw("same");
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Random = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kBlack);
 		txt->DrawTextNDC(0.4, 0.7, str);
@@ -72,7 +72,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineWidth(2);
 		h->SetLineColor(kRed);
 		h->Draw("same");
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Result = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.4, 0.6, str);
@@ -86,7 +86,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineColor(kBlue);
 		h->SetTitle("Cosmic background");
 		h->Draw();
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Signal = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kBlue);
 		txt->DrawTextNDC(0.4, 0.8, str);
@@ -96,7 +96,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineWidth(2);
 		h->SetLineColor(kBlack);
 		h->Draw("same");
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Random = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kBlack);
 		txt->DrawTextNDC(0.4, 0.7, str);
@@ -106,7 +106,7 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		h->SetLineWidth(2);
 		h->SetLineColor(kRed);
 		h->Draw("same");
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Result = %5.0f+-%4.0f", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.4, 0.6, str);
@@ -134,12 +134,12 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		hb->Scale(positions[i].bgnd * bgScale);
 		h->Add(hb, -1.0);
 		h->Draw();
-		val = h->IntegralAndError(1, 28, err);
+		val = h->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Neutrino = %5.2f+-%4.2f mHz", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.3, 0.85, str);
 		hb->Draw("same");
-		val = hb->IntegralAndError(1, 28, err);
+		val = hb->IntegralAndError(1, h->FindBin(7.999), err);
 		sprintf(str, "Cosm = %5.2f+-%4.2f mHz (%4.1f%%)", val, err, 100*positions[i].bgnd * bgScale);
 		txt->SetTextColor(kBlue);
 		txt->DrawTextNDC(0.3, 0.8, str);
@@ -158,14 +158,14 @@ void danss_draw_report(const char *fname, double bgScale = 2.24)
 		sprintf(str, "%s_1", hb->GetName());
 		hb1 = (TH1 *) hb->Clone(str);
 		if (h1->GetMinimum() > 0) h1->SetMinimum(0);
-		h1->GetXaxis()->SetRange(29, 44);
+		h1->GetXaxis()->SetRange(h1->FindBin(7.001), h1->GetNbinsX());
 		h1->Draw();
-		val = h->IntegralAndError(33, 44, err);
+		val = h->IntegralAndError(h->FindBin(9.001), h->FindBin(11.999), err);
 		sprintf(str, "[9-12] MeV = %5.2f+-%4.2f mHz", val, err);
 		txt->SetTextColor(kRed);
 		txt->DrawTextNDC(0.3, 0.85, str);
 		hb1->Draw("same");
-		val = hb->IntegralAndError(33, 44, err);
+		val = hb->IntegralAndError(hb->FindBin(9.001), hb->FindBin(11.999), err);
 		sprintf(str, "[9-12] MeV = %5.2f+-%4.2f mHz (%4.1f%%)", val, err, 100*positions[i].bgnd * bgScale);
 		txt->SetTextColor(kBlue);
 		txt->DrawTextNDC(0.3, 0.8, str);

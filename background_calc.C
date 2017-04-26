@@ -456,13 +456,14 @@ void background_calcpe(const char *fname = "background_plotspe.root", int run_fi
         TCut cN("NeutronEnergy > 3.5");
         TCut cN3("NeutronEnergy > 3.0");
 //        TCut cPMT("fabs(SiPmCleanEnergy[0] - PmtCleanEnergy[0]) < 5");
+	TCut cPMT("");
         TCut ct;
 
 	TFile *fRoot = new TFile(fname, "RECREATE");
 	for (i=0; i<3; i++) for (j=0; j<2; j++) {
 		sprintf(strs, "hPosEnergy%c%c", 'A'+i, (j) ? 'C' : 'N');
 		sprintf(strl, "Positron Energy %s;MeV", (j) ? "Cosmic" : "Neutrino");
-		h[i][j] = new TH1D(strs, strl, 44, 1.0, 12.0);
+		h[i][j] = new TH1D(strs, strl, 60, 1.0, 16.0);
 	}
 
 	HPainter *hp = new HPainter(0x801E, run_first, run_last);
@@ -554,7 +555,7 @@ void background_draw_pe(const char *rootname = "background_plotspe.root")
 			sprintf(strs, "%s_z", h[i][j]->GetName());
 			hz[i][j] = (TH1D*)h[i][j]->Clone(strs);
 			hz[i][j]->SetTitle("");
-			hz[i][j]->GetXaxis()->SetRange(29, 44);
+			hz[i][j]->GetXaxis()->SetRange(hz[i][j]->FindBin(7.001), hz[i][j]->GetNbinsX());
 		}
 		for (j=0; j<2; j++) {
 			sprintf(strs, "hRPES%c%c", (j) ? 'C': 'R', 'A'+i);
