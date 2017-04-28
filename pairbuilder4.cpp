@@ -47,6 +47,7 @@
 #define ATTENUATION	0.00342	// Signal attenuation for positron energy correction
 #define CORR_P0		0.179	// Positron energy correction from MC
 #define CORR_P1		0.929	// Positron energy correction from MC
+#define SHOWERMIN	800	// 800 MeV shower event threshold
 
 //	Correction based on the neutron position if this was not done before based on the positron position
 void acorr(struct DanssPairStruct4 *DanssPair) {
@@ -85,7 +86,18 @@ int IsVeto(struct DanssEventStruct3 *Event)
 	return 0;
 }
 
-void MakePair(struct DanssEventStruct3 *DanssEvent, struct DanssEventStruct3 *SavedEvent, struct DanssEventStruct3 *VetoEvent, struct DanssPairStruct4 *DanssPair)
+int IsShower(struct DanssEventStruct3 *Event)
+{
+	if (Event->PmtCleanEnergy + Event->SiPmCleanEnergy > 2*SHOWERMIN) return 1;
+	return 0;
+}
+
+void MakePair(
+    struct DanssEventStruct3 *DanssEvent, 
+    struct DanssEventStruct3 *SavedEvent, 
+    struct DanssEventStruct3 *VetoEvent, 
+    struct DanssEventStruct3 *ShowerEvent, 
+    struct DanssPairStruct4 *DanssPair)
 {
 	double tmp;
 	int i;
@@ -125,7 +137,9 @@ void MakePair(struct DanssEventStruct3 *DanssEvent, struct DanssEventStruct3 *Sa
 	DanssPair->VetoHits = VetoEvent->VetoCleanHits;
 	DanssPair->VetoEnergy = VetoEvent->VetoCleanEnergy;
 	DanssPair->DanssEnergy = (VetoEvent->SiPmCleanEnergy + VetoEvent->PmtCleanEnergy) / 2;
-	
+	DanssPair->gtFromShower = (SavedEvent->globalTime - ShowerEvent->globalTime) / GFREQ2US;
+	DanssPair->ShowerEnergy = (ShowerEvent->SiPmCleanEnergy + ShowerEvent->PmtCleanEnergy) / 2;
+
 	acorr(DanssPair);		// correct positron energy based on neutron position if only one coordinate of positron cluster is available
 	DanssPair->PositronEnergy = (DanssPair->PositronEnergy - CORR_P0) / CORR_P1;
 }
@@ -137,6 +151,7 @@ int main(int argc, char **argv)
 	struct DanssEventStruct3		Neutron;
 	struct DanssEventStruct3		Positron;
 	struct DanssEventStruct3		Veto;
+	struct DanssEventStruct3		Shower;
 	struct DanssInfoStruct3			DanssInfo;
 	struct DanssInfoStruct			SumInfo;
 
@@ -198,7 +213,9 @@ int main(int argc, char **argv)
 		"gtFromVeto/F:"		// time from the last Veto event
 		"VetoHits/I:"		// hits in Veto counters
 		"VetoEnergy/F:"		// Energy in Veto counters
-		"DanssEnergy/F"		// Veto Energy in Danss (Pmt + SiPm)/2
+		"DanssEnergy/F:"	// Veto Energy in Danss (Pmt + SiPm)/2
+		"gtFromShower/F:"	// time from large energy shower in DANSS
+		"ShowerEnergy/F"	// shower event energy in DANSS (Pmt + SiPm)/2
 	);
 	
 	InfoOut = new TTree("SumInfo", "Summary information");
@@ -232,8 +249,12 @@ int main(int argc, char **argv)
 
 	nEvt = EventChain->GetEntries();
 	PairCnt = 0;
+	memset(&Veto, 0, sizeof(Veto));
+	memset(&Shower, 0, sizeof(Shower));
 	for (iEvt =0; iEvt < nEvt; iEvt++) {
 		EventChain->GetEntry(iEvt);
+//	Shower	
+		if (IsShower(&DanssEvent)) memcpy(&Shower, &DanssEvent, sizeof(struct DanssEventStruct3));
 //	Veto
 		if (IsVeto(&DanssEvent)) {
 			memcpy(&Veto, &DanssEvent, sizeof(struct DanssEventStruct3));
@@ -253,7 +274,7 @@ int main(int argc, char **argv)
 //	less than 50 us from neutron
 			if (Neutron.globalTime - DanssEvent.globalTime < MAXTDIFF * GFREQ2US && i >= 0) {
 				memcpy(&Positron, &DanssEvent, sizeof(struct DanssEventStruct3));
-				MakePair(&Neutron, &Positron, &Veto, &DanssPair);
+				MakePair(&Neutron, &Positron, &Veto, &Shower, &DanssPair);
 				DanssPair.EventsBetween = iEvt - i - 1;
 //	look backward
 				if (i>0) {

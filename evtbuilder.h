@@ -289,6 +289,8 @@ struct DanssPairStruct4 {
 	int		VetoHits;		// hits in Veto counters
 	float		VetoEnergy;		// Energy in Veto counters
 	float		DanssEnergy;		// Veto Energy in Danss (Pmt + SiPm)/2
+	float		gtFromShower;		// time from large energy shower in DANSS
+	float		ShowerEnergy;		// shower event energy in DANSS (Pmt + SiPm)/2
 };
 
 //		248Cm analysis

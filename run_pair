@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EVENTDIR="danss_root3"
-PAIRDIR="danss_root2"
+PAIRDIR="danss_root2b"
 
 if [ "X"$2 == "X" ] ; then
 	echo "Usage $0 first_number last_number"
