@@ -474,7 +474,6 @@ void danss_draw_sp2(const char *fname, double bgScale = 5.6/2.5)
 		hMc->Draw("same");
 		lg->AddEntry(hMc, "Monte Carlo", "p");
 	}
-	txt->DrawLatex(10, 300, "S Текст S");
 
 	hUp->Draw("axis,same");
 	lg->Draw();

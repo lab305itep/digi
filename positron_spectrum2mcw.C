@@ -4,13 +4,13 @@ void positron_spectrum2mcw(void)
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
 	const Color_t fColor[4] = {kRed, kGreen, kBlue, kOrange};
 	const char mcfile[4][128] = {
-		"/space/danss_root3/mc_positron_235U_simple_newScale.root",
-		"/space/danss_root3/mc_positron_238U_simple_newScale.root",
-		"/space/danss_root3/mc_positron_239Pu_simple_newScale.root",
-		"/space/danss_root3/mc_positron_241Pu_simple_newScale.root"
+		"/space/danss_root3/withdead/mc_positron_235U_simple_newScale.root",
+		"/space/danss_root3/withdead/mc_positron_238U_simple_newScale.root",
+		"/space/danss_root3/withdead/mc_positron_239Pu_simple_newScale.root",
+		"/space/danss_root3/withdead/mc_positron_241Pu_simple_newScale.root"
 	};
 	const double fuelmid[4]  = {0.58, 0.07, 0.30, 0.05};
-	const char expname[] = "danss_report_4p-calc.root";
+	const char expname[] = "danss_report_4pw16_c25-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];

@@ -93,6 +93,7 @@ struct DanssInfoStruct3			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
 TH1D *					hTimeDelta[iMaxAddress_AdcBoard][iNChannels_AdcBoard];
+int					DeadList[iMaxAddress_AdcBoard][iNChannels_AdcBoard];
 
 /********************************************************************************************************************/
 /************************	Analysis functions					*****************************/
@@ -357,13 +358,19 @@ void CalculateNeutron(ReadDigiDataUser *user)
 	DanssEvent.NeutronRadius = (nx) ? DanssEvent.NeutronRadius / nx : -1;
 }
 
+// Clean hits:
+// - SiPM with zero or less number of pixels
+// - bad (not a number) or not positive energy
+// - bad time
+// - from marked bad channels
+// - from dead channel list
 void CleanZeroes(ReadDigiDataUser *user)
 {
 	int i, N;
-	
+
 	N = user->nhits();
 	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || (!isfinite(user->e(i))) ||
-		user->e(i) <= 0 || user->t(i) < -1000 || user->isBadChannel(user->chanIndex(i))) HitFlag[i] = -1;
+		user->e(i) <= 0 || user->t(i) < -1000 || user->isBadChannel(user->chanIndex(i)) || DeadList[user->adc(i)][user->adcChan(i)]) HitFlag[i] = -1;
 }
 
 void CleanNoise(ReadDigiDataUser *user)
@@ -438,6 +445,30 @@ void CleanByTime(ReadDigiDataUser *user)
 		tearly = SOMEEARLYTIME;
 	}
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && fabs(user->t(i) - tearly) <= TCUT) HitFlag[i] = -100;	// mark early hit candidates
+}
+
+void CreateDeadList(char *fname)
+{
+	int i, j;
+	char str[1024];
+	char *ptr;
+	FILE *f;
+
+	memset(DeadList, 0, sizeof(DeadList));
+	if (!fname) return;
+	f = fopen(fname, "rt");
+	if (!f) {
+		printf("Dead list file %s not found.\n", fname);
+		return;
+	}
+	for (;;) {
+		if (!fgets(str, sizeof(str), f)) break;
+		i = strtol(str, &ptr, 10);
+		ptr++;
+		j = strtol(ptr, NULL, 10);
+		if (i >= 0 && i < iMaxAddress_AdcBoard && j >= 0 && j < iNChannels_AdcBoard) DeadList[i][j] = 1;
+	}
+	fclose(f);
 }
 
 void DebugFullPrint(ReadDigiDataUser *user)
@@ -640,6 +671,7 @@ void Help(void)
 	printf("\tOptions:\n");
 	printf("-alen AttenuationLength --- signal attenuation length in cm. Default - 300 cm.\n");
 	printf("-calib filename.txt --- file with energy calibration. No default.\n");
+	printf("-deadlist filename.txt --- file with explicit list of dead channels.\n");
 	printf("-events number --- stop after processing this number of events. Default - do not stop.\n");
 	printf("-file filename.txt --- file with a list of files for processing. No default.\n");
 	printf("-flag FLAGS --- analysis flag mask. Default - 0. Recognized flags:\n");
@@ -671,11 +703,13 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	int i, j;
 	char strs[128];
 	char strl[1024];
+	char *DeadListName;
 
 	AttenuationLength = 300;
 	progStartTime = time(NULL);
 	chOutputFile = NULL;
 	chTimeCalibration = NULL;
+	DeadListName = NULL;
 	iFlags = 0;
 	MaxEvents = -1;
 	IsMc = 0;
@@ -687,6 +721,9 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		} else if (!strcmp(argv[i], "-tcalib")) {
 			i++;
 			chTimeCalibration = (char *)argv[i];
+		} else if (!strcmp(argv[i], "-deadlist")) {
+			i++;
+			DeadListName = (char *)argv[i];
 		} else if (!strcmp(argv[i], "-flag")) {
 			i++;
 			iFlags = strtol(argv[i], NULL, 0);
@@ -704,6 +741,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		}
 	}
 
+	CreateDeadList(DeadListName);
 	if (chTimeCalibration) init_Tds();
 
 	if (!chOutputFile) {

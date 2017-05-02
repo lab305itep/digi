@@ -17,7 +17,7 @@ private:
 public:
 	HPainter(const char *base);
 	HPainter(const char *sname, const char *rname);
-	HPainter(int mask, int run_from, int run_to);
+	HPainter(int mask, int run_from, int run_to, const char *root2dir = "/space/danss_root2/");
 	~HPainter(void);
 	inline int IsOpen(void) { return tSig && tRand; };
 	inline void SetFile(TFile *f) { fRes = f; };

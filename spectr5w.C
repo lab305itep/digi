@@ -8,7 +8,7 @@ TH1D *spectr5(const char *prefix, int mask, int run_from, int run_to, double bgn
 	
 	gStyle->SetOptStat(1001100);
 //		Set cuts
-	TCut cVeto("gtFromVeto > 60");
+	TCut cVeto("(gtFromVeto > 60  && DanssEnergy < 300) || gtFromVeto > 200");
 //	TCut cVeto("gtFromVeto > 200");
 	TCut cIso("(gtFromPrevious > 45 || gtFromPrevious == gtFromVeto) && gtToNext > 80 && EventsBetween == 0");
 	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
