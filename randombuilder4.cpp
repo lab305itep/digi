@@ -43,7 +43,6 @@
 #define MINVETOE	4.0	// MeV
 #define VETON		2	// number of hits
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
-#define VETOBLK		100.0	// us
 #define RSHIFT		5000.0	// us
 #define NRANDOM		16	// increase random statistics
 #define ATTENUATION	0.00342	// Signal attenuation for positron energy correction

@@ -44,7 +44,7 @@
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
-#define MYVERSION	"3.03"
+#define MYVERSION	"3.04"
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -62,6 +62,8 @@
 //	Flags
 #define FLG_PRINTALL		       1	// do large debuggging printout
 #define FLG_DTHIST		       2	// create time delta histogramms
+#define FLG_POSECORRECTIONA	   0x100	// do positron energy correction based on MC and NHITS
+#define FLG_POSECORRECTIONB	   0x200	// do positron energy correction based on average MC
 #define FLG_NOCLEANNOISE 	 0x10000	// do not clean low energy signals
 #define FLG_NOTIMECUT		 0x20000	// do not clean signals by time
 #define FLG_NOCONFIRM		 0x40000	// do not search PMT confirmation for SiPM and vice versa
@@ -144,6 +146,39 @@ float acorr(float energy, float dist)
 	return C * energy;
 }
 
+//	Calculate corrected energy from MC taking number of cluster hits into account
+double HitNumberCorrection(double E, int N)
+{
+	const double coef[6][2] = {{0.0197, -0.0444}, {0.1976, -0.1081}, {0.3504, -0.1272}, {0.4837, -0.1372}, {0.5737, -0.1388}, {0.6682, -0.1346}};
+	int i;
+	double EC;
+	
+	if (N < 1) return -1;	// internal error.
+	i = (N < 6) ? N : 6;
+	EC = (E - coef[i-1][0])/ (1 + coef[i-1][1]);
+	return EC;
+}
+
+//	Calculate corrected energy from MC not taking number of cluster hits into account
+double MCAverageCorrection(double E)
+{
+	const double coef[2] = {0.1702, -0.0868};
+	double EC;
+	
+	EC = (E - coef[0])/ (1 + coef[1]);
+	return EC;
+}
+
+//	Calculate corrected positron energy from total energy
+double MCTotalCorrection(double E)
+{
+	const double coef[2] = {0.6812, -0.0872};
+	double EC;
+	
+	EC = (E - coef[0])/ (1 + coef[1]);
+	return EC;
+}
+
 int GetEdgeFlag(int hit, ReadDigiDataUser *user)
 {
 	int z;
@@ -212,7 +247,6 @@ void CalculatePositron(ReadDigiDataUser *user)
 		return;
 	}
 	HitFlag[maxHit] = 10;
-	DanssEvent.MaxHitEnergy = A;
 //		Find cluster
 	for (k=0; k<MAXCLUSTITER; k++) {
 		repeat = 0;
@@ -230,12 +264,12 @@ void CalculatePositron(ReadDigiDataUser *user)
 		if (user->zCoord(i) > zmax) zmax = user->zCoord(i);
 		if (user->zCoord(i) < zmin) zmin = user->zCoord(i);
 		if (user->side(i) == 'X') {
-			if (user->firstCoord(i) > xmax) xmax = user->firstCoord(i);			
-			if (user->firstCoord(i) < xmin) xmin = user->firstCoord(i);			
+			if (user->firstCoord(i) > xmax) xmax = user->firstCoord(i);
+			if (user->firstCoord(i) < xmin) xmin = user->firstCoord(i);
 		} else {
 			if (user->firstCoord(i) > ymax) ymax = user->firstCoord(i);
 			if (user->firstCoord(i) < ymin) ymin = user->firstCoord(i);
-		}		
+		}
 	}
 	A = 0;
 	if (xmax - xmin > 1) A += fStripWidth  * fStripWidth  * (xmax - xmin - 1) * (xmax - xmin - 1);
@@ -305,6 +339,16 @@ void CalculatePositron(ReadDigiDataUser *user)
 	}
 //	Step 4: Divide by 2, because we count SiPM + PMT
 	DanssEvent.PositronEnergy /= 2;
+//	Calculate Total energy with longitudinal correction
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0) {
+		if (user->side(i) == 'X') {
+			DanssEvent.TotalEnergy += acorr(user->e(i), DanssEvent.PositronX[1]);
+		} else {
+			DanssEvent.TotalEnergy += acorr(user->e(i), DanssEvent.PositronX[0]);
+		}
+	}
+	DanssEvent.TotalEnergy /= 2;	// PMT + SiPM
+	if (FLG_POSECORRECTIONB & iFlags) DanssEvent.TotalEnergy = MCTotalCorrection(DanssEvent.TotalEnergy);
 //
 //		Count possible gammas
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
@@ -317,8 +361,10 @@ void CalculatePositron(ReadDigiDataUser *user)
 		if (!j) continue;
 		DanssEvent.PositronFlags |= j;
 		if (HitFlag[i] >= 10) 	DanssEvent.PositronFlags |= j >> 12;
-
 	}
+//		Do energy correction based on MC taking into account number of hits in the cluster
+	if (FLG_POSECORRECTIONA & iFlags) DanssEvent.PositronEnergy = HitNumberCorrection(DanssEvent.PositronEnergy, DanssEvent.PositronHits);
+	if (FLG_POSECORRECTIONB & iFlags) DanssEvent.PositronEnergy = MCAverageCorrection(DanssEvent.PositronEnergy);
 }
 
 void CalculateNeutron(ReadDigiDataUser *user)
@@ -659,7 +705,7 @@ void ReadDigiDataUser::init_Tds()
 
 	printf("Time calibration used: %s. %d channels found.\n", chTimeCalibration, k);
 
-	fclose(f);	
+	fclose(f);
 }
 
 //------------------------------->
@@ -677,6 +723,7 @@ void Help(void)
 	printf("-flag FLAGS --- analysis flag mask. Default - 0. Recognized flags:\n");
 	printf("\t       1 --- do debugging printout of events;\n");
 	printf("\t       2 --- create delta time histograms;\n");
+	printf("\t   0x100 --- do energy correction based on MC taking into account number of hits in the cluster;\n");
 	printf("\t 0x10000 --- do not clean small energies;\n");
 	printf("\t 0x20000 --- do not do time cut;\n");
 	printf("\t 0x40000 --- do not require confirmation for all hits;\n");
@@ -781,7 +828,7 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"PositronFlags/I:"	// flags
 		"PositronMinLen/F:"	// Minimum track length to create the cluster
 		"PositronEnergy/F:"	// Energy sum of the cluster, corrected, (SiPM + PMT) / 2
-		"MaxHitEnergy/F:"	// Energy of the maximum hit
+		"TotalEnergy/F:"	// Total energy, longitudinally correctd (former Energy of the maximum hit)
 		"PositronX[3]/F:"	// cluster position
 		"AnnihilationGammas/I:"	// number of possible annihilation gammas
 		"AnnihilationEnergy/F:"	// Energy in annihilation gammas

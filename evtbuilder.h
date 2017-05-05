@@ -110,7 +110,7 @@ struct DanssEventStruct3 {
 	int		PositronFlags;		// Positron flags
 	float		PositronMinLen;		// Minimum track length to create the cluster
 	float		PositronEnergy;		// Energy sum of the cluster, corrected (SiPM+PMT)
-	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
+	float		TotalEnergy;		// Energy of the maximum hit (SiPM)
 	float		PositronX[3];		// cluster position
 	int		AnnihilationGammas;	// number of possible annihilation gammas
 	float		AnnihilationEnergy;	// Energy in annihilation gammas

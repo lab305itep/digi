@@ -43,7 +43,6 @@
 #define MINVETOE	4.0	// MeV
 #define VETON		2	// number of hits
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
-#define VETOBLK		100.0	// us
 #define ATTENUATION	0.00342	// Signal attenuation for positron energy correction
 #define CORR_P0		0.179	// Positron energy correction from MC
 #define CORR_P1		0.929	// Positron energy correction from MC
