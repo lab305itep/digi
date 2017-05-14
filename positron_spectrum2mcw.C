@@ -4,17 +4,18 @@ void positron_spectrum2mcw(void)
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
 	const Color_t fColor[4] = {kRed, kGreen, kBlue, kOrange};
 	const char mcfile[4][128] = {
-		"/space/danss_root3/withdead/mc_positron_235U_simple_newScale.root",
-		"/space/danss_root3/withdead/mc_positron_238U_simple_newScale.root",
-		"/space/danss_root3/withdead/mc_positron_239Pu_simple_newScale.root",
-		"/space/danss_root3/withdead/mc_positron_241Pu_simple_newScale.root"
+		"/space/danss_root3/withdead-uncorr/mc_positron_235U_simple_newScale.root",
+		"/space/danss_root3/withdead-uncorr/mc_positron_238U_simple_newScale.root",
+		"/space/danss_root3/withdead-uncorr/mc_positron_239Pu_simple_newScale.root",
+		"/space/danss_root3/withdead-uncorr/mc_positron_241Pu_simple_newScale.root"
 	};
-	const double fuelmid[4]  = {0.58, 0.07, 0.30, 0.05};
+	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
+	const char cmppart[3][20] = {"Begin", "Middle", "End"};
 	const char expname[] = "danss_report_4pw16_c25-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
-	TH1D *hMcMixt;
+	TH1D *hMcMixt[3];
 	TFile *fExp;
 	TH1D *hExpw;
 	TH1D *hExp;
@@ -25,7 +26,7 @@ void positron_spectrum2mcw(void)
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
         TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
 	TCut cXYZ = cX && cY && cZ && cGamma;
-	int i;
+	int i, j;
 	char strs[128];
 	char strl[1024];
 	
@@ -47,8 +48,8 @@ void positron_spectrum2mcw(void)
 		hExp->SetBinContent(i+1, hExpw->GetBinContent(i+1));
 		hExp->SetBinError(i+1, hExpw->GetBinError(i+1));
 	}
-	hExp->SetLineColor(kBlue);
-	hExp->SetMarkerColor(kBlue);
+	hExp->SetLineColor(kBlack);
+	hExp->SetMarkerColor(kBlack);
 	hExp->SetMarkerStyle(20);
 	hExp->SetLineWidth(4);
 	gROOT->cd();
@@ -70,26 +71,29 @@ void positron_spectrum2mcw(void)
 	gROOT->cd();
 	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), "1.04*(PositronEnergy-0.179)/0.929", cXYZ);
 	for (i=0; i<4; i++) hMc[i]->Sumw2();
-	hMcMixt = (TH1D*) hMc[0]->Clone("hMcMiddleMixt");
-	hMcMixt->Clear();
-	for (i=0; i<4; i++) hMcMixt->Add(hMc[i], fuelmid[i]);
-	TFile fSave("mc_fuel_middle.root", "RECREATE");
+	for (j=0; j<3; j++) {
+		sprintf(strs, "h%sMixt", cmppart[j]);
+		hMcMixt[j] = (TH1D*) hMc[0]->Clone(strs);
+		hMcMixt[j]->Reset();
+		for (i=0; i<4; i++) hMcMixt[j]->Add(hMc[i], fuelmix[j][i]);
+//		hMcMixt[j]->Scale(hExp->Integral(3, NBINS-5) / hMcMixt[j]->Integral(3, NBINS-5));
+		hMcMixt[j]->Scale(hExp->Integral() / hMcMixt[j]->Integral());
+		hMcMixt[j]->SetLineColor(fColor[j]);
+		hMcMixt[j]->SetLineWidth(2);
+		hMcMixt[j]->GetYaxis()->SetLabelSize(0.05);
+		hMcMixt[j]->SetTitle(";Positron energy, MeV;Events/(day*0.25 MeV)");
+	}
+	TFile fSave("mc_fuel.root", "RECREATE");
 	fSave.cd();
-	hMcMixt->SetName("hMcMiddleMixt");
-	hMcMixt->Write();
+	for (j=0; j<3; j++) hMcMixt[j]->Write();
 	fSave.Close();
-	hMcMixt->Scale(hExp->Integral(3, NBINS-5) / hMcMixt->Integral(3, NBINS-5));
-	hMcMixt->SetLineColor(kBlack);
-	hMcMixt->SetLineWidth(2);
-	hMcMixt->GetYaxis()->SetLabelSize(0.05);
-	hMcMixt->SetTitle(";Positron energy, MeV;Events/(day*0.25 MeV)");
 	
-	hRatio = (TH1D *) hMcMixt->Clone("hRatioExpMc");
-	hRatio->Divide(hExp, hMcMixt);
+	hRatio = (TH1D *) hMcMixt[2]->Clone("hRatioExpMc");
+	hRatio->Divide(hExp, hMcMixt[2]);
 	hRatio->SetTitle(";Positron energy, MeV;#frac{N_{EXP}}{N_{MC}}");
 
-	hDiff = (TH1D *) hMcMixt->Clone("hRatioExpMc");
-	hDiff->Add(hExp, hMcMixt, 1, -1);
+	hDiff = (TH1D *) hMcMixt[2]->Clone("hRatioExpMc");
+	hDiff->Add(hExp, hMcMixt[2], 1, -1);
 	
 	TCanvas *cm = new TCanvas("CM", "Fuel", 1200, 900);
 	hMc[2]->Draw("hist");
@@ -101,11 +105,14 @@ void positron_spectrum2mcw(void)
 	lm->Draw();
 	
 	TCanvas *cv = new TCanvas("CV", "Exp & MC", 1200, 900);
-	hMcMixt->Draw("hist");
+	for (j=0; j<3; j++) hMcMixt[j]->Draw((j) ? "same,hist" : "hist");
 	hExp->Draw("same");
 	TLegend *lg = new TLegend(0.6, 0.75, 0.9, 0.9);
 	lg->AddEntry(hExp, "DANSS data", "LP");
-	lg->AddEntry(hMcMixt, "Monte-Carlo", "L");
+	for (j=0; j<3; j++) {
+		sprintf(strs, "MC - %s", cmppart[j]);
+		lg->AddEntry(hMcMixt[j], strs, "L");
+	}
 	lg->Draw();
 	
 	TCanvas *cr = new TCanvas("CR", "Ratio", 1200, 500);

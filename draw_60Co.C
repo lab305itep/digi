@@ -9,7 +9,7 @@ void draw_60Co(void)
 	gStyle->SetPadBottomMargin(0.15);
 	gStyle->SetLineWidth(2);
 	
-	TFile *fMc = new TFile("/space/danss_root3/mc_60Co_simple.root");
+	TFile *fMc = new TFile("/space/danss_root3/mcold/mc_60Co_simple.root");
 	TTree *tMc = (TTree *) fMc->Get("DanssEvent");
 	if (!tMc) {
 		printf("Can not open MC tree.\n");

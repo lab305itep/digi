@@ -119,6 +119,46 @@ struct DanssEventStruct3 {
 	float		NeutronRadius;		// average distance between hits and the center
 };
 
+struct DanssEventStruct4 {
+//		Common parameters
+	long long	globalTime;		// time in terms of 125 MHz
+	long long	number;			// event number in the file
+	int		runNumber;		// the run number
+	int		unixTime;		// linux time, seconds
+	float		fineTime;		// fine time of the event (for hit selection)
+//		Veto parameters
+	int		VetoHits;		// hits in the event record
+	float		VetoEnergy;		// Energy Sum of all hits
+	int		VetoCleanHits;		// hits above threshold and in time window
+	float		VetoCleanEnergy;	// Energy Sum of clean hits
+//		PMT parameters
+	int		PmtHits;		// the same as above for PMT
+	float		PmtEnergy;
+	int		PmtCleanHits;
+	float		PmtCleanEnergy;
+//		SiPM parameters
+	int		SiPmHits;		// the same as above for PMT
+	float		SiPmEnergy;
+	int		SiPmCleanHits;
+	float		SiPmCleanEnergy;
+	int		SiPmEarlyHits;		// to understand random background
+	float		SiPmEarlyEnergy;
+//		"positron cluster" parameters
+	int		PositronHits;		// hits in the cluster
+	int		PositronFlags;		// Positron flags
+	float		PositronMinLen;		// Minimum track length to create the cluster
+	float		PositronEnergy;		// Energy sum of the cluster, corrected (SiPM+PMT)
+	float		TotalEnergy;		// Event full eenrgy correctd (SiPM+PMT)
+	float		PositronX[3];		// cluster position
+	int		AnnihilationGammas;	// number of possible annihilation gammas
+	float		AnnihilationEnergy;	// Energy in annihilation gammas
+	float		AnnihilationMax;	// Energy in the maximum annihilation hit
+//		"neutron" parameters
+	float		NeutronX[3];		// center of gammas position
+//	float		NeutronRadius;		// average distance between hits and the center
+	int		NHits;			// Number of hits
+};
+
 //	Positron flag masks
 #define PFLAG_MAXENERGY		1		// Too much energy in DANSS
 #define PFLAG_NOCLUSTER		2		// No cluster
@@ -146,6 +186,13 @@ struct DanssEventStruct3 {
 #define PFLAG_HIT_N		0x1000000	// hit in North edge
 #define PFLAG_HIT_S		0x2000000	// hit in South edge
 
+struct HitTypeStruct {
+	char 	type;
+	char	z;
+	char	xy;
+	char	flag;
+};
+
 struct DanssInfoStruct {
 	long long	upTime;			// running time in terms of 125 MHz
 	int		startTime;		// linux start time, seconds
@@ -159,6 +206,16 @@ struct DanssInfoStruct3 {
 	int		startTime;		// linux start time, seconds
 	int		stopTime;		// linux stop time, seconds
 	int		events;			// number of events
+};
+
+struct DanssInfoStruct4 {
+	long long	upTime;			// running time in terms of 125 MHz
+	int		runNumber;		// the run number
+	int		startTime;		// linux start time, seconds
+	int		stopTime;		// linux stop time, seconds
+	int		events;			// number of events
+	int		position;		// Danss Position type
+	float		height;			// Danss average height
 };
 
 struct DanssPairStruct {
@@ -265,7 +322,7 @@ struct DanssPairStruct4 {
 //		"positron cluster" parameters
 	int		PositronHits;		// hits in the cluster
 	float		PositronEnergy;		// Energy sum of the cluster (SiPM)
-	float		MaxHitEnergy;		// Energy of the maximum hit (SiPM)
+	float		TotalEnergy;		// Energy of the maximum hit (SiPM)
 	float		PositronX[3];		// cluster position
 	int		AnnihilationGammas;	// number of possible annihilation gammas
 	float		AnnihilationEnergy;	// Energy in annihilation gammas

@@ -34,10 +34,10 @@
 
 #define GFREQ2US	(GLOBALFREQ / 1000000.0)
 #define MAXTDIFF	50.0	// us
-#define MINPOSE		1.0	// MeV
+#define MINPOSE		0.5	// MeV
 #define MAXPOSE		20.0	// MeV
 #define AGAMMAN		0	// number of annihilation gamma hits (0 no requirement)
-#define MINNEUTE	3.0	// MeV
+#define MINNEUTE	5.0	// MeV
 #define MAXNEUTE	12.0	// MeV
 #define NEUTN		3	// number of hits
 #define MINVETOE	4.0	// MeV
@@ -117,7 +117,7 @@ void MakePair(
 	DanssPair->PositronHits = SavedEvent->PositronHits;
 	DanssPair->PositronEnergy = SavedEvent->PositronEnergy;
 	memcpy(DanssPair->PositronX, SavedEvent->PositronX, sizeof(SavedEvent->PositronX));
-	DanssPair->MaxHitEnergy = SavedEvent->MaxHitEnergy;
+	DanssPair->TotalEnergy = SavedEvent->TotalEnergy;
 	DanssPair->AnnihilationGammas = SavedEvent->AnnihilationGammas;
 	DanssPair->AnnihilationEnergy = SavedEvent->AnnihilationEnergy;
 	
@@ -284,9 +284,9 @@ int main(int argc, char **argv)
 //	look backward
 					for (i=iEvt-1;i>=0;i--) {
 						EventChain->GetEntry(i);
-						if (DanssEvent.globalTime >= Positron.globalTime) {
+						if (DanssEvent.globalTime > Positron.globalTime) {
 							DanssPair.EventsBetween++;						
-						} else {
+						} else if (DanssEvent.globalTime < Positron.globalTime) {
 							DanssPair.gtFromPrevious = (Positron.globalTime - DanssEvent.globalTime) / GFREQ2US;
 							DanssPair.PreviousEnergy = (DanssEvent.SiPmCleanEnergy + DanssEvent.PmtCleanEnergy) / 2;
 							break;
