@@ -1,0 +1,71 @@
+#!/bin/bash
+
+export DANSSRAWREC_HOME=/usr/local/digi/
+
+BUILDER=./digi_evtbuilder4
+
+if [ "X"$1 == "X" ] ; then
+	echo "Usage ./$0 run_number|filename [flags] [root_dir] [other options]"
+	exit 10
+fi
+
+
+FN=$1
+FLAGS=${2:-"0x50002"}
+ROOT_DIR=${3:-"danss_root4"}
+ARGS=""
+
+if [ $# -gt 3 ] ; then
+	shift 3
+	ARGS="$@"
+fi
+
+if [ ${FN:0:1} == "/" ] ; then
+	RUN=$FN
+
+	LISTFILE=".mc.list"
+	echo $RUN > $LISTFILE
+	OUTFILE=$ROOT_DIR/`basename $RUN`
+#	CALIB="danss_data_002101-17_calib.txt"
+
+	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
+else
+	RUNNUMBER=`printf "%6.6d" $FN`
+	RUN=`find -L /space/digi -name danss*${RUNNUMBER}_rawrec*.digi* -print -quit 2>/dev/null`
+	TMPFILE=tmp/${RUNNUMBER}.digi
+
+	if [ "x$RUN" == "x" ] ; then
+    		echo Run $RUNNUMBER not found
+	    	exit 10
+	fi
+
+	LISTFILE="${RUNNUMBER}.list"
+	echo $RUN > $LISTFILE
+
+	RUNDIR=`dirname $RUN`
+	CALIB=`find -L $RUNDIR -name "*calib*.txt" -print`
+
+	if [ "x$CALIB" == "x" ] ; then
+		echo "No calibration found in $RUNDIR - using default"
+		CALIB="danss_data_002101-17_calib.txt"
+	fi
+#		Workaround bad cell 20.4
+#	if [ $FN -ge 2835 -a $FN -lt 3400 ] ; then
+#		CALIB=/space/digi/digi_Real/period2016_02-06/digi_rawProc/v1.0/003400-3778/danss_data_003550-9_calib.txt
+#	fi
+
+	if [ $RUNNUMBER -lt 2066 ] ; then
+		TCALIB=tcalib_1000_ss.calib
+	elif [ $RUNNUMBER -lt 5469 ] ; then
+		TCALIB=tcalib_cmnew_ss-b.calib
+	else
+		TCALIB=tcalib_5512_ss-b.calib
+	fi
+	echo "TCALIB=$TCALIB"
+	
+	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS $ARGS
+	
+#	rm $TMPFILE
+fi
+
+rm $LISTFILE
