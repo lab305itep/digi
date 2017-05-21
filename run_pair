@@ -1,7 +1,7 @@
 #!/bin/bash
 
-EVENTDIR="/space/danss_root3"
-PAIRDIR="/space/danss_root2c"
+EVENTDIR=${EVENTDIR:-"/mnt/space1/danss_root4"}
+PAIRDIR="/space/danss_pair"
 
 if [ "X"$2 == "X" ] ; then
 	echo "Usage $0 first_number last_number"
@@ -16,11 +16,9 @@ for ((i=$1; $i < $2+1; i=$i+1)) ; do
 	FIN=$EVENTDIR"/danss_"$FN".root"
 	if [ -r $FIN ] ; then
 		FOUT=$PAIRDIR"/pair_"$FN".root"
-		FOUTR=$PAIRDIR"/random_"$FN".root"
 		LISTFILE="list_"$FN".txt"
 		echo $FIN > $LISTFILE
-		./pairbuilder4 $LISTFILE $FOUT >> $LOG_FILE 2>&1
-		./randombuilder4 $LISTFILE $FOUTR >> $LOG_FILE 2>&1
+		./pairbuilder5 $LISTFILE $FOUT >> $LOG_FILE 2>&1
 		rm -f $LISTFILE >> /dev/null 2>&1
 	else
 		echo "File "$FIN" not found." >> $LOG_FILE 2>&1
