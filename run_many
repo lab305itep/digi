@@ -11,7 +11,7 @@ LAST=$2
 TOTAL=$(($LAST - $FIRST + 1))
 FLAGS=${3:-"0x50002"}
 ROOT_DIR=${4:-"danss_root4"}
-USECPU=8
+USECPU=${5:-8}
 
 if [ $LAST -lt $FIRST ] ; then
 	echo Nothing to do !

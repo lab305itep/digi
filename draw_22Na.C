@@ -9,7 +9,8 @@ void draw_22Na(void)
 	gStyle->SetPadBottomMargin(0.15);
 	gStyle->SetLineWidth(2);
 	
-	TFile *fMc = new TFile("/space/danss_root3/mcold/mc_22Na_simple.root");
+//	TFile *fMc = new TFile("/space/danss_root3/mcold/mc_22Na_simple.root");
+	TFile *fMc = new TFile("/mnt/space1/danss_root4/mc_Na22center_simple.root");
 	TTree *tMc = (TTree *) fMc->Get("DanssEvent");
 	if (!tMc) {
 		printf("Can not open MC tree.\n");
@@ -35,22 +36,23 @@ void draw_22Na(void)
 	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 	TCut cz50("(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
 	TCut cc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 43) * (NeutronX[1] - 43) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
+	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
 	
-	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2");
-	tMc->Project("hMcHits", "SiPmCleanHits");
+	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc);
+	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc);
 	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50);
 	tExpA->Project("hExpA", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && cc);
 	tExpB->Project("hExpB", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && cc);
 	tExpA->Project("hHitsA", "SiPmCleanHits", cxyz && cc);
 	tExpB->Project("hHitsB", "SiPmCleanHits", cxyz && cc);
 	
+	hMc->Sumw2();
+	hMcHits->Sumw2();
 	hExpA->Sumw2();
 	hExpB->Sumw2();
-	hMcHits->Sumw2();
 	hHitsA->Sumw2();
 	hHitsB->Sumw2();
 	
-//	hExpC->Add(hExpA, hExpB, 1.0, -hExpA->Integral(3, 8) / hExpB->Integral(3, 8));
 	hExpC->Add(hExpA, hExpB, 1.0, -1.0);
 	hHitsC->Add(hHitsA, hHitsB, 1.0, -1.0);
 	hMcHits->Scale(hHitsC->Integral() / hMcHits->Integral());
@@ -72,9 +74,10 @@ void draw_22Na(void)
 	hMcHits->SetStats(0);
 	hHitsC->SetStats(0);
 	
-	TLegend *lg = new TLegend(0.8, 0.8, 0.95, 0.95);
+	TLegend *lg = new TLegend(0.65, 0.8, 0.95, 0.93);
 	lg->AddEntry(hMcHits, "Monte Carlo", "L");
 	lg->AddEntry(hHitsC,  "DANSS", "LP");
+	lg->SetTextSize(0.035);
 	
 	TCanvas *cMc = new TCanvas("cMc", "Monte Carlo", 800, 1000);
 	cMc->cd();
