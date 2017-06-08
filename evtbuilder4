@@ -32,18 +32,26 @@ if [ ${FN:0:1} == "/" ] ; then
 else
 	RUNNUMBER=`printf "%6.6d" $FN`
 	RUN=`find -L /space/digi -name danss*${RUNNUMBER}_rawrec*.digi* -print -quit 2>/dev/null`
-	TMPFILE=tmp/${RUNNUMBER}.digi
+	if [ "x"$RUN == "x" ] ; then
+		RUN=`find -L /space/digi -name danss*${RUNNUMBER}_000*.digi* -print -quit 2>/dev/null`
+	fi
 
 	if [ "x$RUN" == "x" ] ; then
     		echo Run $RUNNUMBER not found
 	    	exit 10
 	fi
 
+	TMPFILE=tmp/${RUNNUMBER}.digi
+
 	LISTFILE="${RUNNUMBER}.list"
 	echo $RUN > $LISTFILE
 
 	RUNDIR=`dirname $RUN`
-	CALIB=`find -L $RUNDIR -name "*calib*.txt" -print`
+	CALIB=`find -L $RUNDIR -name "*calib_saturCorr*.txt" -print`
+	
+	if [ "x$CALIB" == "x" ] ; then
+		CALIB=`find -L $RUNDIR -name "*calib*.txt" -print`
+	fi
 
 	if [ "x$CALIB" == "x" ] ; then
 		echo "No calibration found in $RUNDIR - using default"

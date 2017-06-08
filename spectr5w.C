@@ -69,3 +69,18 @@ void spectr_all(const char *fname = "danss_report_v4.root", TCut cAux = (TCut)""
 	fRoot->Close();
 }
 
+void spectr_sect(const char *fname = "danss_report_v4.root", TCut cAux = (TCut)"", double bgScale = 2.24)	// 5.6% from reactor OFF data
+{
+	char str[1024];
+	char *ptr;
+	int i;
+	const TCut csect[3] = {(TCut)"PositronX[2] <= 34.5", (TCut)"PositronX[2] > 34.5 && PositronX[2] <= 64.5", (TCut)"PositronX[2] > 64.5"};
+	
+	for (i=0; i<3; i++) {
+		strcpy(str, fname);
+		ptr = strstr(str, ".root");
+		if (!ptr) ptr = &str[strlen(str)];
+		sprintf(ptr, "-sect%d.root", i+1);
+		spectr_all(str, cAux && csect[i], bgScale);
+	}
+}

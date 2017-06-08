@@ -4,7 +4,7 @@ void digi_statone(int num)
 	double tm;
 	char start[64], stop[64];
 	
-	sprintf(fname, "danss_root3/danss_%6.6d.root", num);
+	sprintf(fname, "danss_root4/danss_%6.6d.root", num);
 	TFile *f = new TFile(fname);
 	if (!f->IsOpen()) {
 		printf("File %s not found\n", fname);
@@ -20,6 +20,7 @@ void digi_statone(int num)
 	tm = info->GetLeaf("gTime")->GetValueLong64() / 125.0E6;
 //	time_t tStart = info->GetLeaf("startTime")->GetValue();
 	time_t tStop = info->GetLeaf("stopTime")->GetValue();
+	int ipos = info->GetLeaf("position")->GetValue();
 	
 	TTree *evt = (TTree *) f->Get("DanssEvent");
 	if (!evt) {
@@ -44,15 +45,15 @@ void digi_statone(int num)
 //	
 	strftime(start, sizeof(start), "%F %R", localtime(&tStart));
 	strftime(stop , sizeof(stop) , "%R", localtime(&tStop));
-	printf("%4d  %s %s %5.0f   %8d %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f\n", 
-		num, start, stop, tm, N, N/tm, veto/tm, vetoOnly/tm, danssOnly/tm, gt1MeV/tm, gt3MeV/tm, gt20MeV/tm, positrons/tm, neutrons/tm);
+	printf("%6d %2d %s %s %5.0f   %8d %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f\n", 
+		num, ipos, start, stop, tm, N, N/tm, veto/tm, vetoOnly/tm, danssOnly/tm, gt1MeV/tm, gt3MeV/tm, gt20MeV/tm, positrons/tm, neutrons/tm);
 
 	f->Close();
 }
 
 void digi_stattitle(void)
 {
-	printf("Run    Start           Stop   len, s   Events   Trig   Veto  NoPMT NoVeto  >1MeV  >3MeV >20MeV     e+     n\n");
+	printf("Run   Pos Start           Stop   len, s   Events   Trig   Veto  NoPMT NoVeto  >1MeV  >3MeV >20MeV     e+     n\n");
 }
 
 void digi_statlist(void)

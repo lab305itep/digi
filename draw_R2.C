@@ -3,8 +3,12 @@ void draw_R2(void)
 //		Original data
 	double r[9] = {10.395, 11.395, 12.395, 10.7, 11.7, 12.7, 11.005, 12.005, 13.005};
 	double er[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+//		April 16 - March 17
 	double cnt[9] = {1878, 1577, 1361, 1851, 1572, 1321, 1585, 1341, 1140};
 	double ecnt[9] = {14, 17, 15, 14, 17, 14, 12, 15, 12};
+//		Oct 16 - May 17
+//	double cnt[9] = {1689, 1399, 1198, 1710, 1429, 1201, 1377, 1155, 958};
+//	double ecnt[9] = {8, 8, 6, 8, 8, 6, 7, 7, 5};
 	
 	TGraphErrors *gr;
 	TH1D *hst;
@@ -40,8 +44,8 @@ void draw_R2(void)
 	fR2->SetLineColor(kRed);
 	fR2->SetLineWidth(3);
 	hst = new TH1D("H", ";Distance to reactor core center, m;Events per day", 35, 10, 13.5);
-	hst->SetMinimum(1200);
-	hst->SetMaximum(2100);
+	hst->SetMinimum(900);
+	hst->SetMaximum(2000);
 	hst->GetXaxis()->SetLabelSize(0.06);
 	hst->GetYaxis()->SetLabelSize(0.06);
 	hst->GetXaxis()->SetTitleSize(0.06);
@@ -58,6 +62,6 @@ void draw_R2(void)
 	TLatex txt;
 	txt.SetTextSize(0.07);
 	sprintf(str, "#chi^{2}/n.d.f. = %6.2f/6", fR2->GetChisquare());
-	txt.DrawLatex(11.3, 2000, str);
+	txt.DrawLatex(11.3, 1800, str);
 }
 

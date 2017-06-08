@@ -10,7 +10,9 @@ void draw_60Co(void)
 	gStyle->SetLineWidth(2);
 	
 //	TFile *fMc = new TFile("/space/danss_root3/mcold/mc_60Co_simple.root");
-	TFile *fMc = new TFile("/mnt/space1/danss_root4/mc_Co60center_simple.root");
+//	TFile *fMc = new TFile("/mnt/space1/danss_root4/mc_Co60center_simple.root");
+//	TFile *fMc = new TFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/oldTransvProfile/mc_60Co_center_simple.root");
+	TFile *fMc = new TFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_simple.root");
 	TTree *tMc = (TTree *) fMc->Get("DanssEvent");
 	if (!tMc) {
 		printf("Can not open MC tree.\n");
