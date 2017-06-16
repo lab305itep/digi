@@ -461,7 +461,6 @@ void CleanByConfirmation(ReadDigiDataUser *user)
 	}
 }
 
-
 /*	Clean SiPM only if npix == 1 and no PMT confirmation	*/
 void CleanByConfirmation2(ReadDigiDataUser *user)
 {
@@ -497,7 +496,7 @@ void CleanByTime(ReadDigiDataUser *user)
 	} else {
 		tearly = SOMEEARLYTIME;
 	}
-	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && user->type(i) == SiPmHit && fabs(user->t(i) - tearly) <= TCUT) HitFlag[i] = -100;	// mark early hit candidates
+	for (i=0; i<N; i++) if (user->type(i) == SiPmHit && fabs(user->t(i) - tearly) <= TCUT) HitFlag[i] = -100;	// mark early hit candidates
 }
 
 void CreateDeadList(char *fname)

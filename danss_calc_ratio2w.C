@@ -108,6 +108,8 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	TH1D *hUp = new TH1D(strs, strl, 60, 1, 16);
 	n = sum_of_spectra(hUp, "u", periodmask, bgScale);
 	Cnt = n;
+	TH1D *hTmp = (TH1D *) hUp->Clone("hTmp");	// keep to subtract block #3
+	hUp->Add(hTmp, -0.0045);
 	hUp->Write();
 	hUp->SetLineColor(kRed);
 	hUp->SetFillColor(kRed-10);
@@ -123,6 +125,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	TH1D *hMid = new TH1D(strs, strl, 60, 1, 16);
 	n = sum_of_spectra(hMid, "m", periodmask, bgScale);
 	Cnt += n;
+	hMid->Add(hTmp, -0.0045);
 	hMid->Write();
 	hMid->SetLineColor(kGreen);
 	hMid->SetFillColor(kGreen-10);
@@ -136,6 +139,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	TH1D *hDown = new TH1D(strs, strl, 60, 1, 16);
 	n = sum_of_spectra(hDown, "d", periodmask, bgScale);
 	Cnt += n;
+	hDown->Add(hTmp, -0.0045);
 	hDown->Write();
 	hDown->SetLineColor(kBlue);
 	hDown->SetFillColor(kBlue-10);
@@ -149,6 +153,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	sprintf(strs, "%d events", Cnt);
 	txt.DrawLatexNDC(0.6, 0.5, strs);
 	cv->Update();
+	delete hTmp;
 }
 
 void draw_tail_hist(const char *title, const char *posmask)
@@ -334,15 +339,18 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hDown_30", "hUp_30", "hDownUpAll", "Ratio Down/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hDown_2", "hUp_2", "hDownUp1", "Ratio Down/Up April-June 16;Positron energy, MeV");
+	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up October 16 - May 17;Positron energy, MeV");
 
 	cv->cd(3);
-	draw_single_ratio("hDown_4", "hUp_4", "hDownUp2", "Ratio Down/Up October-December 16;Positron energy, MeV");
+	draw_single_ratio("hDown_2", "hUp_2", "hDownUp1", "Ratio Down/Up April-June 16;Positron energy, MeV");
 
 	cv->cd(4);
-	draw_single_ratio("hDown_8", "hUp_8", "hDownUp3", "Ratio Down/Up January-March 17;Positron energy, MeV");
+	draw_single_ratio("hDown_4", "hUp_4", "hDownUp2", "Ratio Down/Up October-December 16;Positron energy, MeV");
 
 	cv->cd(5);
+	draw_single_ratio("hDown_8", "hUp_8", "hDownUp3", "Ratio Down/Up January-March 17;Positron energy, MeV");
+
+	cv->cd(6);
 	draw_single_ratio("hDown_16", "hUp_16", "hDownUp4", "Ratio Down/Up April-May 17;Positron energy, MeV");
 
 	cv->Update();
@@ -356,15 +364,18 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hMid_30", "hUp_30", "hMidUpAll", "Ratio Middle/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hMid_2", "hUp_2", "hMidUp1", "Ratio Middle/Up April-June 16;Positron energy, MeV");
+	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up October 16 - May 17;Positron energy, MeV");
 
 	cv->cd(3);
-	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up October-December 17;Positron energy, MeV");
+	draw_single_ratio("hMid_2", "hUp_2", "hMidUp1", "Ratio Middle/Up April-June 16;Positron energy, MeV");
 
 	cv->cd(4);
-	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up January-March 17;Positron energy, MeV");
+	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up October-December 17;Positron energy, MeV");
 
 	cv->cd(5);
+	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up January-March 17;Positron energy, MeV");
+
+	cv->cd(6);
 	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up April-May 17;Positron energy, MeV");
 
 	cv->Update();
@@ -450,6 +461,8 @@ void danss_draw_sp2(const char *fname, double bgScale = 5.6/2.5)
 	lg = new TLegend(0.45, 0.75, 0.9, 0.9);
 	TH1D *hUp = new TH1D("hUp", "Positron spectrum All, UP;Positron energy, MeV;Events/(day*0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hUp, "u", 30, bgScale);
+	TH1D *hTmp = (TH1D *) hUp->Clone("hTmp");	// keep to subtract block #3
+	hUp->Add(hTmp, -0.0045);
 	hUp->SetLineColor(kRed);
 	hUp->SetFillColor(kRed-10);
 	hUp->GetYaxis()->SetLabelSize(0.06);
@@ -461,6 +474,7 @@ void danss_draw_sp2(const char *fname, double bgScale = 5.6/2.5)
 
 	TH1D *hDown = new TH1D("hDown", "Positron spectrum All, DOWN;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hDown, "d", 30, bgScale);
+	hDown->Add(hTmp, -0.0045);
 	hDown->SetLineColor(kBlue);
 	hDown->SetFillColor(kBlue-10);
 	hDown->Draw("same,hist,e");

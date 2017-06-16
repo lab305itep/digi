@@ -1,8 +1,7 @@
-#define NBINS	28
-void positron_spectrum2mcw(void)
+void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
 {
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
-	const Color_t fColor[4] = {kRed, kGreen, kBlue, kOrange};
+	const Color_t fColor[4] = {kRed, kBlue, kGreen, kOrange};
 	const char mcfile[4][128] = {
 		"/space/danss_root3/withdead-uncorr/mc_positron_235U_simple_newScale.root",
 		"/space/danss_root3/withdead-uncorr/mc_positron_238U_simple_newScale.root",
@@ -11,7 +10,7 @@ void positron_spectrum2mcw(void)
 	};
 	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
 	const char cmppart[3][20] = {"Begin", "Middle", "End"};
-	const char expname[] = "danss_report_4pw16_c25-calc.root";
+	const char expname[] = "danss_report_v4n-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
@@ -43,10 +42,11 @@ void positron_spectrum2mcw(void)
 	if (!fExp->IsOpen()) return;
 	hExpw = (TH1D*) fExp->Get("hSum");
 	if (!hExpw) return;
-	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", NBINS, 1, 8);
-	for (i=0; i<NBINS; i++) {
-		hExp->SetBinContent(i+1, hExpw->GetBinContent(i+1));
-		hExp->SetBinError(i+1, hExpw->GetBinError(i+1));
+	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", 
+		RangeMax - RangeMin + 1, hExpw->GetBinLowEdge(RangeMin), hExpw->GetBinLowEdge(RangeMax) + hExpw->GetBinWidth(RangeMax));
+	for (i=0; i<RangeMax - RangeMin + 1; i++) {
+		hExp->SetBinContent(i+1, hExpw->GetBinContent(i + RangeMin));
+		hExp->SetBinError(i+1, hExpw->GetBinError(i + RangeMin));
 	}
 	hExp->SetLineColor(kBlack);
 	hExp->SetMarkerColor(kBlack);
@@ -56,7 +56,7 @@ void positron_spectrum2mcw(void)
 	for (i=0; i<4; i++) {
 		sprintf(strs, "h%s", fuel[i]);
 		sprintf(strl, "Positron spectrum of %s;MeV", fuel[i]);
-		hMc[i] = new TH1D(strs, strl, NBINS, 1, 8);
+		hMc[i] = new TH1D(strs, strl, RangeMax - RangeMin + 1, hExpw->GetBinLowEdge(RangeMin), hExpw->GetBinLowEdge(RangeMax) + hExpw->GetBinWidth(RangeMax));
 		hMc[i]->SetLineColor(fColor[i]);
 	}
 	for (i=0; i<4; i++) {
@@ -76,8 +76,7 @@ void positron_spectrum2mcw(void)
 		hMcMixt[j] = (TH1D*) hMc[0]->Clone(strs);
 		hMcMixt[j]->Reset();
 		for (i=0; i<4; i++) hMcMixt[j]->Add(hMc[i], fuelmix[j][i]);
-//		hMcMixt[j]->Scale(hExp->Integral(3, NBINS-5) / hMcMixt[j]->Integral(3, NBINS-5));
-		hMcMixt[j]->Scale(hExp->Integral() / hMcMixt[j]->Integral());
+		hMcMixt[j]->Scale(hExp->Integral(NormMin, NormMax) / hMcMixt[j]->Integral(NormMin, NormMax));
 		hMcMixt[j]->SetLineColor(fColor[j]);
 		hMcMixt[j]->SetLineWidth(2);
 		hMcMixt[j]->GetYaxis()->SetLabelSize(0.05);
@@ -88,7 +87,7 @@ void positron_spectrum2mcw(void)
 	for (j=0; j<3; j++) hMcMixt[j]->Write();
 	fSave.Close();
 	
-	hRatio = (TH1D *) hMcMixt[2]->Clone("hRatioExpMc");
+	hRatio = (TH1D *) hMcMixt[1]->Clone("hRatioExpMc");
 	hRatio->Divide(hExp, hMcMixt[2]);
 	hRatio->SetTitle(";Positron energy, MeV;#frac{N_{EXP}}{N_{MC}}");
 
@@ -105,14 +104,16 @@ void positron_spectrum2mcw(void)
 	lm->Draw();
 	
 	TCanvas *cv = new TCanvas("CV", "Exp & MC", 1200, 900);
-	for (j=0; j<3; j++) hMcMixt[j]->Draw((j) ? "same,hist" : "hist");
+//	for (j=0; j<3; j++) hMcMixt[j]->Draw((j) ? "same,hist" : "hist");
+	hMcMixt[1]->Draw("hist");
 	hExp->Draw("same");
 	TLegend *lg = new TLegend(0.6, 0.75, 0.9, 0.9);
 	lg->AddEntry(hExp, "DANSS data", "LP");
-	for (j=0; j<3; j++) {
-		sprintf(strs, "MC - %s", cmppart[j]);
-		lg->AddEntry(hMcMixt[j], strs, "L");
-	}
+	lg->AddEntry(hMcMixt[1], "Monte Carlo", "L");
+//	for (j=0; j<3; j++) {
+//		sprintf(strs, "MC - %s", cmppart[j]);
+//		lg->AddEntry(hMcMixt[j], strs, "L");
+//	}
 	lg->Draw();
 	
 	TCanvas *cr = new TCanvas("CR", "Ratio", 1200, 500);

@@ -84,3 +84,54 @@ void spectr_sect(const char *fname = "danss_report_v4.root", TCut cAux = (TCut)"
 		spectr_all(str, cAux && csect[i], bgScale);
 	}
 }
+
+TH1D *count_z5(int mask, int run_from, int run_to, double bgnd, TCut cAux)
+{
+	char str[256];
+	
+//		Set cuts
+	TCut cVeto("gtFromVeto > 60");
+	TCut cMuonA("gtFromVeto == 0");
+	TCut cMuonB("gtFromVeto > 0 && gtFromVeto <= 60");
+	TCut cIso("(gtFromPrevious > 45 && gtToNext > 80 && EventsBetween == 0) || (gtFromPrevious == gtFromVeto)");
+	TCut cShower("gtFromVeto > 200 || DanssEnergy < 300");
+	TCut cX("PositronX[0] < 0 || (PositronX[0] > 2 && PositronX[0] < 94)");
+	TCut cY("PositronX[1] < 0 || (PositronX[1] > 2 && PositronX[1] < 94)");
+	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
+	TCut c20("gtDiff > 2");
+        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+	TCut cGammaMax("AnnihilationMax < 0.8");
+        TCut cPe("PositronEnergy > 1");
+	TCut cRXY("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
+        TCut cR1("Distance < 45");
+        TCut cR2("Distance < 55");
+        TCut cRZ("fabs(DistanceZ) < 40");
+        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+        TCut cN("NeutronEnergy > 3.5");
+	TCut cSel = cX && cY && cZ && cR && c20 && cGamma && cGammaMax && cN && cPe && cIso && cShower && cAux;
+	TCut cSig = cSel && cVeto;
+	TCut cBgnd = cSel && (!cVeto);
+
+	TH1D *hSig  = new TH1D("hSigz5", ";Z, cm", 1000, 0, 100);
+	TH1D *hBgnd = new TH1D("hBgndz5", ";Z, cm", 1000, 0, 100);
+	TH1D *hRes  = new TH1D("hResz5", ";Z, cm", 1000, 0, 100);
+	
+	HPainter2 *ptr = new HPainter2(mask, run_from, run_to);
+	ptr->Project(hSig,  "PositronX[2]+0.5", cSig);
+	ptr->Project(hBgnd, "PositronX[2]+0.5", cBgnd);
+
+	hRes->Add(hSig, hBgnd, 1, -bgnd);
+	delete ptr;
+	printf("MeanZ=%f\n", hRes->GetMean());
+	return hRes;
+}
+
+void z5_sect(int mask, int run_from, int run_to, double bgnd)
+{
+	int i;
+	const TCut csect[3] = {(TCut)"PositronX[2] <= 34.5", (TCut)"PositronX[2] > 34.5 && PositronX[2] <= 64.5", (TCut)"PositronX[2] > 64.5"};
+	for (i=0; i<3; i++) {
+		printf("Sect %d: ", i + 1);
+		count_z5(mask, run_from, run_to, bgnd, csect[i]);
+	}
+}

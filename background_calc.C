@@ -246,7 +246,7 @@ void background_calcgt(const char *fname = "background_plotsgt.root", int run_fi
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
 	TCut cRXY("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
 	TCut c20("gtDiff > 2");
-        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+        TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10 && AnnihilationMax < 0.8" );
         TCut cPe("PositronEnergy > 1");
         TCut cR60("Distance < 60");
         TCut cR1("Distance < 45");

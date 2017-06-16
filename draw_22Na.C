@@ -62,10 +62,12 @@ void project_hits_distrib(TChain *chain, TH1D *hist)
 		chain->GetEntry(i);
 //	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 		if (EVT.NeutronX[0] < 0 || EVT.NeutronX[1] < 0 || EVT.NeutronX[2] < 0) continue;
-//	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
+//	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
 		r2 = 0;
 		for (j=0; j<3; j++) r2 += (EVT.NeutronX[0] - 48) * (EVT.NeutronX[0] - 48);
-		if (r2 >= 100) continue;
+		if (r2 >= 400) continue;
+//	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
+		if (EVT.VetoCleanHits >= 2 || EVT.VetoCleanEnergy >= 4) continue;
 		for (j=0; j<EVT.NHits; j++) if (HitArray.type[j].type == 0) hist->Fill(HitArray.E[j]);
 	}
 }
@@ -85,10 +87,12 @@ void project_mc_random_energy(TChain *chain, TH1D *hist)
 		chain->GetEntry(i);
 //	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 		if (EVT.NeutronX[0] < 0 || EVT.NeutronX[1] < 0 || EVT.NeutronX[2] < 0) continue;
-//	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
+//	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
 		r2 = 0;
 		for (j=0; j<3; j++) r2 += (EVT.NeutronX[0] - 48) * (EVT.NeutronX[0] - 48);
-		if (r2 >= 100) continue;
+		if (r2 >= 400) continue;
+//	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
+		if (EVT.VetoCleanHits >= 2 || EVT.VetoCleanEnergy >= 4) continue;
 		Esum = 0;
 		for (j=0; j<EVT.NHits; j++) if (HitArray.type[j].type == 0 || HitArray.type[j].type == 1) Esum += HitArray.E[j] * random->Gaus(1.0, 0.26);
 		hist->Fill(Esum/2);
@@ -99,8 +103,10 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 {
 	char str[256];
 	
-	gStyle->SetOptStat("i");
-	gStyle->SetOptFit(1);
+//	gStyle->SetOptStat("i");
+//	gStyle->SetOptFit(1);
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(0);
 	gStyle->SetTitleXSize(0.05);
 	gStyle->SetTitleYSize(0.05);
 	gStyle->SetLabelSize(0.05);
@@ -120,6 +126,14 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	TH1D *hExpA = new TH1D("hExpA", str, 50, 0, 5);
 	TH1D *hExpB = new TH1D("hExpB", str, 50, 0, 5);
 	TH1D *hExpC = new TH1D("hExpC", str, 50, 0, 5);
+	sprintf(str, "SiPM energy deposit in %s decay;E, MeV", name);
+	TH1D *hExpSiPMA = new TH1D("hExpSiPMA", str, 50, 0, 5);
+	TH1D *hExpSiPMB = new TH1D("hExpSiPMB", str, 50, 0, 5);
+	TH1D *hExpSiPMC = new TH1D("hExpSiPMC", str, 50, 0, 5);
+	sprintf(str, "PMT energy deposit in %s decay;E, MeV", name);
+	TH1D *hExpPMTA = new TH1D("hExpPMTA", str, 50, 0, 5);
+	TH1D *hExpPMTB = new TH1D("hExpPMTB", str, 50, 0, 5);
+	TH1D *hExpPMTC = new TH1D("hExpPMTC", str, 50, 0, 5);
 	sprintf(str, "Number of hits from %s decay", name);
 	TH1D *hHitsA = new TH1D("hHitsA", str, 20, 0, 20);
 	TH1D *hHitsB = new TH1D("hHitsB", str, 20, 0, 20);
@@ -130,16 +144,21 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 
 	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 	TCut cz50("(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
-	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
+	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
+	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
 	
-	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc);
-	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc);
+	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc && cVeto);
 	project_hits_distrib(tMc, hMcE);
-	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50);
-	tExpA->Project("hExpA", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc);
-	tExpB->Project("hExpB", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc);
-	tExpA->Project("hHitsA", "SiPmCleanHits", cxyz && ccc);
-	tExpB->Project("hHitsB", "SiPmCleanHits", cxyz && ccc);
+	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50 && cVeto);
+	tExpA->Project("hExpA", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	tExpB->Project("hExpB", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	tExpA->Project("hExpSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tExpB->Project("hExpSiPMB", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tExpA->Project("hExpPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tExpB->Project("hExpPMTB", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tExpA->Project("hHitsA", "SiPmCleanHits", cxyz && ccc && cVeto);
+	tExpB->Project("hHitsB", "SiPmCleanHits", cxyz && ccc && cVeto);
 	project_hits_distrib(tExpA, hEA);
 	project_hits_distrib(tExpB, hEB);
 	project_mc_random_energy(tMc, hMcR);
@@ -150,12 +169,18 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hMcE->Sumw2();
 	hExpA->Sumw2();
 	hExpB->Sumw2();
+	hExpSiPMA->Sumw2();
+	hExpSiPMB->Sumw2();
+	hExpPMTA->Sumw2();
+	hExpPMTB->Sumw2();
 	hHitsA->Sumw2();
 	hHitsB->Sumw2();
 	hEA->Sumw2();
 	hEB->Sumw2();
 	
 	hExpC->Add(hExpA, hExpB, 1.0, -rAB);
+	hExpSiPMC->Add(hExpSiPMA, hExpSiPMB, 1.0, -rAB);
+	hExpPMTC->Add(hExpPMTA, hExpPMTB, 1.0, -rAB);
 	hHitsC->Add(hHitsA, hHitsB, 1.0, -rAB);
 	hEC->Add(hEA, hEB, 1.0, -rAB);
 	hMcHits->Scale(hHitsC->Integral() / hMcHits->Integral());
@@ -169,6 +194,8 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hXY->GetYaxis()->SetLabelSize(0.045);
 	hXY->GetZaxis()->SetLabelSize(0.05);
 	hExpC->GetYaxis()->SetLabelSize(0.05);
+	hExpSiPMC->GetYaxis()->SetLabelSize(0.05);
+	hExpPMTC->GetYaxis()->SetLabelSize(0.05);
 	hEC->GetYaxis()->SetLabelSize(0.05);
 	hHitsC->GetYaxis()->SetLabelSize(0.05);
 	hMcHits->SetLineColor(kRed);
@@ -212,8 +239,20 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	
 	TCanvas *cExp = new TCanvas("cExp", "Danss", 800, 1000);
 	cExp->cd();
-	hExpC->Fit("gaus", "", "", 1.3, 2.7);
+	hExpC->SetLineWidth(2);
+	hExpC->Draw();
+//	hExpC->Fit("gaus", "", "", 1.3, 2.7);
 	cExp->SaveAs(str);
+
+	TCanvas *cExpSiPM = new TCanvas("cExpSiPM", "Danss SiPM", 800, 1000);
+	cExpSiPM->cd();
+	hExpSiPMC->Fit("gaus", "", "", 1.3, 2.7);
+	cExpSiPM->SaveAs(str);
+
+	TCanvas *cExpPMT = new TCanvas("cExpPMT", "Danss PMT", 800, 1000);
+	cExpPMT->cd();
+	hExpPMTC->Fit("gaus", "", "", 1.3, 2.7);
+	cExpPMT->SaveAs(str);
 	
 	TCanvas *cHits = new TCanvas("cHits", "Hits", 800, 1000);
 	cHits->cd();
@@ -233,81 +272,104 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	cE->SaveAs(str);
 }
 
-void draw_22Na(void)
+void draw_22Na(int iFull, int iSer)
 {
-//	TFile *fMc = new TFile("/space/danss_root3/mcold/mc_22Na_simple.root");
-//	TFile *fMc = new TFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/oldTransvProfile/mc_22Na_center_simple.root");
+	char str[128];
 	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_simple.root");
+	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_transcodeNew.root");
 	TChain *tExpA = new TChain("DanssEvent");
-//	tExpA->AddFile("/space/danss_root3/danss_data_002197_000.root");
-//	tExpA->AddFile("/space/danss_root3/danss_data_002198_000.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_020243.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_020244.root");
 	TChain *tExpB = new TChain("DanssEvent");
-//	tExpB->AddFile("/space/danss_root3/danss_data_002193_000.root");
-//	tExpB->AddFile("/space/danss_root3/danss_data_002194_000.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
-	draw_Src(tMc, tExpA, tExpB, 0.977, "^{22}Na", "22Na");
+	switch (2*iSer + iFull) {
+	case 0:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002197.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002198.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286.root");
+		break;
+	case 1:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002197_000.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002198_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286_000.root");
+		break;
+	case 2:
+		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012380.root");
+		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012381.root");
+		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012301.root");
+		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
+		break;
+	case 4:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020243.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020244.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
+		break;
+	case 5:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020243_000.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020244_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253_000.root");
+		break;
+	default:
+		printf("Not yet.\n");
+		return;
+	}
+	sprintf(str, "22Na_%d_%s_20cm", iSer, (iFull) ? "full" : "fast");
+	draw_Src(tMc, tExpA, tExpB, 0.977, "^{22}Na", str);
 }
 
-void draw_60Co(void)
+void draw_60Co(int iFull, int iSer)
 {
+	char str[128];
 	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_simple.root");
+	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_transcodeNew.root");
 	TChain *tExpA = new TChain("DanssEvent");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_020233.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_020234.root");
 	TChain *tExpB = new TChain("DanssEvent");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
-	draw_Src(tMc, tExpA, tExpB, 1.002, "^{60}Co", "60Co");
+	switch (2*iSer + iFull) {
+	case 0:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002106.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002107.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286.root");
+		break;
+	case 1:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002106_000.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_002107_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286_000.root");
+		break;
+	case 2:
+		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012310.root");
+		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012311.root");
+		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012301.root");
+		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
+		break;
+	case 4:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020233.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020234.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
+		break;
+		
+	case 5:
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020233_000.root");
+		tExpA->AddFile("/mnt/space1/danss_root4/danss_020234_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252_000.root");
+		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253_000.root");
+		break;
+	default:
+		printf("Not yet.\n");
+		return;
+	}
+	sprintf(str, "60Co_%d_%s_20cm", iSer, (iFull) ? "full" : "fast");
+	draw_Src(tMc, tExpA, tExpB, 0.977, "^{60}Co", str);
 }
 
-void draw_old22Na(void)
+void draw_all(void)
 {
-	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_simple.root");
-	TChain *tExpA = new TChain("DanssEvent");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002197.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002198.root");
-	TChain *tExpB = new TChain("DanssEvent");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002193.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002194.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002306.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002307.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002118.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002119.root");
-	draw_Src(tMc, tExpA, tExpB, 3124.0/3103.0, "^{22}Na", "22Na_old");
-}
-
-void draw_old60Co(void)
-{
-	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_simple.root");
-	TChain *tExpA = new TChain("DanssEvent");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002106.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002107.root");
-	TChain *tExpB = new TChain("DanssEvent");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002102.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002103.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002118.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002119.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002306.root");
-//	tExpB->AddFile("/mnt/space1/danss_root4/danss_002307.root");
-	draw_Src(tMc, tExpA, tExpB, 2882.0/3024.0, "^{60}Co", "60Co_old");
-}
-
-void draw_oldDummy(void)
-{
-	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_simple.root");
-	TChain *tExpA = new TChain("DanssEvent");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002620.root");
-	tExpA->AddFile("/mnt/space1/danss_root4/danss_002621.root");
-	TChain *tExpB = new TChain("DanssEvent");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002620_000.root");
-	tExpB->AddFile("/mnt/space1/danss_root4/danss_002621_000.root");
-	draw_Src(tMc, tExpA, tExpB, 1.0, "No source", "2620_cmp");
+	int i;
+	for (i=0; i<6; i++) {
+		draw_22Na(i&1, i/2);
+		draw_60Co(i&1, i/2);
+	}
 }
