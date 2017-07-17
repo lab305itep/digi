@@ -1,4 +1,4 @@
-#define NBINS	30
+#define NBINS	28
 void pos_sp2mcrand_wl(double sigma = 0, double coef = 1)
 {
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
@@ -11,7 +11,7 @@ void pos_sp2mcrand_wl(double sigma = 0, double coef = 1)
 	};
 	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
 	const char cmppart[3][20] = {"Begin", "Middle", "End"};
-	const char expname[] = "danss_report_wl-calc.root";
+	const char expname[] = "danss_report_v4n-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
@@ -89,7 +89,7 @@ void pos_sp2mcrand_wl(double sigma = 0, double coef = 1)
 	if (!fExp->IsOpen()) return;
 	hExpw = (TH1D*) fExp->Get("hSum");
 	if (!hExpw) return;
-	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", NBINS, 0.5, 8);
+	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", NBINS, 1, 8);
 	for (i=0; i<NBINS; i++) {
 		hExp->SetBinContent(i+1, hExpw->GetBinContent(i+1));
 		hExp->SetBinError(i+1, hExpw->GetBinError(i+1));
@@ -102,7 +102,7 @@ void pos_sp2mcrand_wl(double sigma = 0, double coef = 1)
 	for (i=0; i<4; i++) {
 		sprintf(strs, "h%s", fuel[i]);
 		sprintf(strl, "Positron spectrum of %s MC setup;MeV", fuel[i]);
-		hMc[i] = new TH1D(strs, strl, NBINS, 0.5, 8);
+		hMc[i] = new TH1D(strs, strl, NBINS, 1, 8);
 		hMc[i]->SetLineColor(fColor[i]);
 	}
 	for (i=0; i<4; i++) {

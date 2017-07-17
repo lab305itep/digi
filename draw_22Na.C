@@ -123,9 +123,9 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	TH1D *hMcE = new TH1D("hMcE", "Monte Carlo hit energy;E, MeV", 60, 0, 3);
 	TH2D *hXY = new TH2D("hXY", "XY distribution of gamma flash center;X, cm;Y, cm", 25, 0, 100, 25, 0, 100);
 	sprintf(str, "DANSS energy deposit in %s decay;E, MeV", name);
-	TH1D *hExpA = new TH1D("hExpA", str, 50, 0, 5);
-	TH1D *hExpB = new TH1D("hExpB", str, 50, 0, 5);
-	TH1D *hExpC = new TH1D("hExpC", str, 50, 0, 5);
+	TH1D *hExpA = new TH1D("hExpA", str, 60, 1, 7);
+	TH1D *hExpB = new TH1D("hExpB", str, 60, 1, 7);
+	TH1D *hExpC = new TH1D("hExpC", str, 60, 1, 7);
 	sprintf(str, "SiPM energy deposit in %s decay;E, MeV", name);
 	TH1D *hExpSiPMA = new TH1D("hExpSiPMA", str, 50, 0, 5);
 	TH1D *hExpSiPMB = new TH1D("hExpSiPMB", str, 50, 0, 5);
@@ -240,8 +240,8 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	TCanvas *cExp = new TCanvas("cExp", "Danss", 800, 1000);
 	cExp->cd();
 	hExpC->SetLineWidth(2);
-	hExpC->Draw();
-//	hExpC->Fit("gaus", "", "", 1.3, 2.7);
+//	hExpC->Draw();
+	hExpC->Fit("gaus", "", "", 1.3, 2.7);
 	cExp->SaveAs(str);
 
 	TCanvas *cExpSiPM = new TCanvas("cExpSiPM", "Danss SiPM", 800, 1000);

@@ -74,7 +74,7 @@ void draw_R2m(void)
 	MyMinuit->DefineParameter(2, "EffDown", 1, 0.1, 0.5, 1.5);
 	MyMinuit->DefineParameter(3, "Shift", 0, 0.1, -10, 10);
 	MyMinuit->DefineParameter(4, "Size", 3, 1, 0, 10);
-//	MyMinuit->FixParameter(3);
+	MyMinuit->FixParameter(3);
 	MyMinuit->FixParameter(4);
 	MyMinuit->Migrad();
 	MyMinuit->GetParameter(0, C, eC);
