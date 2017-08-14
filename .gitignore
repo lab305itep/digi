@@ -2,3 +2,6 @@
 *.root
 *~
 *.png
+*.d
+*.so
+*.pdf

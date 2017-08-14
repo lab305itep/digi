@@ -1,4 +1,4 @@
-const struct {
+struct {
 	double r[9] = {10.412, 11.412, 12.412, 10.7, 11.7, 12.7, 10.999, 11.999, 12.999};
 //		All but very old
 	double cnt[9] = {1681, 1392, 1191, 1702, 1421, 1193, 1371, 1148, 952};
@@ -63,6 +63,7 @@ void draw_R2m(void)
 	int i, irc;
 	char str[1024];
 	TF1 *fR2;
+	TVirtualPad *pd;
 	
 	gStyle->SetOptStat(0);
 	gStyle->SetOptFit(0);
@@ -109,8 +110,8 @@ void draw_R2m(void)
 	fR2->SetLineWidth(3);
 	
 	hst = new TH1D("H", ";Distance to reactor core center, m;Events per day", 35, 10, 13.5);
-	hst->SetMinimum(900);
-	hst->SetMaximum(2000);
+	hst->SetMinimum(DataArray.cnt[4] * 0.5);
+	hst->SetMaximum(DataArray.cnt[4] * 1.5);
 	hst->GetXaxis()->SetLabelSize(0.06);
 	hst->GetYaxis()->SetLabelSize(0.06);
 	hst->GetXaxis()->SetTitleSize(0.06);
@@ -118,25 +119,28 @@ void draw_R2m(void)
 	hst->GetYaxis()->SetTitleOffset(1.25);
 
 	hstd = new TH1D("H", ";Distance to reactor core center, m;Events per day", 35, 10, 13.5);
-	hstd->SetMinimum(-50);
-	hstd->SetMaximum(50);
+	hstd->SetMinimum(-40);
+	hstd->SetMaximum(40);
 	hstd->GetXaxis()->SetLabelSize(0.06);
 	hstd->GetYaxis()->SetLabelSize(0.06);
 	hstd->GetXaxis()->SetTitleSize(0.06);
 	hstd->GetYaxis()->SetTitleSize(0.06);
 	hstd->GetYaxis()->SetTitleOffset(1.25);
 	
+	TCanvas *cv = new TCanvas("CV", "R2", 800, 1200);
+	cv->Divide(1, 2);
 //		Do common fit and draw
-	TCanvas *cv = new TCanvas("CV", "R2", 1200, 900);
-	cv->SetLeftMargin(0.15);
-	cv->SetBottomMargin(0.12);
+	pd = cv->cd(1);
+	pd->SetLeftMargin(0.15);
+	pd->SetBottomMargin(0.15);
+	pd->SetTopMargin(0.03);
 	hst->Draw();
 	gr->Draw("p");
 	fR2->Draw("same");
 	TLatex txt;
 	txt.SetTextSize(0.07);
 	sprintf(str, "#chi^{2}/n.d.f. = %6.2f/5", fmin);
-	txt.DrawLatex(11.3, 1800, str);
+	txt.DrawLatex(11.3, DataArray.cnt[4] * 1.3, str);
 //		Draw difference
 	for (i=0; i<9; i++) dcnt[i] = ccnt[i] - fR2->Eval(DataArray.r[i]);
 	grd = new TGraphErrors(9, DataArray.r, dcnt, er, eccnt);
@@ -146,10 +150,41 @@ void draw_R2m(void)
 	grd->SetMarkerColor(kBlue);
 	grd->SetMarkerSize(2);
 	
-	cv = new TCanvas("CVD", "R2 difference", 1200, 900);
-	cv->SetLeftMargin(0.15);
-	cv->SetBottomMargin(0.12);
+	pd = cv->cd(2);
+	pd->SetLeftMargin(0.15);
+	pd->SetBottomMargin(0.15);
+	pd->SetTopMargin(0.03);
 	hstd->Draw();
 	grd->Draw("p");
 }
 
+void fill_data(double e_min, double e_max, int mask)
+{
+	const char name_pattern[] = "danss_report_v4n-sect%d-calc.root";
+	const char pos[3][20] = {"hUp_%d", "hMid_%d", "hDown_%d"};
+	char fname[1024];
+	char cpos[32];
+	int i, j;
+	TFile *f;
+	TH1* h;
+	double val, err;
+	
+	for (i=0; i<3; i++) {
+		sprintf(fname, name_pattern, 3-i);
+		f = new TFile(fname);
+		if (!f->IsOpen()) return;
+		for (j=0; j<3; j++) {
+			sprintf(cpos, pos[j], mask);
+			h = (TH1*) f->Get(cpos);
+			if (!h) {
+				printf("Something is wrong: %d %d %s.\n", i, j, cpos);
+				return;
+			}
+			val = h->IntegralAndError(h->FindBin(e_min), h->FindBin(e_max), err);
+			DataArray.cnt[3*i+j] = val;
+			DataArray.ecnt[3*i+j] = err;
+			printf("%d %d %f +- %f\n", i, j, val, err);
+		}
+		f->Close();
+	}
+}
