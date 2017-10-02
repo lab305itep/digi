@@ -29,3 +29,5 @@ mupairbuilder : mupairbuilder.cpp
 cmbuilder : cmbuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
+mu12B : mu12B.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`

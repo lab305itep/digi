@@ -10,7 +10,7 @@ void Add2Chain(TChain *ch, int run_from, int run_to, int mask, const char *f_tem
 	f = fopen(stat_file_name, "rt");
 	if (!f) {
 		printf("Stat file %s not found: %m\n", stat_file_name);
-		return -1;
+		return;
 	}
 
 	N = 0;

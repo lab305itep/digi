@@ -103,19 +103,23 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 {
 	char str[256];
 	
-//	gStyle->SetOptStat("i");
-//	gStyle->SetOptFit(1);
-	gStyle->SetOptStat(0);
-	gStyle->SetOptFit(0);
+	gStyle->SetOptStat("i");
+	gStyle->SetOptFit(1);
+//	gStyle->SetOptStat(0);
+//	gStyle->SetOptFit(0);
 	gStyle->SetTitleXSize(0.05);
 	gStyle->SetTitleYSize(0.05);
 	gStyle->SetLabelSize(0.05);
 	gStyle->SetPadLeftMargin(0.15);
 	gStyle->SetPadBottomMargin(0.15);
-	gStyle->SetLineWidth(2);
+//	gStyle->SetLineWidth(4);
 	
 	sprintf(str, "Monte Carlo energy deposit in %s decay;E, MeV", name);
 	TH1D *hMc = new TH1D("hMc", str, 50, 0, 5);
+	sprintf(str, "Monte Carlo SiPM energy deposit in %s decay;E, MeV", name);
+	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 50, 0, 5);
+	sprintf(str, "Monte Carlo PMT energy deposit in %s decay;E, MeV", name);
+	TH1D *hMcPMT = new TH1D("hMcPMT", str, 50, 0, 5);
 	sprintf(str, "Monte Carlo energy deposit in %s decay with random;E, MeV", name);
 	TH1D *hMcR = new TH1D("hMcR", str, 50, 0, 5);
 	sprintf(str, "Monte Carlo number of hits from %s decay", name);
@@ -148,6 +152,8 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
 	
 	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	tMc->Project("hMcSiPM", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tMc->Project("hMcPMT", "PmtCleanEnergy", cxyz && ccc && cVeto);
 	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc && cVeto);
 	project_hits_distrib(tMc, hMcE);
 	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50 && cVeto);
@@ -164,6 +170,8 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	project_mc_random_energy(tMc, hMcR);
 	
 	hMc->Sumw2();
+	hMcSiPM->Sumw2();
+	hMcPMT->Sumw2();
 	hMcR->Sumw2();
 	hMcHits->Sumw2();
 	hMcE->Sumw2();
@@ -187,6 +195,8 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hMcE->Scale(hEC->Integral() / hMcE->Integral());
 
 	hMc->GetYaxis()->SetLabelSize(0.05);
+	hMcSiPM->GetYaxis()->SetLabelSize(0.05);
+	hMcPMT->GetYaxis()->SetLabelSize(0.05);
 	hMcR->GetYaxis()->SetLabelSize(0.05);
 	hMcHits->GetYaxis()->SetLabelSize(0.05);
 	hMcE->GetYaxis()->SetLabelSize(0.05);
@@ -194,6 +204,7 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hXY->GetYaxis()->SetLabelSize(0.045);
 	hXY->GetZaxis()->SetLabelSize(0.05);
 	hExpC->GetYaxis()->SetLabelSize(0.05);
+	hExpC->SetLineWidth(2);
 	hExpSiPMC->GetYaxis()->SetLabelSize(0.05);
 	hExpPMTC->GetYaxis()->SetLabelSize(0.05);
 	hEC->GetYaxis()->SetLabelSize(0.05);
@@ -220,77 +231,67 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	lg->AddEntry(hHitsC,  "DANSS", "LP");
 	lg->SetTextSize(0.035);
 	
-	TCanvas *cMc = new TCanvas("cMc", "Monte Carlo", 800, 1000);
-	cMc->cd();
+	TCanvas *cMc = new TCanvas("cMc", "Monte Carlo", 1200, 800);
+	cMc->Divide(2, 2);
+	cMc->cd(1);
 	hMc->Fit("gaus", "", "", 1.5, 2.7);
+	cMc->cd(2);
+	hMcSiPM->Fit("gaus", "", "", 1.5, 2.7);
+	cMc->cd(3);
+	hMcPMT->Fit("gaus", "", "", 1.5, 2.7);
+	cMc->cd(4);
+	hMcR->Fit("gaus", "", "", 1.5, 2.7);
 	sprintf(str, "%s.pdf(", fname);
 	cMc->SaveAs(str);
 
-	TCanvas *cMcR = new TCanvas("cMcR", "Monte Carlo", 800, 1000);
-	cMcR->cd();
-	hMcR->Fit("gaus", "", "", 1.5, 2.7);
-	sprintf(str, "%s.pdf", fname);
-	cMcR->SaveAs(str);
 	
-	TCanvas *cXY = new TCanvas("cXY", "DANSS XY", 800, 800);
-	cXY->cd();
+	TCanvas *cExp = new TCanvas("cExp", "Data", 1200, 800);
+	cExp->Divide(2, 2);
+	cExp->cd(1);
 	hXY->Draw("colz");
-	cXY->SaveAs(str);
-	
-	TCanvas *cExp = new TCanvas("cExp", "Danss", 800, 1000);
-	cExp->cd();
-	hExpC->SetLineWidth(2);
-//	hExpC->Draw();
+	cExp->cd(2);
 	hExpC->Fit("gaus", "", "", 1.3, 2.7);
+	cExp->cd(3);
+	hExpSiPMC->Fit("gaus", "", "", 1.3, 2.7);
+	cExp->cd(4);
+	hExpPMTC->Fit("gaus", "", "", 1.3, 2.7);
 	cExp->SaveAs(str);
 
-	TCanvas *cExpSiPM = new TCanvas("cExpSiPM", "Danss SiPM", 800, 1000);
-	cExpSiPM->cd();
-	hExpSiPMC->Fit("gaus", "", "", 1.3, 2.7);
-	cExpSiPM->SaveAs(str);
-
-	TCanvas *cExpPMT = new TCanvas("cExpPMT", "Danss PMT", 800, 1000);
-	cExpPMT->cd();
-	hExpPMTC->Fit("gaus", "", "", 1.3, 2.7);
-	cExpPMT->SaveAs(str);
-	
-	TCanvas *cHits = new TCanvas("cHits", "Hits", 800, 1000);
-	cHits->cd();
+	TCanvas *cHits = new TCanvas("cHits", "Hits", 1200, 800);
+	cHits->Divide(2, 1);
+	cHits->cd(1);
 	hHitsC->Draw();
 	hMcHits->Draw("same,hist");
 	lg->Draw();
-	cHits->Update();
-	cHits->SaveAs(str);
-
-	TCanvas *cE = new TCanvas("cE", "Hit energy", 800, 1000);
-	cE->cd();
+	cHits->cd(2);
 	hEC->Draw();
 	hMcE->Draw("same,hist");
-	lg->Draw();
-	cE->Update();
+	cHits->Update();
 	sprintf(str, "%s.pdf)", fname);
-	cE->SaveAs(str);
+	cHits->SaveAs(str);
 }
 
 void draw_22Na(int iFull, int iSer)
 {
 	char str[128];
 	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_newCuts_transcodeNew.root");
+	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_dl200um_transcodeNew.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {
 	case 0:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002197.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002198.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002197.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002198.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002285.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286.root");
 		break;
 	case 1:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002197_000.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002198_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002197_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002198_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002285_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286_000.root");
 		break;
 	case 2:
 		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012380.root");
@@ -299,22 +300,28 @@ void draw_22Na(int iFull, int iSer)
 		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
 		break;
 	case 4:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020243.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020244.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020243.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020244.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
 		break;
 	case 5:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020243_000.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020244_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020243_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020244_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253_000.root");
+		break;
+	case 6:
+		tExpA->AddFile("../digi.v2/danss_root4_2/danss_020243.root");
+		tExpA->AddFile("../digi.v2/danss_root4_2/danss_020244.root");
+		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020252.root");
+		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020253.root");
 		break;
 	default:
 		printf("Not yet.\n");
 		return;
 	}
-	sprintf(str, "22Na_%d_%s_20cm", iSer, (iFull) ? "full" : "fast");
+	sprintf(str, "22Na_%d_%s", iSer, (iFull) ? "full" : "fast");
 	draw_Src(tMc, tExpA, tExpB, 0.977, "^{22}Na", str);
 }
 
@@ -322,21 +329,23 @@ void draw_60Co(int iFull, int iSer)
 {
 	char str[128];
 	TChain *tMc = new TChain("DanssEvent");
-	tMc->AddFile("/mnt/space1/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_newCuts_transcodeNew.root");
+	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_dl200um_transcodeNew.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {
 	case 0:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002106.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002107.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002106.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002107.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002285.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286.root");
 		break;
 	case 1:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002106_000.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_002107_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002285_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_002286_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002106_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_002107_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002285_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286_000.root");
 		break;
 	case 2:
 		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012310.root");
@@ -345,23 +354,29 @@ void draw_60Co(int iFull, int iSer)
 		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
 		break;
 	case 4:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020233.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020234.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020233.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020234.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
 		break;
 		
 	case 5:
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020233_000.root");
-		tExpA->AddFile("/mnt/space1/danss_root4/danss_020234_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020252_000.root");
-		tExpB->AddFile("/mnt/space1/danss_root4/danss_020253_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020233_000.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020234_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252_000.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253_000.root");
+		break;
+	case 6:
+		tExpA->AddFile("../digi.v2/danss_root4_2/danss_020233.root");
+		tExpA->AddFile("../digi.v2/danss_root4_2/danss_020234.root");
+		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020252.root");
+		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020253.root");
 		break;
 	default:
 		printf("Not yet.\n");
 		return;
 	}
-	sprintf(str, "60Co_%d_%s_20cm", iSer, (iFull) ? "full" : "fast");
+	sprintf(str, "60Co_%d_%s", iSer, (iFull) ? "full" : "fast");
 	draw_Src(tMc, tExpA, tExpB, 0.977, "^{60}Co", str);
 }
 
@@ -371,5 +386,118 @@ void draw_all(void)
 	for (i=0; i<6; i++) {
 		draw_22Na(i&1, i/2);
 		draw_60Co(i&1, i/2);
+	}
+}
+
+void draw_Amps(void)
+{
+	gStyle->SetOptStat("i");
+	gStyle->SetOptFit(1);
+	gStyle->SetTitleXSize(0.05);
+	gStyle->SetTitleYSize(0.05);
+	gStyle->SetLabelSize(0.05);
+	gStyle->SetPadLeftMargin(0.15);
+	gStyle->SetPadBottomMargin(0.15);
+	
+	TChain *tNa = new TChain("DanssEvent");
+	TChain *tCo = new TChain("DanssEvent");
+	TChain *tBgnd = new TChain("DanssEvent");
+	tNa->AddFile("../digi.v2/danss_root4_3/danss_020243.root");
+	tNa->AddFile("../digi.v2/danss_root4_3/danss_020244.root");
+	tCo->AddFile("../digi.v2/danss_root4_3/danss_020233.root");
+	tCo->AddFile("../digi.v2/danss_root4_3/danss_020234.root");
+	tBgnd->AddFile("../digi.v2/danss_root4_3/danss_020252.root");
+	tBgnd->AddFile("../digi.v2/danss_root4_3/danss_020253.root");
+
+	TH1D *hNaSiPMA = new TH1D("hNaSiPMA", "SiPM ^{22}Na;ADC units", 50, 0, 1500);
+	TH1D *hNaSiPMB = new TH1D("hNaSiPMB", "SiPM ^{22}Na;ADC units", 50, 0, 1500);
+	TH1D *hCoSiPMA = new TH1D("hCoSiPMA", "SiPM ^{60}Co;ADC units", 50, 0, 1500);
+	TH1D *hCoSiPMB = new TH1D("hCoSiPMB", "SiPM ^{60}Co;ADC units", 50, 0, 1500);
+	TH1D *hBgndSiPM = new TH1D("hBgndSiPM", "SiPM ^{60}Co;ADC units", 50, 0, 1500);
+
+	TH1D *hNaPMTA = new TH1D("hNaPMTA", "PMT ^{22}Na;ADC units", 50, 0, 1000);
+	TH1D *hNaPMTB = new TH1D("hNaPMTB", "PMT ^{22}Na;ADC units", 50, 0, 1000);
+	TH1D *hCoPMTA = new TH1D("hCoPMTA", "PMT ^{60}Co;ADC units", 50, 0, 1000);
+	TH1D *hCoPMTB = new TH1D("hCoPMTB", "PMT ^{60}Co;ADC units", 50, 0, 1000);
+	TH1D *hBgndPMT = new TH1D("hBgndPMT", "PMT ^{60}Co;ADC units", 50, 0, 1000);
+	
+	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
+	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
+	TCut cVeto("VetoHits < 2 && VetoEnergy < 4");
+	
+	tNa->Project("hNaSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tCo->Project("hCoSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tBgnd->Project("hBgndSiPM", "SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tNa->Project("hNaPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tCo->Project("hCoPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tBgnd->Project("hBgndPMT", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	
+	hNaSiPMA->Sumw2();
+	hCoSiPMA->Sumw2();
+	hBgndSiPM->Sumw2();
+	hNaPMTA->Sumw2();
+	hCoPMTA->Sumw2();
+	hBgndPMT->Sumw2();
+
+	hNaSiPMB->Add(hNaSiPMA, hBgndSiPM, 1.0, -0.977);
+	hCoSiPMB->Add(hCoSiPMA, hBgndSiPM, 1.0, -0.977);
+	hNaPMTB->Add(hNaPMTA, hBgndPMT, 1.0, -0.977);
+	hCoPMTB->Add(hCoPMTA, hBgndPMT, 1.0, -0.977);
+
+	hNaSiPMB->GetYaxis()->SetLabelSize(0.05);
+	hCoSiPMB->GetYaxis()->SetLabelSize(0.05);
+	hNaPMTB->GetYaxis()->SetLabelSize(0.05);
+	hCoPMTB->GetYaxis()->SetLabelSize(0.05);
+
+	TCanvas *cAmp = new TCanvas("cAmp", "Raw Amplitude", 1200, 800);
+	cAmp->Divide(2, 2);
+	cAmp->cd(1);
+	hNaSiPMB->Fit("gaus", "", "", 200, 800);
+	cAmp->cd(2);
+	hCoSiPMB->Fit("gaus", "", "", 200, 200);
+	cAmp->cd(3);
+	hNaPMTB->Fit("gaus", "", "", 150, 600);
+	cAmp->cd(4);
+	hCoPMTB->Fit("gaus", "", "", 150, 600);
+	cAmp->SaveAs("22Na_60Co_raw_ADC_amplitudes.pdf");
+}
+
+void draw_graphs(void)
+{
+	const char title[4][20] = {"Na_mean;um", "Na_sigma;um", "Co_mean;um", "Co_sigma;um"};
+	const double tgt[4] = {1.787, 0.394, 2.082, 0.473};
+	const double mc[4][4] = {{2.008, 1.985, 1.974, 1.933}, {0.319, 0.326, 0.330, 0.336}, 
+		{2.233, 2.211, 2.185, 2.149}, {0.377, 0.385, 0.394, 0.405}};
+	const double dl[4] = {0, 50, 100, 200};
+	const double mm[4][2] = {{1.7, 2.1}, {0.3, 0.4}, {2.0, 2.3}, {0.35, 0.5}};
+	TGraph *gr;
+	TLine *ln;
+	TH1D *h;
+	TLegend *lg;
+	int i;
+	
+	TCanvas *cv = new TCanvas;
+	cv->Divide(2,2);
+	gr = new TGraph;
+	ln = new TLine;
+	gr->SetMarkerStyle(kFullCircle);
+	gr->SetMarkerSize(1.5);
+	gr->SetMarkerColor(kBlue);
+	ln->SetLineWidth(4);
+	ln->SetLineColor(kRed);
+	lg = new TLegend(0.65, 0.65, 0.95, 0.85);
+	lg->AddEntry(ln, "Exp.", "L");
+	lg->AddEntry(gr, "MC", "P");
+	for (i=0; i<4; i++) {
+		cv->cd(i+1);
+		
+		h = new TH1D(title[i], title[i], 100, 0, 200);
+		h->SetMinimum(mm[i][0]);
+		h->SetMaximum(mm[i][1]);
+		h->DrawCopy();
+		gr->DrawGraph(4, dl, mc[i], "P");
+		ln->DrawLine(0, tgt[i], 200, tgt[i]);
+		lg->Draw();
+		delete h;
 	}
 }
