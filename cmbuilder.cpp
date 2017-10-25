@@ -41,25 +41,21 @@
 #define VETON		2	// number of hits
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
 #define VETOBLK		100.0	// us
-#define SOURCEX		50.0	// cm
-#define SOURCEZ		50.0	// cm
 #define DELTA		15.0	// cm
 
-int IsFission(struct DanssEventStruct3 *DanssEvent)
+int IsFission(struct DanssEventStruct4 *DanssEvent)
 {
 	if (DanssEvent->PmtCleanEnergy + DanssEvent->SiPmCleanEnergy < 2*MINTRIGE || DanssEvent->PmtCleanEnergy + DanssEvent->SiPmCleanEnergy > 2*MAXTRIGE) return 0;
-//	if (fabs(DanssEvent->NeutronX[0] - SOURCEX) > DELTA) return 0;
-//	if (fabs(DanssEvent->PositronX[2] - SOURCEZ) > DELTA) return 0;
 	return 1;
 }
 
-int IsVeto(struct DanssEventStruct3 *Event)
+int IsVeto(struct DanssEventStruct4 *Event)
 {
 	if (Event->VetoCleanEnergy > MINVETOE || Event->VetoCleanHits > VETON || Event->PmtCleanEnergy > DANSSVETOE || Event->SiPmCleanEnergy > DANSSVETOE) return 1;
 	return 0;
 }
 
-void Add2Cm(struct DanssEventStruct3 *DanssEvent, struct DanssCmStruct *DanssCm, int num, long long globalTime)
+void Add2Cm(struct DanssEventStruct4 *DanssEvent, struct DanssCmStruct *DanssCm, int num, long long globalTime)
 {
 	if (num >= 10) return;
 	DanssCm->number[num] = DanssEvent->number;
@@ -68,13 +64,10 @@ void Add2Cm(struct DanssEventStruct3 *DanssEvent, struct DanssCmStruct *DanssCm,
 	DanssCm->PmtCleanEnergy[num] = DanssEvent->PmtCleanEnergy;
 
 	DanssCm->Hits[num] = DanssEvent->SiPmCleanHits;
-//	DanssCm->NeutronHits[num] = DanssEvent->SiPmCleanHits;
 	DanssCm->NeutronEnergy[num] = (DanssEvent->SiPmCleanEnergy + DanssEvent->PmtCleanEnergy) / 2;
 	memcpy(DanssCm->NeutronX[num], DanssEvent->NeutronX, sizeof(DanssEvent->NeutronX));
 	memcpy(DanssCm->PositronX[num], DanssEvent->PositronX, sizeof(DanssEvent->PositronX));
-//	memcpy(DanssCm->NeutronGammaEnergy[num], DanssEvent->NeutronGammaEnergy, sizeof(DanssEvent->NeutronGammaEnergy));
-//	memcpy(DanssCm->NeutronGammaDistance[num], DanssEvent->NeutronGammaDistance, sizeof(DanssEvent->NeutronGammaDistance));
-	DanssCm->NeutronRadius[num] = DanssEvent->NeutronRadius;
+	DanssCm->NeutronRadius[num] = -1;
 	DanssCm->PositronEnergy[num] = DanssEvent->PositronEnergy;
 	
 	DanssCm->gtDiff[num] = DanssEvent->globalTime - globalTime;
@@ -88,11 +81,11 @@ void Add2Cm(struct DanssEventStruct3 *DanssEvent, struct DanssCmStruct *DanssCm,
 
 int main(int argc, char **argv)
 {
-	struct DanssEventStruct3		DanssEvent;
+	struct DanssEventStruct4		DanssEvent;
 	struct DanssCmStruct			DanssCm;
-	struct DanssEventStruct3		SavedEvent;
-	struct DanssInfoStruct3			DanssInfo;
-	struct DanssInfoStruct3			SumInfo;
+	struct DanssEventStruct4		SavedEvent;
+	struct DanssInfoStruct4			DanssInfo;
+	struct DanssInfoStruct			SumInfo;
 
 	TChain *EventChain;
 	TChain *InfoChain;
@@ -150,7 +143,7 @@ int main(int argc, char **argv)
 		"stopTime/I:"		// linux stop time, seconds
 		"events/I"		// number of events
 	);
-	memset(&SumInfo, 0, sizeof(struct DanssInfoStruct3));
+	memset(&SumInfo, 0, sizeof(struct DanssInfoStruct4));
 	memset(&DanssCm, 0, sizeof(struct DanssCmStruct));
 
 	EventChain = new TChain("DanssEvent");

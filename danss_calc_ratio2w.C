@@ -255,11 +255,11 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	txt = new TLatex();
 	
 //	Page 1:	Spectra All
-	draw_spectra_page(cv, "April 16-May 17", 0x1E, bgScale);
+	draw_spectra_page(cv, "April 16-July 17", 0x1E, bgScale);
 	cv->Print(pname);
 	
 //	Page 1a:	Spectra All but April-June 16.
-	draw_spectra_page(cv, "Oct 16-May 17", 0x1C, bgScale);
+	draw_spectra_page(cv, "Oct 16-July 17", 0x1C, bgScale);
 	cv->Print(pname);
 
 //	Page 2:	Spectra April-June
@@ -275,7 +275,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Print(pname);
 
 //	Page 5:	Spectra February-March
-	draw_spectra_page(cv, "April-May17", 0x10, bgScale);
+	draw_spectra_page(cv, "April-July 17", 0x10, bgScale);
 	cv->Print(pname);
 
 //	Page 6: Total Spectrum (all positions)
@@ -283,7 +283,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(3, 2);
 
 	cv->cd(1);
-	TH1D *hSum = new TH1D("hSum", "Positron spectrum April 16 - May 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum = new TH1D("hSum", "Positron spectrum April 16 - July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum, "umdrs", 0x1E, bgScale);
 	hSum->Write();
 	hSum->Draw("e");
@@ -301,13 +301,13 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	hSum2->Draw("e");
 
 	cv->cd(4);
-	TH1D *hSum3 = new TH1D("hSum3", "Positron spectrum January-March 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum3 = new TH1D("hSum3", "Positron spectrum January-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum3, "umdrs", 8, bgScale);
 	hSum3->Write();
 	hSum3->Draw("e");
 
 	cv->cd(5);
-	TH1D *hSum4 = new TH1D("hSum4", "Positron spectrum April-May 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum4 = new TH1D("hSum4", "Positron spectrum April-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum4, "umdrs", 0x10, bgScale);
 	hSum4->Write();
 	hSum4->Draw("e");
@@ -316,7 +316,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	TH1D *hSum12 = new TH1D("hSum12", "Positron spectrum April-December 16;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	hSum12->Add(hSum1, hSum2);
 	hSum12->Write();
-	TH1D *hSum34 = new TH1D("hSum34", "Positron spectrum January-May 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum34 = new TH1D("hSum34", "Positron spectrum January-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	hSum34->Add(hSum3, hSum4);
 	hSum34->Write();
 	hSum12->SetLineColor(kRed);
@@ -339,7 +339,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hDown_30", "hUp_30", "hDownUpAll", "Ratio Down/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up October 16 - May 17;Positron energy, MeV");
+	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up October 16 - July 17;Positron energy, MeV");
 
 	cv->cd(3);
 	draw_single_ratio("hDown_2", "hUp_2", "hDownUp1", "Ratio Down/Up April-June 16;Positron energy, MeV");
@@ -351,7 +351,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hDown_8", "hUp_8", "hDownUp3", "Ratio Down/Up January-March 17;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hDown_16", "hUp_16", "hDownUp4", "Ratio Down/Up April-May 17;Positron energy, MeV");
+	draw_single_ratio("hDown_16", "hUp_16", "hDownUp4", "Ratio Down/Up April-July 17;Positron energy, MeV");
 
 	cv->Update();
 	cv->Print(pname);
@@ -364,7 +364,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hMid_30", "hUp_30", "hMidUpAll", "Ratio Middle/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up October 16 - May 17;Positron energy, MeV");
+	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up October 16 - July 17;Positron energy, MeV");
 
 	cv->cd(3);
 	draw_single_ratio("hMid_2", "hUp_2", "hMidUp1", "Ratio Middle/Up April-June 16;Positron energy, MeV");
@@ -376,7 +376,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up January-March 17;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up April-May 17;Positron energy, MeV");
+	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up April-July 17;Positron energy, MeV");
 
 	cv->Update();
 	cv->Print(pname);
@@ -392,7 +392,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hSum3", "hSum2", "hRatio3_2", "Ratio January-March 17/October-December 16;Positron energy, MeV");
 
 	cv->cd(3);
-	draw_single_ratio("hSum4", "hSum2", "hRatio4_2", "Ratio April-May 17/October-December 16;Positron energy, MeV");
+	draw_single_ratio("hSum4", "hSum2", "hRatio4_2", "Ratio April-July 17/October-December 16;Positron energy, MeV");
 
 	cv->cd(4);
 	draw_single_ratio("hSum2", "hSum1", "hRatio2_1", "Ratio October-December 16/April-June 16;Positron energy, MeV");
@@ -401,7 +401,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hSum3", "hSum1", "hRatio3_1", "Ratio January-March 17/April-June 16;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hSum4", "hSum1", "hRatio4_1", "Ratio April-May 17/April-June 16;Positron energy, MeV");
+	draw_single_ratio("hSum4", "hSum1", "hRatio4_1", "Ratio April-July 17/April-June 16;Positron energy, MeV");
 
 	cv->Update();
 	cv->Print(pname);

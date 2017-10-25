@@ -23,7 +23,7 @@ void make_fuel_hist(void)
 		sprintf(strs, "PositronEnergy_%s_%c", fuel[i], (j) ? 'D' : 'A');
 		sprintf(strl, "Positron spectrum for %s%s;MeV", fuel[i], (j) ? ", with dead channels" : "");
 		h[j][i] = new TH1D(strs, strl, 28, 1, 8);
-		sprintf(strl, "danss_root3%s/mc_positron_%s_simple_newScale.root", (j) ? "/withdead" : "", fuel[i]);
+		sprintf(strl, "danss_root3%s/mc_positron_%s_simple_newScale.root", (j) ? "/withdead-uncorr" : "", fuel[i]);
 		f = new TFile(strl);
 		if (!f->IsOpen()) {
 			printf("File not found %s\n", strl);

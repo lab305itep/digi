@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EVENTDIR=${EVENTDIR:-"/mnt/space1/danss_root4"}
+EVENTDIR=${EVENTDIR:-"/mnt/root0/danss_root4"}
 PAIRDIR="/space/danss_pair"
 
 if [ "X"$2 == "X" ] ; then

@@ -48,7 +48,10 @@ int main(int argc, char **argv)
 			continue;
 		}
 		memset(p, 0, sizeof(p));
-		for(j=0; j<4; j++) for (k=0; k<3; k++) if (abs(posrec.pos[j] - PosVal[k]) < DEVIATION) p[j] = k+2;
+		for(j=0; j<4; j++) {
+			for (k=0; k<3; k++) if (abs(posrec.pos[j] - PosVal[k]) < DEVIATION) p[j] = k+2;
+			printf(" %5d[%1d] ", posrec.pos[j], p[j]);
+		}
 		if (!p[0] || p[1] != p[0] || p[2] != p[0] || p[3] != p[0]) {
 			printf("   1\n");
 			pclose(f);

@@ -8,7 +8,7 @@ TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle
 	gStyle->SetOptStat(10);
 	gStyle->SetOptFit(1);
 	
-	h = new TH1D(hname, htitle, 100, 0, 10);
+	h = new TH1D(hname, htitle, 48, 0, 12);
 	f = new TFile(fname);
 	t = (TTree *) f->Get("DanssEvent");
 	if (!t) {
@@ -25,7 +25,7 @@ TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle
 	TCut cSel = cX && cY && cZ && cGamma && cGammaMax;
 
 	gROOT->cd();
-	t->Project(hname, "PositronEnergy", cSel);
+	t->Project(hname, "(PositronEnergy-0.179)/0.929", cSel);
 	return h;
 }
 
@@ -78,3 +78,50 @@ void all_mono_positrons(void)
 	delete cv;
 	fOut->Close();
 }
+
+void all_mono_positrons_250keV(void)
+{
+	int Energy;
+	char fvar[20];
+	const char *dir = "/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mono_positrons_250keV/";
+	char strF[1024];
+	char strH[1024];
+	char strT[1024];
+	int i;
+	TH1D *h[48];
+	double elow, ehigh;
+	
+	for (i = 0; i < 48; i++) {
+		Energy = 125 + 250 * i;
+		sprintf(fvar, "%d-%d", Energy/1000, Energy%1000);
+		sprintf(strF, "%s/mc_positron%sMeV_transcodeNew.root", dir, fvar);
+		sprintf(strH, "hPE%s", fvar);
+		sprintf(strT, "Reconstructed positron energy for MC mono positrons at %6.3f MeV;E, MeV", Energy/1000.0);
+		h[i] = mc_mono_positrons(strF, strH, strT);
+	}
+	TFile *fOut = new TFile("mc_mono_positrons_v3.root", "RECREATE");
+	fOut->cd();
+	for (i=0; i<48; i++) h[i]->Write();
+	
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	
+	TCanvas *cv = new TCanvas("CV", "CV", 600, 800);
+	
+	cv->SaveAs("mc_mono_positrons_v3.pdf[");
+	
+	for (i=0; i<48; i++) {
+		cv->Clear();
+		Energy = 0.125 + 0.25 * i;
+		elow=Energy - 2 * h[i]->GetRMS();
+		ehigh=Energy + 2 * h[i]->GetRMS();
+		h[i]->Fit("gaus", "", "", elow, ehigh);
+		cv->SaveAs("mc_mono_positrons_v3.pdf");
+	}
+	
+	cv->SaveAs("mc_mono_positrons_v3.pdf]");
+	
+	delete cv;
+	fOut->Close();
+}
+
