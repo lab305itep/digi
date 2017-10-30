@@ -47,10 +47,10 @@ else
 	echo $RUN > $LISTFILE
 
 	RUNDIR=`dirname $RUN`
-	CALIB=`find -L $RUNDIR -name "*calib_saturCorr*.txt" -print`
+	CALIB=`find -L $RUNDIR -name "*calib_saturCorr*.txt" -print -quit`
 	
 	if [ "x$CALIB" == "x" ] ; then
-		CALIB=`find -L $RUNDIR -name "*calib*.txt" -print`
+		CALIB=`find -L $RUNDIR -name "*calib*.txt" -print -quit`
 	fi
 
 	if [ "x$CALIB" == "x" ] ; then

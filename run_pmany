@@ -8,7 +8,7 @@ fi
 FIRST=$1
 LAST=$2
 TOTAL=$(($LAST - $FIRST + 1))
-USECPU=4
+USECPU=6
 
 if [ $LAST -lt $FIRST ] ; then
 	echo Nothing to do !
