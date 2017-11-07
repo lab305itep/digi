@@ -423,7 +423,7 @@ void CleanZeroes(ReadDigiDataUser *user)
 
 	N = user->nhits();
 	for (i=0; i<N; i++) if ((user->type(i) == SiPmHit && user->npix(i) <= 0) || (!isfinite(user->e(i))) ||
-		user->e(i) <= 0 || user->t(i) < -1000 || user->isBadChannel(user->chanIndex(i)) || DeadList[user->adc(i)][user->adcChan(i)]) HitFlag[i] = -1;
+		user->e(i) <= 0 || user->t(i) < -1000 || user->isBadChannel(user->chanIndex(i)) || DeadList[user->adc(i)-1][user->adcChan(i)]) HitFlag[i] = -1;
 }
 
 void CleanNoise(ReadDigiDataUser *user)
@@ -515,7 +515,7 @@ void CreateDeadList(char *fname)
 	}
 	for (;;) {
 		if (!fgets(str, sizeof(str), f)) break;
-		i = strtol(str, &ptr, 10);
+		i = strtol(str, &ptr, 10) - 1;
 		ptr++;
 		j = strtol(ptr, NULL, 10);
 		if (i >= 0 && i < iMaxAddress_AdcBoard && j >= 0 && j < iNChannels_AdcBoard) DeadList[i][j] = 1;

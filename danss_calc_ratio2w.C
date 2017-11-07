@@ -202,7 +202,7 @@ void draw_tail_hist(const char *title, const char *posmask)
 }
 
 
-void draw_single_ratio(const char *nameA, const char *nameB, const char *name, const char *title)
+void draw_single_ratio(const char *nameA, const char *nameB, const char *name, const char *title, double min=0.6, double max=1.2, int last=60)
 {
 	TH1D *hA = (TH1D *) gROOT->FindObject(nameA);
 	TH1D *hB = (TH1D *) gROOT->FindObject(nameB);
@@ -216,10 +216,89 @@ void draw_single_ratio(const char *nameA, const char *nameB, const char *name, c
 	hAB->Divide(hA, hB);
 	hAB->SetLineColor(kBlue);
 	hAB->Write();	
-	hAB->SetMinimum(0.6);
-	hAB->SetMaximum(1.2);
+	hAB->SetMinimum(min);
+	hAB->SetMaximum(max);
 	hAB->GetYaxis()->SetLabelSize(0.08);
+	hAB->GetXaxis()->SetRange(1, last);
 	hAB->Fit("pol0", "", "", 1, 8);
+}
+
+void draw_period_ratios(int m1, int m2, const char *title)
+{
+	char nameA[64];
+	char nameB[64];
+	char nameR[64];
+	TH1D *hRUp;
+	TH1D *hRMid;
+	TH1D *hRDown;
+	TH1D *hA;
+	TH1D *hB;
+	
+	sprintf(nameA, "hUp_%d", 1 << m1);
+	sprintf(nameB, "hUp_%d", 1 << m2);
+	hA = (TH1D *) gROOT->FindObject(nameA);
+	hB = (TH1D *) gROOT->FindObject(nameB);
+	if (!hA || !hB) {
+		printf("Can not find hist: %s or/and %s. Step %s\n", nameA, nameB, title);
+		return;
+	}
+	sprintf(nameR, "hRUp_%d_%d", 1 << m1, 1 << m2);
+	hRUp = (TH1D*) hA->Clone(nameR);
+	hRUp->SetTitle(title);
+	hRUp->Divide(hA, hB);
+	hRUp->SetLineColor(kRed);
+	hRUp->SetMarkerColor(kRed);
+	hRUp->SetMarkerSize(2);
+	hRUp->SetMarkerStyle(kFullTriangleUp);
+	
+	sprintf(nameA, "hMid_%d", 1 << m1);
+	sprintf(nameB, "hMid_%d", 1 << m2);
+	hA = (TH1D *) gROOT->FindObject(nameA);
+	hB = (TH1D *) gROOT->FindObject(nameB);
+	if (!hA || !hB) {
+		printf("Can not find hist: %s or/and %s. Step %s\n", nameA, nameB, title);
+		return;
+	}
+	sprintf(nameR, "hRMid_%d_%d", 1 << m1, 1 << m2);
+	hRMid = (TH1D*) hA->Clone(nameR);
+	hRMid->SetTitle(title);
+	hRMid->Divide(hA, hB);
+	hRMid->SetLineColor(kGreen);
+	hRMid->SetMarkerColor(kGreen);
+	hRMid->SetMarkerSize(2);
+	hRMid->SetMarkerStyle(kFullCircle);
+	
+	sprintf(nameA, "hDown_%d", 1 << m1);
+	sprintf(nameB, "hDown_%d", 1 << m2);
+	hA = (TH1D *) gROOT->FindObject(nameA);
+	hB = (TH1D *) gROOT->FindObject(nameB);
+	if (!hA || !hB) {
+		printf("Can not find hist: %s or/and %s. Step %s\n", nameA, nameB, title);
+		return;
+	}
+	sprintf(nameR, "hRDown_%d_%d", 1 << m1, 1 << m2);
+	hRDown = (TH1D*) hA->Clone(nameR);
+	hRDown->SetTitle(title);
+	hRDown->Divide(hA, hB);
+	hRDown->SetLineColor(kBlue);
+	hRDown->SetMarkerColor(kBlue);
+	hRDown->SetMarkerSize(2);
+	hRDown->SetMarkerStyle(kFullTriangleDown);
+	
+	hRUp->SetMinimum(0.9);
+	hRUp->SetMaximum(1.4);
+	hRUp->GetXaxis()->SetRange(1, 28);
+	hRUp->DrawCopy();
+	hRMid->DrawCopy("same");
+	hRDown->DrawCopy("same");
+	TLegend *lg = new TLegend(0.3, 0.7, 0.5, 0.85);
+	lg->AddEntry(hRUp, "Up", "LP");
+	lg->AddEntry(hRMid, "Middle", "LP");
+	lg->AddEntry(hRDown, "down", "LP");
+	
+	delete hRUp;
+	delete hRMid;
+	delete hRDown;
 }
 
 void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
@@ -255,11 +334,11 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	txt = new TLatex();
 	
 //	Page 1:	Spectra All
-	draw_spectra_page(cv, "April 16-July 17", 0x1E, bgScale);
+	draw_spectra_page(cv, "April 16-Sep 17", 0x1E, bgScale);
 	cv->Print(pname);
 	
 //	Page 1a:	Spectra All but April-June 16.
-	draw_spectra_page(cv, "Oct 16-July 17", 0x1C, bgScale);
+	draw_spectra_page(cv, "Oct 16-Sep 17", 0x1C, bgScale);
 	cv->Print(pname);
 
 //	Page 2:	Spectra April-June
@@ -267,15 +346,15 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Print(pname);
 
 //	Page 3:	Spectra October-November
-	draw_spectra_page(cv, "October-December 16", 4, bgScale);
+	draw_spectra_page(cv, "Oct 16 - Feb 17", 4, bgScale);
 	cv->Print(pname);
 
 //	Page 4:	Spectra December-January
-	draw_spectra_page(cv, "January-March 17", 8, bgScale);
+	draw_spectra_page(cv, "March-July 17", 8, bgScale);
 	cv->Print(pname);
 
 //	Page 5:	Spectra February-March
-	draw_spectra_page(cv, "April-July 17", 0x10, bgScale);
+	draw_spectra_page(cv, "August-September 17", 0x10, bgScale);
 	cv->Print(pname);
 
 //	Page 6: Total Spectrum (all positions)
@@ -283,7 +362,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(3, 2);
 
 	cv->cd(1);
-	TH1D *hSum = new TH1D("hSum", "Positron spectrum April 16 - July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum = new TH1D("hSum", "Positron spectrum April 16 - Sep 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum, "umdrs", 0x1E, bgScale);
 	hSum->Write();
 	hSum->Draw("e");
@@ -295,35 +374,35 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	hSum1->Draw("e");
 
 	cv->cd(3);
-	TH1D *hSum2 = new TH1D("hSum2", "Positron spectrum October-December 16;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum2 = new TH1D("hSum2", "Positron spectrum Oct 16-Feb 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum2, "umdrs", 4, bgScale);
 	hSum2->Write();
 	hSum2->Draw("e");
 
 	cv->cd(4);
-	TH1D *hSum3 = new TH1D("hSum3", "Positron spectrum January-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum3 = new TH1D("hSum3", "Positron spectrum March-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum3, "umdrs", 8, bgScale);
 	hSum3->Write();
 	hSum3->Draw("e");
 
 	cv->cd(5);
-	TH1D *hSum4 = new TH1D("hSum4", "Positron spectrum April-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum4 = new TH1D("hSum4", "Positron spectrum Aug-Sep 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	sum_of_spectra(hSum4, "umdrs", 0x10, bgScale);
 	hSum4->Write();
 	hSum4->Draw("e");
 
 	cv->cd(6);
-	TH1D *hSum12 = new TH1D("hSum12", "Positron spectrum April-December 16;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum12 = new TH1D("hSum12", "Positron spectrum April 16- Feb 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	hSum12->Add(hSum1, hSum2);
 	hSum12->Write();
-	TH1D *hSum34 = new TH1D("hSum34", "Positron spectrum January-July 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	TH1D *hSum34 = new TH1D("hSum34", "Positron spectrum March-Sep 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
 	hSum34->Add(hSum3, hSum4);
 	hSum34->Write();
 	hSum12->SetLineColor(kRed);
 	hSum34->SetLineColor(kBlue);
 	lg = new TLegend(0.6, 0.7, 0.9, 0.8);
-	lg->AddEntry(hSum12, "April-December 16", "LE");
-	lg->AddEntry(hSum34, "January-May 17", "LE");
+	lg->AddEntry(hSum12, "April 16 - Feb 17", "LE");
+	lg->AddEntry(hSum34, "March-Sep 17", "LE");
 	hSum12->Draw("e");
 	hSum34->Draw("e,same");
 	lg->Draw();
@@ -339,20 +418,26 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hDown_30", "hUp_30", "hDownUpAll", "Ratio Down/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up October 16 - July 17;Positron energy, MeV");
+	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up All but Apr-June 16;Positron energy, MeV");
 
 	cv->cd(3);
 	draw_single_ratio("hDown_2", "hUp_2", "hDownUp1", "Ratio Down/Up April-June 16;Positron energy, MeV");
 
 	cv->cd(4);
-	draw_single_ratio("hDown_4", "hUp_4", "hDownUp2", "Ratio Down/Up October-December 16;Positron energy, MeV");
+	draw_single_ratio("hDown_4", "hUp_4", "hDownUp2", "Ratio Down/Up Oct 16 - Feb 17;Positron energy, MeV");
 
 	cv->cd(5);
-	draw_single_ratio("hDown_8", "hUp_8", "hDownUp3", "Ratio Down/Up January-March 17;Positron energy, MeV");
+	draw_single_ratio("hDown_8", "hUp_8", "hDownUp3", "Ratio Down/Up Feb-July 17;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hDown_16", "hUp_16", "hDownUp4", "Ratio Down/Up April-July 17;Positron energy, MeV");
+	draw_single_ratio("hDown_16", "hUp_16", "hDownUp4", "Ratio Down/Up Aug-Sep 17;Positron energy, MeV");
 
+	cv->Update();
+	cv->Print(pname);
+
+//	Page 7a: Main plot
+	cv->Clear();
+	draw_single_ratio("hDown_28", "hUp_28", "hDownUp0", "Ratio Down/Up All but Apr-June 16;Positron energy, MeV;#frac{N_{DOWN}}{N_{UP}}", 0.6, 0.9, 28);
 	cv->Update();
 	cv->Print(pname);
 
@@ -364,19 +449,19 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	draw_single_ratio("hMid_30", "hUp_30", "hMidUpAll", "Ratio Middle/Up All;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up October 16 - July 17;Positron energy, MeV");
+	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up All but Apr-June 16;Positron energy, MeV");
 
 	cv->cd(3);
 	draw_single_ratio("hMid_2", "hUp_2", "hMidUp1", "Ratio Middle/Up April-June 16;Positron energy, MeV");
 
 	cv->cd(4);
-	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up October-December 17;Positron energy, MeV");
+	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up Oct 16 - Feb 17;Positron energy, MeV");
 
 	cv->cd(5);
-	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up January-March 17;Positron energy, MeV");
+	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up March-July 17;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up April-July 17;Positron energy, MeV");
+	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up Aug-Sep 17;Positron energy, MeV");
 
 	cv->Update();
 	cv->Print(pname);
@@ -386,23 +471,35 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(3, 2);
 
 	cv->cd(1);
-	draw_single_ratio("hSum34", "hSum12", "hRatio34_12", "Ratio 17/16;Positron energy, MeV");
+	draw_single_ratio("hSum34", "hSum12", "hRatio34_12", "Ratio Mar-Sep 17/Apr 16-Feb 17;Positron energy, MeV");
 
 	cv->cd(2);
-	draw_single_ratio("hSum3", "hSum2", "hRatio3_2", "Ratio January-March 17/October-December 16;Positron energy, MeV");
+	draw_single_ratio("hSum3", "hSum2", "hRatio3_2", "Ratio March-July 17/Oct 16 - Feb 17;Positron energy, MeV");
 
 	cv->cd(3);
-	draw_single_ratio("hSum4", "hSum2", "hRatio4_2", "Ratio April-July 17/October-December 16;Positron energy, MeV");
+	draw_single_ratio("hSum4", "hSum2", "hRatio4_2", "Ratio Aug-Sep 17/Oct 16 - Feb 17;Positron energy, MeV");
 
 	cv->cd(4);
-	draw_single_ratio("hSum2", "hSum1", "hRatio2_1", "Ratio October-December 16/April-June 16;Positron energy, MeV");
+	draw_single_ratio("hSum2", "hSum1", "hRatio2_1", "Ratio Oct 16 - Feb 17/April-June 16;Positron energy, MeV");
 
 	cv->cd(5);
-	draw_single_ratio("hSum3", "hSum1", "hRatio3_1", "Ratio January-March 17/April-June 16;Positron energy, MeV");
+	draw_single_ratio("hSum3", "hSum1", "hRatio3_1", "Ratio March-July 17/April-June 16;Positron energy, MeV");
 
 	cv->cd(6);
-	draw_single_ratio("hSum4", "hSum1", "hRatio4_1", "Ratio April-July 17/April-June 16;Positron energy, MeV");
+	draw_single_ratio("hSum4", "hSum1", "hRatio4_1", "Ratio Aug-Sep 17/April-June 16;Positron energy, MeV");
 
+	cv->Update();
+	cv->Print(pname);
+
+//	Page 9a: after shutdown / before shutdown
+	cv->Clear();
+	draw_single_ratio("hSum4", "hSum3", "hRatio4_3", "Ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 28);
+	cv->Update();
+	cv->Print(pname);
+
+//	Page 9b: after shutdown / before shutdown
+	cv->Clear();
+	draw_period_ratios(4, 3, "Ratio after shutdown / before shutdown;Positron energy, MeV");
 	cv->Update();
 	cv->Print(pname);
 
