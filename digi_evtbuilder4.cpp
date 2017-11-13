@@ -888,8 +888,9 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 	OutputTree->Branch("HitT", HitArray.T, "HitT[NHits]/F");
 	OutputTree->Branch("HitType", HitArray.type, "HitType[NHits]/I");
 	if (IsMc) OutputTree->Branch("MC", &DanssMc,
-		"McEnergy/F:"		// MC true energy
-		"McX[3]/F"		// MC vertex position
+		"McEnergy/F:"		// MC true energy, MeV
+		"McX[3]/F:"		// MC vertex position, cm
+		"DriftTime/F"		// MC time between positron and neutron, us
 	);
 
 	InfoTree = new TTree("DanssInfo", "Run info tree");	
@@ -949,7 +950,7 @@ int ReadDigiDataUser::processUserEvent()
 	DanssEvent.runNumber  = runnumber();
 	DanssEvent.unixTime   = absTime();
 
-	if (IsMc) mcTruth(DanssMc.Energy, DanssMc.X[0], DanssMc.X[1], DanssMc.X[2]);
+	if (IsMc) mcTruth(DanssMc.Energy, DanssMc.X[0], DanssMc.X[1], DanssMc.X[2], DanssMc.DriftTime);
 
 	CleanZeroes(this);
 	SumEverything(this);

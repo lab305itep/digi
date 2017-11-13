@@ -31,10 +31,10 @@ if [ ${FN:0:1} == "/" ] ; then
 	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
 else
 	RUNNUMBER=`printf "%6.6d" $FN`
-	RUN=`find -L /space/digi -name danss*${RUNNUMBER}_rawrec*.digi* -print -quit 2>/dev/null`
-	if [ "x"$RUN == "x" ] ; then
-		RUN=`find -L /space/digi -name danss*${RUNNUMBER}_000*.digi* -print -quit 2>/dev/null`
-	fi
+	RUN=`locate ${RUNNUMBER}_rawrec 2>/dev/null`
+#	if [ "x"$RUN == "x" ] ; then
+#		RUN=`find -L /space/digi -name danss*${RUNNUMBER}_000*.digi* -print -quit 2>/dev/null`
+#	fi
 
 	if [ "x$RUN" == "x" ] ; then
     		echo Run $RUNNUMBER not found

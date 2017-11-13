@@ -100,6 +100,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	double val, err;
 	int Cnt, n;
 	TLatex txt;
+	const double OtherBlockFraction = 0.0060;	// Distances to other reactors: 160, 336 and 478 m
 
 	cv->Clear();
 	lg = new TLegend(0.35, 0.65, 0.9, 0.9);
@@ -109,7 +110,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	n = sum_of_spectra(hUp, "u", periodmask, bgScale);
 	Cnt = n;
 	TH1D *hTmp = (TH1D *) hUp->Clone("hTmp");	// keep to subtract block #3
-	hUp->Add(hTmp, -0.0045);
+	hUp->Add(hTmp, -OtherBlockFraction);
 	hUp->Write();
 	hUp->SetLineColor(kRed);
 	hUp->SetFillColor(kRed-10);
@@ -125,7 +126,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	TH1D *hMid = new TH1D(strs, strl, 60, 1, 16);
 	n = sum_of_spectra(hMid, "m", periodmask, bgScale);
 	Cnt += n;
-	hMid->Add(hTmp, -0.0045);
+	hMid->Add(hTmp, -OtherBlockFraction);
 	hMid->Write();
 	hMid->SetLineColor(kGreen);
 	hMid->SetFillColor(kGreen-10);
@@ -139,7 +140,7 @@ void draw_spectra_page(TCanvas *cv, const char *title, int periodmask, double bg
 	TH1D *hDown = new TH1D(strs, strl, 60, 1, 16);
 	n = sum_of_spectra(hDown, "d", periodmask, bgScale);
 	Cnt += n;
-	hDown->Add(hTmp, -0.0045);
+	hDown->Add(hTmp, -OtherBlockFraction);
 	hDown->Write();
 	hDown->SetLineColor(kBlue);
 	hDown->SetFillColor(kBlue-10);

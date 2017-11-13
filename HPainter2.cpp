@@ -60,6 +60,7 @@ HPainter2::HPainter2(int mask, int run_from, int run_to, const char *root2dir)
 		info->GetEntry(i);
 		upTime += info->GetLeaf("gTime")->GetValue() / 125E6;
 	}
+	delete info;
 	gROOT->cd();
 }
 

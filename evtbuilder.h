@@ -421,6 +421,7 @@ struct DanssCmStruct {
 struct DanssMcStruct {
 	float		Energy;
 	float		X[3];
+	float		DriftTime;
 };
 
 #endif /* EVTBUILDER_H */
