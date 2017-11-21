@@ -467,6 +467,30 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Update();
 	cv->Print(pname);
 
+//	Page 8.1: Double ratios Down/Up and Mid/Up between periods. Use March-July 17 as a base
+	cv->Clear();
+	cv->Divide(3, 2);
+
+	cv->cd(1);
+	draw_single_ratio("hDownUp1", "hDownUp3", "hDownUpdr1", "Ratio Down/Up Apr-June 16 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->cd(2);
+	draw_single_ratio("hDownUp2", "hDownUp3", "hDownUpdr2", "Ratio Down/Up Oct 16 - Feb 17 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->cd(3);
+	draw_single_ratio("hDownUp4", "hDownUp3", "hDownUpdr4", "Ratio Down/Up Aug-Sep 17 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->cd(4);
+	draw_single_ratio("hMidUp1", "hMidUp3", "hMidUpdr1", "Ratio Middle/Up Apr-June 16 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->cd(5);
+	draw_single_ratio("hMidUp2", "hMidUp3", "hMidUpdr2", "Ratio Middle/Up Oct 16 - Feb 17 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->cd(6);
+	draw_single_ratio("hMidUp4", "hMidUp3", "hMidUpdr4", "Ratio Middle/Up Aug-Sep 17 to March-July 17;Positron energy, MeV", 0.8, 1.2, 28);
+
+	cv->Update();
+	cv->Print(pname);
 //	Page 9: Period ratios
 	cv->Clear();
 	cv->Divide(3, 2);

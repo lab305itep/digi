@@ -355,7 +355,7 @@ void CalculatePositron(ReadDigiDataUser *user)
 //	Step 4: Divide by 2, because we count SiPM + PMT
 	DanssEvent.PositronEnergy /= 2;
 //	Calculate Total energy with longitudinal correction
-	for (i=0; i<N; i++) if (HitFlag[i] >= 0) {
+	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && (user->type(i) == PmtHit || user->type(i) == SiPmHit)) {
 		if (user->side(i) == 'X') {
 			DanssEvent.TotalEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 'X');
 		} else {

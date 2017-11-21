@@ -1,20 +1,25 @@
-void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
+void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax, float norm = 1.0)
 {
 	const char fuel[4][6] = {"235U", "238U", "239Pu", "241Pu"};
 	const Color_t fColor[4] = {kRed, kBlue, kGreen, kOrange};
+	const float crossection[4] = {6.39, 8.90, 4.18, 5.76};	// from Sinev
 	const char mcfile[4][128] = {
 		"/space/danss_root3/withdead-uncorr/mc_positron_235U_simple_newScale.root",
 		"/space/danss_root3/withdead-uncorr/mc_positron_238U_simple_newScale.root",
 		"/space/danss_root3/withdead-uncorr/mc_positron_239Pu_simple_newScale.root",
 		"/space/danss_root3/withdead-uncorr/mc_positron_241Pu_simple_newScale.root"
 	};
-	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
+//	From Sinev
+//	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
+//	From Khvatov
+	const double fuelmix[3][4]  = {{0.78, 0.07, 0.12, 0.03}, {0.69, 0.07, 0.19, 0.05}, {0.59, 0.07, 0.26, 0.07}};
 	const char cmppart[3][20] = {"Begin", "Middle", "End"};
-	const char expname[] = "danss_report_v4n-calc.root";
+	const char expname[] = "danss_report_v4_sep17-calc.root";
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
 	TH1D *hMcMixt[3];
+	TH1D *hMcRatio;
 	TFile *fExp;
 	TH1D *hExpw;
 	TH1D *hExp;
@@ -28,6 +33,7 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
 	int i, j;
 	char strs[128];
 	char strl[1024];
+	double s, term, A, B;
 	
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
@@ -40,7 +46,7 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
 
 	fExp = new TFile(expname);
 	if (!fExp->IsOpen()) return;
-	hExpw = (TH1D*) fExp->Get("hSum4");
+	hExpw = (TH1D*) fExp->Get("hSum3");
 	if (!hExpw) return;
 	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", 
 		RangeMax - RangeMin + 1, hExpw->GetBinLowEdge(RangeMin), hExpw->GetBinLowEdge(RangeMax) + hExpw->GetBinWidth(RangeMax));
@@ -69,24 +75,49 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
 		return;
 	}
 	gROOT->cd();
-	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), "1.04*(PositronEnergy-0.179)/0.929", cXYZ);
+	sprintf(strs, "%6.3f*(PositronEnergy-0.179)/0.929", norm);
+	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), strs, cXYZ);
 	for (i=0; i<4; i++) hMc[i]->Sumw2();
+	for (i=0; i<4; i++) hMc[i]->Scale(crossection[i]);
 	for (j=0; j<3; j++) {
 		sprintf(strs, "h%sMixt", cmppart[j]);
 		hMcMixt[j] = (TH1D*) hMc[0]->Clone(strs);
 		hMcMixt[j]->Reset();
 		for (i=0; i<4; i++) hMcMixt[j]->Add(hMc[i], fuelmix[j][i]);
-		hMcMixt[j]->Scale(hExp->Integral(NormMin, NormMax) / hMcMixt[j]->Integral(NormMin, NormMax));
 		hMcMixt[j]->SetLineColor(fColor[j]);
 		hMcMixt[j]->SetLineWidth(2);
 		hMcMixt[j]->GetYaxis()->SetLabelSize(0.05);
-		hMcMixt[j]->SetTitle(";Positron energy, MeV;Events/(day*0.25 MeV)");
+		sprintf(strs, "MC spectrum %s;Positron energy, MeV;Events/(day*0.25 MeV)", cmppart[j]);
+		hMcMixt[j]->SetTitle(strs);
 	}
+	hMcRatio = (TH1D*) hMc[0]->Clone("hMcBegin2End");
+	hMcRatio->Reset();
+	hMcRatio->Divide(hMcMixt[0], hMcMixt[2]);
+	for (i=0; i<hMcRatio->GetNbinsX(); i++) {
+		s = 0;
+		A = hMcMixt[0]->GetBinContent(i + 1);
+		B = hMcMixt[2]->GetBinContent(i + 1);
+		for (j=0; j<4; j++) {
+			term = fuelmix[0][j] * B - fuelmix[2][j] * A;
+			term *= hMc[j]->GetBinError(i+1);
+			s += term*term;
+		}
+		s = sqrt(s) / (B * B);
+		hMcRatio->SetBinError(i+1, s);
+	}
+	hMcRatio->SetLineColor(kBlue);
+	hMcRatio->SetLineWidth(2);
+	hMcRatio->GetYaxis()->SetLabelSize(0.05);
+	hMcRatio->SetTitle("Begin to end spectrum ratio;Positron energy, MeV;Events/(day*0.25 MeV)");
+	
 	TFile fSave("mc_fuel.root", "RECREATE");
 	fSave.cd();
+	for (j=0; j<4; j++) hMc[j]->Write();
 	for (j=0; j<3; j++) hMcMixt[j]->Write();
+	hMcRatio->Write();
 	fSave.Close();
 	
+	for (j=0; j<3; j++) hMcMixt[j]->Scale(hExp->Integral(NormMin, NormMax) / hMcMixt[j]->Integral(NormMin, NormMax));
 	hRatio = (TH1D *) hMcMixt[1]->Clone("hRatioExpMc");
 	hRatio->Divide(hExp, hMcMixt[2]);
 	hRatio->SetTitle(";Positron energy, MeV;#frac{N_{EXP}}{N_{MC}}");
@@ -95,9 +126,9 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax)
 	hDiff->Add(hExp, hMcMixt[2], 1, -1);
 	
 	TCanvas *cm = new TCanvas("CM", "Fuel", 1200, 900);
-	hMc[2]->Draw("hist");
+	hMc[1]->Draw("hist");
 	hMc[0]->Draw("hist,same");
-	hMc[1]->Draw("hist,same");
+	hMc[2]->Draw("hist,same");
 	hMc[3]->Draw("hist,same");
 	TLegend *lm = new TLegend(0.7, 0.7, 0.9, 0.9);
 	for (i=0; i<4; i++) lm->AddEntry(hMc[i], fuel[i], "L");
@@ -217,7 +248,7 @@ void positron_spectrum2mcw3(int RangeMin, int RangeMax, int NormMin, int NormMax
 		return;
 	}
 	gROOT->cd();
-	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), "1.04*(PositronEnergy-0.179)/0.929", cXYZ);
+	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), "1.07*(PositronEnergy-0.179)/0.929", cXYZ);
 	for (i=0; i<4; i++) hMc[i]->Sumw2();
 	for (j=0; j<3; j++) {
 		sprintf(strs, "h%sMixt", cmppart[j]);

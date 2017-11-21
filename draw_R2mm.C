@@ -178,7 +178,7 @@ void fill_and_fit(int nSect, double e_min, double e_max, int mask)
 	TFile *f;
 	TH1* h;
 	double val, err, r;
-	const double bz[3] = {11.2, 12.2, 13.2};
+	const double bz[3] = {11.2, 12.2, 13.16};
 	const double dz3[3] = {0.212, 0.502, 0.799};
 	const double dz5[5] = {0.141, 0.317, 0.501, 0.685, 0.866};
 //	const double dz3[3] = {0.195, 0.5, 0.805};
@@ -222,3 +222,215 @@ void fill_and_fit(int nSect, double e_min, double e_max, int mask)
 	}
 	fit_and_draw();
 }
+
+void draw_sect_ratios(void)
+{
+	const char name_pattern[] = "danss_report_v4_sep17-sect%d_of_%d-calc.root";
+	const char pos[3][20] = {"hUp_%d", "hMid_%d", "hDown_%d"};
+	const char posname[3][64] = {"POSITION UP", "POSITION MIDDLE", "POSITION DOWN"};
+	const char sectname[3][64] = {"SECTION UP", "SECTION MIDDLE", "SECTION DOWN"};
+	const char rname[2][64] = {"SECTION #frac{UP}{MID}", "SECTION #frac{DOWN}{MID}"};
+	const char tname[2][64] = {"POSITION MID/UP", "POSITION DOWN/UP"};
+	const char srname[2][64] = {"SECTION #frac{UP}{MID}", "SECTION #frac{DOWN}{MID}"};
+	char fname[1024];
+	char cpos[32];
+	TFile *f[3];
+	TH1* h[3][3];	// [SECTION][POSITION]
+	TH1* hrp[2][3];	
+	TH1* hrs[3][2];
+	TH1 *hrd[2][2]; // [RATIO][SECTION]
+	int i, j, err;
+	
+	err = 0;
+	for (i=0; i<3; i++) {
+		sprintf(fname, name_pattern, 3-i, 3);
+		f[i] = new TFile(fname);
+		for (j=0; j<3; j++) {
+			sprintf(cpos, pos[j], 28);
+			h[i][j] = (TH1 *) f[i]->Get(cpos);
+			if (!h[i][j]) {
+				printf("Can not find %s in %s.\n", cpos, fname);
+				err++;
+			}
+		}
+	}
+	if (!err) {
+		TCanvas *cv = new TCanvas("CV", "Ratios", 1200, 900);
+
+	//	FIXED position section ratio: N^Pj_SU/N^Pj_SM and N^Pj_SD/N^Pj_SM
+	//	Pj - positions UP, MID, DOWN; SM - middle section, SD - down section, SU - up section
+
+		cv->Divide(2, 3);
+		gStyle->SetOptStat(0);
+		gStyle->SetOptFit(1);
+		for (i=0; i<2; i++) for (j=0;j<3;j++) {	// i - section, j - position
+			sprintf(cpos, "hRP%d%d", i+1, j+1);
+			hrp[i][j] = (TH1 *)h[0][0]->Clone(cpos);
+			hrp[i][j]->Divide(h[2*i][j], h[1][j]);	// i=0: SECT UP/MID; i=1 SECT DOWN/MID
+			hrp[i][j]->SetTitle(posname[j]);
+			hrp[i][j]->GetXaxis()->SetTitle("E, MeV");
+			hrp[i][j]->GetXaxis()->SetTitleOffset(0.85);
+			hrp[i][j]->GetYaxis()->SetTitle(rname[i]);
+			hrp[i][j]->GetYaxis()->SetTitleOffset(0.85);
+			hrp[i][j]->GetYaxis()->SetLabelSize(0.06);
+			hrp[i][j]->GetXaxis()->SetRange(1, 24);
+			hrp[i][j]->SetMinimum(0.9 - 0.2*i);
+			hrp[i][j]->SetMaximum(1.5 - 0.2*i);
+			cv->cd(2*j + i + 1);
+			gPad->SetLeftMargin(0.15);
+			gPad->SetBottomMargin(0.15);
+			hrp[i][j]->Fit("pol0");
+		}
+		cv->Update();
+		cv->SaveAs("SectionRatios.pdf[");
+		cv->SaveAs("SectionRatios.pdf");
+//		printf("Press Enter\n");
+//		getchar();
+
+	//	FIXED section position ratio : N^PM_Si/N^PU_Si and N^PD_Si/N^PU_Si
+
+		cv->Clear();
+		cv->Divide(2, 3);
+		for (i=0; i<3; i++) for (j=0;j<2;j++) {	// i - section, j - position ratio
+			sprintf(cpos, "hRS%d%d", i+1, j+1);
+			hrs[i][j] = (TH1 *)h[0][0]->Clone(cpos);
+			hrs[i][j]->Divide(h[i][j+1], h[i][0]);	// 0 - MID/UP, 1 - DOWN/UP
+			hrs[i][j]->SetTitle(sectname[i]);
+			hrs[i][j]->GetXaxis()->SetTitle("E, MeV");
+			hrs[i][j]->GetXaxis()->SetTitleOffset(0.85);
+			hrs[i][j]->GetYaxis()->SetTitle(tname[j]);
+			hrs[i][j]->GetYaxis()->SetTitleOffset(0.85);
+			hrs[i][j]->GetYaxis()->SetLabelSize(0.06);
+			hrs[i][j]->GetXaxis()->SetRange(1, 24);
+			hrs[i][j]->SetMinimum(0.7 - 0.15*j);
+			hrs[i][j]->SetMaximum(1.1 - 0.15*j);
+			cv->cd(2*i + j + 1);
+			gPad->SetLeftMargin(0.15);
+			gPad->SetBottomMargin(0.15);
+			hrs[i][j]->Fit("pol0");
+		}
+		cv->Update();
+		cv->SaveAs("SectionRatios.pdf");
+//		printf("Press Enter\n");
+//		getchar();
+
+	//	Double ratios:  (N^PM_SU/N^PU_SU) / (N^PM_SM/N^PU_SM), (N^PM_SD/N^PU_SD) / (N^PM_SM/N^PU_SM)  
+	//			(N^PD_SU/N^PU_SU) / (N^PD_SM/N^PU_SM), (N^PD_SD/N^PU_SD) / (N^PD_SM/N^PU_SM) 
+
+		cv->Clear();
+		cv->Divide(2, 2);
+		for (i=0; i<2; i++) for (j=0;j<2;j++) {	// i - section, j - type
+			sprintf(cpos, "hRD%d%d", i+1, j+1);
+			hrd[i][j] = (TH1 *)h[0][0]->Clone(cpos);
+			hrd[i][j]->Divide(hrs[2*i][j], hrs[1][j]);
+			hrd[i][j]->SetTitle(tname[j]);
+			hrd[i][j]->GetXaxis()->SetTitle("E, MeV");
+			hrd[i][j]->GetXaxis()->SetTitleOffset(0.85);
+			hrd[i][j]->GetYaxis()->SetTitle(srname[i]);
+			hrd[i][j]->GetYaxis()->SetTitleOffset(0.85);
+			hrd[i][j]->GetYaxis()->SetTitleSize(0.05);
+			hrd[i][j]->GetYaxis()->SetLabelSize(0.06);
+			hrd[i][j]->GetXaxis()->SetRange(1, 24);
+			hrd[i][j]->SetMinimum(0.85);
+			hrd[i][j]->SetMaximum(1.15);
+			cv->cd(2*j + i + 1);
+			gPad->SetLeftMargin(0.15);
+			gPad->SetBottomMargin(0.15);
+			hrd[i][j]->Fit("pol0");
+		}
+		cv->Update();
+		cv->SaveAs("SectionRatios.pdf");
+		cv->SaveAs("SectionRatios.pdf]");
+//		printf("Press Enter\n");
+//		getchar();
+	}
+	for (i=0; i<3; i++) delete f[i];
+}
+
+void draw_R2n1(double e_min, double e_max, int mask)
+{
+	const char fname[] = "danss_report_v4_sep17-calc.root";
+	const char pos[3][20] = {"hUp_%d", "hMid_%d", "hDown_%d"};
+	char str[128];
+	const double z[3] = {10.7, 11.7, 12.7};
+	double y[3], yy[3], dy[3], dz[3];
+	TH1D *h[3];
+	int i;
+
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	
+	TFile *f = new TFile(fname);
+	for (i=0; i<3; i++) {
+		sprintf(str, pos[i], mask);
+		h[i] = (TH1D *) f->Get(str);
+		if (!h[i]) {
+			printf("Hist %s not found in %s\n", str, fname);
+			return;
+		}
+		y[i] = h[i]->IntegralAndError(h[i]->FindBin(e_min), h[i]->FindBin(e_max), dy[i]);
+		dz[i] = 0;
+		printf("Z = %f +- %f  ==>> N = %f +- %f\n", z[i], dz[i], y[i], dy[i]);
+	}
+
+	TGraphErrors *gr = new TGraphErrors(3, z, y, dz, dy);
+	gr->SetLineColor(kBlue);
+	gr->SetLineWidth(4);
+	gr->SetMarkerStyle(20);
+	gr->SetMarkerColor(kBlue);
+	gr->SetMarkerSize(2);
+
+	TF1 *fR2 = new TF1("fR2", "[0]/((x-[2])*(x-[2])-[1]*[1]/4.0)", 1, 100);
+	fR2->SetParNames("Const", "Size", "Shift");
+	fR2->SetParameters(1000., 0., 0.);
+	fR2->FixParameter(1, 3.0);
+	fR2->FixParameter(2, 0);
+	
+
+	TH1D *hst = new TH1D("H", ";Distance to reactor core center, m;Events per day", 35, 10, 13.5);
+	hst->SetMinimum(y[0] * 0.6);
+	hst->SetMaximum(y[0] * 1.2);
+	hst->GetXaxis()->SetLabelSize(0.06);
+	hst->GetYaxis()->SetLabelSize(0.06);
+	hst->GetXaxis()->SetTitleSize(0.06);
+	hst->GetYaxis()->SetTitleSize(0.06);
+	hst->GetYaxis()->SetTitleOffset(1.25);
+
+	TH1D *hstd = new TH1D("H", ";Distance to reactor core center, m;#Delta Events per day", 35, 10, 13.5);
+	hstd->SetMinimum(-25);
+	hstd->SetMaximum(25);
+	hstd->GetXaxis()->SetLabelSize(0.06);
+	hstd->GetYaxis()->SetLabelSize(0.06);
+	hstd->GetXaxis()->SetTitleSize(0.06);
+	hstd->GetYaxis()->SetTitleSize(0.06);
+	hstd->GetYaxis()->SetTitleOffset(1.25);
+	
+	TCanvas *cv = new TCanvas("CV", "R2", 800, 1200);
+	cv->Divide(1, 2);
+//		Do common fit and draw
+	TVirtualPad *pd = cv->cd(1);
+	pd->SetLeftMargin(0.15);
+	pd->SetBottomMargin(0.15);
+	pd->SetTopMargin(0.03);
+	hst->Draw();
+	gr->Fit(fR2);
+	gr->Draw("p");
+	fR2->Draw("same");
+
+//		Draw difference
+	for (i=0; i < 3; i++) yy[i] = y[i] - fR2->Eval(z[i]);
+	TGraphErrors *grd = new TGraphErrors(3, z, yy, dz, dy);
+	grd->SetLineColor(kBlue);
+	grd->SetLineWidth(4);
+	grd->SetMarkerStyle(20);
+	grd->SetMarkerColor(kBlue);
+	grd->SetMarkerSize(2);
+	
+	pd = cv->cd(2);
+	pd->SetLeftMargin(0.15);
+	pd->SetBottomMargin(0.15);
+	pd->SetTopMargin(0.03);
+	hstd->Draw();
+	grd->Draw("p");
+}
+
