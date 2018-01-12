@@ -31,17 +31,21 @@ if [ ${FN:0:1} == "/" ] ; then
 	$BUILDER -file $LISTFILE -output ${OUTFILE/.digi/.root} -flag $FLAGS -mcdata $ARGS 
 else
 	RUNNUMBER=`printf "%6.6d" $FN`
-	RUN=`locate ${RUNNUMBER}_rawrec 2>/dev/null`
-#	if [ "x"$RUN == "x" ] ; then
-#		RUN=`find -L /space/digi -name danss*${RUNNUMBER}_000*.digi* -print -quit 2>/dev/null`
-#	fi
-
+	RUNPTR=catalog/${RUNNUMBER:0:3}000/$RUNNUMBER
+	RUN=""
+	if [ -f $RUNPTR ] ; then
+		. $RUNPTR
+		RUN=$DIGIDIR/$DIGIFILE
+	fi
 	if [ "x$RUN" == "x" ] ; then
     		echo Run $RUNNUMBER not found
 	    	exit 10
 	fi
-
-	TMPFILE=tmp/${RUNNUMBER}.digi
+	
+	if [ ! -f $RUN ] ; then
+		echo File $RUN not found
+		exit 20
+	fi
 
 	LISTFILE="${RUNNUMBER}.list"
 	echo $RUN > $LISTFILE
@@ -73,7 +77,6 @@ else
 	
 	$BUILDER -calib $CALIB -file $LISTFILE -tcalib $TCALIB -output ${ROOT_DIR}/danss_${RUNNUMBER}.root -flag $FLAGS $ARGS
 	
-#	rm $TMPFILE
 fi
 
 rm $LISTFILE

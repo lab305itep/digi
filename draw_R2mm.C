@@ -107,10 +107,10 @@ void fit_and_draw(void)
 //	for (i=0; i<9; i++) printf("L = %8.3f    CNT = %6.1f +- %4.1f\n", r[i], cnt[i], ecnt[i]);
 	gr = new TGraphErrors(3 * DataArray.N, DataArray.r, ccnt, er, eccnt);
 	gr->SetLineColor(kBlue);
-	gr->SetLineWidth(4);
-	gr->SetMarkerStyle(20);
+	gr->SetLineWidth(2);
+	gr->SetMarkerStyle(kFullCircle);
 	gr->SetMarkerColor(kBlue);
-	gr->SetMarkerSize(2);
+	gr->SetMarkerSize(1.5);
 	
 	fR2 = new TF1("fR2", "[0] / ((x - [1]) * (x - [1]) - [2] * [2] / 4.0)", 1, 100);
 	fR2->SetParameter(0, C);
@@ -147,6 +147,7 @@ void fit_and_draw(void)
 	hst->Draw();
 	gr->Draw("p");
 	fR2->Draw("same");
+	pd->SaveAs("r2_pict.png");
 	TLatex txt;
 	txt.SetTextSize(0.07);
 	sprintf(str, "#chi^{2}/n.d.f. = %6.2f/%d", fmin, 2 * DataArray.N);

@@ -10,7 +10,7 @@ void change_file_suffix(char *to, int len, const char *from, const char *where, 
 	strcat(to, what);
 }
 
-int sum_of_spectra(TH1D *hSum, const char *posmask, int permask, double bgScale = 1.0)
+int sum_of_spectra(TH1D *hSum, const char *posmask, int permask, double bgScale = 1.0, double *days = NULL)
 {
 #include "positions.h"
 	int N;
@@ -48,6 +48,7 @@ int sum_of_spectra(TH1D *hSum, const char *posmask, int permask, double bgScale 
 		hSum->Add(&fBgndC, dt * positions[i].bgnd * bgScale);
 	}
 	
+	if (days) *days = tSum / 86.4;
 	if (tSum == 0) return 0;
 	Cnt = hSum->Integral();
 	hSum->Scale(86.4 / tSum);
@@ -202,7 +203,6 @@ void draw_tail_hist(const char *title, const char *posmask)
 	lg->Draw();
 }
 
-
 void draw_single_ratio(const char *nameA, const char *nameB, const char *name, const char *title, double min=0.6, double max=1.2, int last=60)
 {
 	TH1D *hA = (TH1D *) gROOT->FindObject(nameA);
@@ -222,6 +222,69 @@ void draw_single_ratio(const char *nameA, const char *nameB, const char *name, c
 	hAB->GetYaxis()->SetLabelSize(0.08);
 	hAB->GetXaxis()->SetRange(1, last);
 	hAB->Fit("pol0", "", "", 1, 8);
+}
+
+void draw_normalized_ratio(const int maskA, const int maskB, const char *name, const char *title, double min=0.6, double max=1.2, int last=60, double bgScale = 1.0)
+{
+	char strs[128];
+	double daysAU, daysAM, daysAD, daysBU, daysBM, daysBD;
+//	int i;
+//	const char posmask[3][3] = {"u", "m", "d"};
+	const double Nfactor[3] = {1.0, (11.7*11.7)/(10.7*10.7), (12.7*12.7)/(10.7*10.7)};
+	const double OtherBlockFraction = 0.0060;	// Distances to other reactors: 160, 336 and 478 m
+//		Book
+	TH1D *hAU = new TH1D("hNRAU", "", 60, 1, 16);
+	TH1D *hAM = new TH1D("hNRAM", "", 60, 1, 16);
+	TH1D *hAD = new TH1D("hNRAD", "", 60, 1, 16);
+	TH1D *hBU = new TH1D("hNRBU", "", 60, 1, 16);
+	TH1D *hBM = new TH1D("hNRBM", "", 60, 1, 16);
+	TH1D *hBD = new TH1D("hNRBD", "", 60, 1, 16);
+	TH1D *hAB = new TH1D(name, title, 60, 1, 16);
+//		Make initial sum
+	sum_of_spectra(hAU, "u", maskA, bgScale, &daysAU);
+	sum_of_spectra(hAM, "m", maskA, bgScale, &daysAM);
+	sum_of_spectra(hAD, "d", maskA, bgScale, &daysAD);
+	sum_of_spectra(hBU, "u", maskB, bgScale, &daysBU);
+	sum_of_spectra(hBM, "m", maskB, bgScale, &daysBM);
+	sum_of_spectra(hBD, "d", maskB, bgScale, &daysBD);
+//		Subtract other blocks
+	TH1D *hTmpA = (TH1D *) hAU->Clone("hTmpA");
+	TH1D *hTmpB = (TH1D *) hBU->Clone("hTmpB");
+	hAU->Add(hTmpA, -OtherBlockFraction);
+	hAM->Add(hTmpA, -OtherBlockFraction);
+	hAD->Add(hTmpA, -OtherBlockFraction);
+	hBU->Add(hTmpB, -OtherBlockFraction);
+	hBM->Add(hTmpB, -OtherBlockFraction);
+	hBD->Add(hTmpB, -OtherBlockFraction);
+//		Add spectra with R^2 weights
+	hTmpA->Reset();
+	hTmpA->Add(hAU, Nfactor[0]*daysAU);
+	hTmpA->Add(hAM, Nfactor[1]*daysAM);
+	hTmpA->Add(hAD, Nfactor[2]*daysAD);
+	hTmpA->Scale(1.0 / (daysAU + daysAM + daysAD));
+	hTmpB->Reset();
+	hTmpB->Add(hBU, Nfactor[0]*daysBU);
+	hTmpB->Add(hBM, Nfactor[1]*daysBM);
+	hTmpB->Add(hBD, Nfactor[2]*daysBD);
+	hTmpB->Scale(1.0 / (daysBU + daysBM + daysBD));
+//		Draw
+	hAB->Divide(hTmpA, hTmpB);
+	hAB->SetLineColor(kBlue);
+	hAB->Write();	
+	hAB->SetMinimum(min);
+	hAB->SetMaximum(max);
+	hAB->GetYaxis()->SetLabelSize(0.08);
+	hAB->GetXaxis()->SetRange(1, last);
+	hAB->Fit("pol1", "", "", 1, 8);
+//		Clean
+	delete hAU;
+	delete hAM;
+	delete hAD;
+	delete hBU;
+	delete hBD;
+	delete hBM;
+	delete hTmpA;
+	delete hTmpB;
 }
 
 void draw_period_ratios(int m1, int m2, const char *title)
@@ -518,7 +581,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 
 //	Page 9a: after shutdown / before shutdown
 	cv->Clear();
-	draw_single_ratio("hSum4", "hSum3", "hRatio4_3", "Ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 28);
+	draw_normalized_ratio(16, 8, "hNRatio43", "Normalized ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 28, bgScale);
 	cv->Update();
 	cv->Print(pname);
 

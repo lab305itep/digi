@@ -103,6 +103,7 @@ void all_mono_positrons_250keV(void)
 		sprintf(strF, "%s/mc_positron%sMeV_transcodeNew.root", dir, fvar);
 		sprintf(strH, "hPE%s", fvar);
 		sprintf(strT, "Reconstructed positron energy for MC mono positrons at %6.3f MeV;E, MeV", Energy/1000.0);
+//		h[i] = mc_mono_positrons(strF, strH, strT, "PositronEnergy");
 		h[i] = mc_mono_positrons(strF, strH, strT, "(PositronEnergy-0.179)/0.929");
 	}
 	TFile *fOut = new TFile("mc_mono_positrons_v3.root", "RECREATE");
@@ -114,7 +115,7 @@ void all_mono_positrons_250keV(void)
 	
 	TCanvas *cv = new TCanvas("CV", "CV", 600, 800);
 	
-	cv->SaveAs("mc_mono_positrons_v3.pdf[");
+	cv->SaveAs("mc_mono_positrons_v3n.pdf[");
 	
 	for (i=0; i<48; i++) {
 		cv->Clear();
@@ -132,7 +133,7 @@ void all_mono_positrons_250keV(void)
 		er[i] = fg->GetParameter(1);
 		es[i] = fg->GetParameter(2); 
 		se[i] = sqrt(e[i]);
-		cv->SaveAs("mc_mono_positrons_v3.pdf");
+		cv->SaveAs("mc_mono_positrons_v3n.pdf");
 	}
 
 	cv->Clear();
@@ -167,9 +168,9 @@ void all_mono_positrons_250keV(void)
 	gE->SetTitle("Sigma;#sqrt{E}, MeV;#sigma,MeV");
 	gE->Draw("AP");
 	gE->Fit("pol1", "", "", 1, 2.8);
-	cv->SaveAs("mc_mono_positrons_v3.pdf");
+	cv->SaveAs("mc_mono_positrons_v3n.pdf");
 
-	cv->SaveAs("mc_mono_positrons_v3.pdf]");
+	cv->SaveAs("mc_mono_positrons_v3n.pdf]");
 	
 	delete cv;
 	fOut->Close();

@@ -66,7 +66,8 @@ void drawstat(char * fname = "stat_all.txt", int startfile=5540, int col = 8, in
 	"Source Na",
 	"Source Co",
 	"Test LED",
-	"Raised 23 cm"
+	"Raised 23 cm",
+	"Source Cs"
     };
     
     printf("Usage: drawstat(<statfile>=\"stat_all.txt\", <startfile>=5540, <column>=8(>20Mev), <mask>=0xFFFFFFFF, <listpref>=\"danss_root/\")\n");
@@ -74,12 +75,10 @@ void drawstat(char * fname = "stat_all.txt", int startfile=5540, int col = 8, in
     if (col < 0 || col >= sizeof(tit)/sizeof(tit[0])) return;
     
     TGraph * gr[sizeof(leg)/sizeof(leg[0])];
-    l = new TLegend(0.8, 0.8, 0.9, 1.0);
     for (i=0; i<sizeof(gr)/sizeof(gr[0]); i++) {
 	gr[i] = new TGraph();
 	gr[i]->SetMarkerStyle(20);
 	gr[i]->SetMarkerColor(mycol[i]);
-	if (i != 1) l->AddEntry(gr[i], leg[i], "p");
     }
 
     f = fopen(fname, "rt");
@@ -121,11 +120,18 @@ void drawstat(char * fname = "stat_all.txt", int startfile=5540, int col = 8, in
 	fprintf(fl, "%sdanss_%06d.root\n", listpref, n);
 	last = n;
     }
+
+    l = new TLegend(0.8, 0.8, 0.9, 1.0);
+    for (i=0; i<sizeof(gr)/sizeof(gr[0]); i++) {
+	if (i != 1 && ((1 << (i-1)) & mask)) l->AddEntry(gr[i], leg[i], "p");
+    }
     
     
     TH1D h("hdummy", tit[col], last-first+2, first-1, last+1);
     h.SetMinimum(min - (max-min)/20.);
     h.SetMaximum(max + (max-min)/20.);
+    h.GetXaxis()->SetLabelSize(0.055);
+    h.GetYaxis()->SetLabelSize(0.055);
     gStyle->SetOptStat(0);
     h.DrawCopy();
     for (i=0; i<sizeof(gr)/sizeof(gr[0]); i++) {
