@@ -1,9 +1,25 @@
+#include <stdio.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TCanvas.h>
+#include <TF1.h>
+#include <TChain.h>
+#include <TStyle.h>
+#include <TText.h>
+#include <TLine.h>
+#include <TLegend.h>
+#include <TCut.h>
+#include <TGraph.h>
+#include <TRandom2.h>
+#include <TROOT.h>
+
 struct HitTypeStruct {
 	char 	type;
 	char	z;
 	char	xy;
 	char	flag;
 };
+
 struct DanssEventStruct4 {
 //		Common parameters
 	long long	globalTime;		// time in terms of 125 MHz
@@ -42,11 +58,32 @@ struct DanssEventStruct4 {
 	float		NeutronX[3];		// center of gammas position
 	int		NHits;			// Number of hits
 } EVT;
+
 struct HitStruct {
 	float			E[2600];
 	float			T[2600];
 	struct HitTypeStruct 	type[2600];
 }	HitArray;
+
+//	Crystall Ball function
+double CBfunction(double *x, double *par)
+{
+	double F;
+	
+	double X = x[0];
+	double N = par[0];
+	double alpha = par[1];
+	double n = par[2];
+	double X0 = par[3];
+	double sigma = par[4];
+	
+	double dx = (X - X0) / sigma;
+	double A = exp(n*log(n/fabs(alpha)) - alpha*alpha/2);
+	double B = n / fabs(alpha) - fabs(alpha);
+	
+	F = (dx > -alpha) ? exp(-dx*dx/2) : A * exp(-n * log(B - dx));
+	return N*F;
+}
 
 void project_hits_distrib(TChain *chain, TH1D *hist)
 {
@@ -99,9 +136,11 @@ void project_mc_random_energy(TChain *chain, TH1D *hist)
 	}
 }
 
-void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char *name, const char *fname)
+void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, const char *name, const char *fname, double kSP = 0.5)
 {
 	char str[256];
+	double rAB;
+	long NA, NB;
 	
 	gStyle->SetOptStat("i");
 	gStyle->SetOptFit(1);
@@ -115,29 +154,29 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 //	gStyle->SetLineWidth(4);
 	
 	sprintf(str, "Monte Carlo energy deposit in %s decay;E, MeV", name);
-	TH1D *hMc = new TH1D("hMc", str, 50, 0, 5);
+	TH1D *hMc = new TH1D("hMc", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo SiPM energy deposit in %s decay;E, MeV", name);
-	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 50, 0, 5);
+	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo PMT energy deposit in %s decay;E, MeV", name);
-	TH1D *hMcPMT = new TH1D("hMcPMT", str, 50, 0, 5);
+	TH1D *hMcPMT = new TH1D("hMcPMT", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo energy deposit in %s decay with random;E, MeV", name);
-	TH1D *hMcR = new TH1D("hMcR", str, 50, 0, 5);
+	TH1D *hMcR = new TH1D("hMcR", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo number of hits from %s decay", name);
 	TH1D *hMcHits = new TH1D("hMcHits", str, 20, 0, 20);
 	TH1D *hMcE = new TH1D("hMcE", "Monte Carlo hit energy;E, MeV", 60, 0, 3);
 	TH2D *hXY = new TH2D("hXY", "XY distribution of gamma flash center;X, cm;Y, cm", 25, 0, 100, 25, 0, 100);
 	sprintf(str, "DANSS energy deposit in %s decay;E, MeV", name);
-	TH1D *hExpA = new TH1D("hExpA", str, 60, 1, 7);
-	TH1D *hExpB = new TH1D("hExpB", str, 60, 1, 7);
-	TH1D *hExpC = new TH1D("hExpC", str, 60, 1, 7);
+	TH1D *hExpA = new TH1D("hExpA", str, 70, 0, 7);
+	TH1D *hExpB = new TH1D("hExpB", str, 70, 0, 7);
+	TH1D *hExpC = new TH1D("hExpC", str, 70, 0, 7);
 	sprintf(str, "SiPM energy deposit in %s decay;E, MeV", name);
-	TH1D *hExpSiPMA = new TH1D("hExpSiPMA", str, 50, 0, 5);
-	TH1D *hExpSiPMB = new TH1D("hExpSiPMB", str, 50, 0, 5);
-	TH1D *hExpSiPMC = new TH1D("hExpSiPMC", str, 50, 0, 5);
+	TH1D *hExpSiPMA = new TH1D("hExpSiPMA", str, 70, 0, 7);
+	TH1D *hExpSiPMB = new TH1D("hExpSiPMB", str, 70, 0, 7);
+	TH1D *hExpSiPMC = new TH1D("hExpSiPMC", str, 70, 0, 7);
 	sprintf(str, "PMT energy deposit in %s decay;E, MeV", name);
-	TH1D *hExpPMTA = new TH1D("hExpPMTA", str, 50, 0, 5);
-	TH1D *hExpPMTB = new TH1D("hExpPMTB", str, 50, 0, 5);
-	TH1D *hExpPMTC = new TH1D("hExpPMTC", str, 50, 0, 5);
+	TH1D *hExpPMTA = new TH1D("hExpPMTA", str, 70, 0, 7);
+	TH1D *hExpPMTB = new TH1D("hExpPMTB", str, 70, 0, 7);
+	TH1D *hExpPMTC = new TH1D("hExpPMTC", str, 70, 0, 7);
 	sprintf(str, "Number of hits from %s decay", name);
 	TH1D *hHitsA = new TH1D("hHitsA", str, 20, 0, 20);
 	TH1D *hHitsB = new TH1D("hHitsB", str, 20, 0, 20);
@@ -145,26 +184,49 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	TH1D *hEA = new TH1D("hEA", "Hit energy;E, MeV", 60, 0, 3);
 	TH1D *hEB = new TH1D("hEB", "Hit energy;E, MeV", 60, 0, 3);
 	TH1D *hEC = new TH1D("hEC", "Hit energy;E, MeV", 60, 0, 3);
+	
+	TH2D *hCorrA = new TH2D("hCorrA", "PMTto SiPM correlation;E_{SiPM}, MeV;E_{PMT}, MeV", 50, 0, 5, 50, 0, 5);
+	TH2D *hCorrB = new TH2D("hCorrB", "PMTto SiPM correlation;E_{SiPM}, MeV;E_{PMT}, MeV", 50, 0, 5, 50, 0, 5);
+	TH2D *hCorrC = new TH2D("hCorrC", "PMTto SiPM correlation;E_{SiPM}, MeV;E_{PMT}, MeV", 50, 0, 5, 50, 0, 5);
+	TH2D *hCorrMC = new TH2D("hCorrMC", "MC PMTto SiPM correlation;E_{SiPM}, MeV;E_{PMT}, MeV", 50, 0, 5, 50, 0, 5);
+	
+	TH1D *hTmpA = new TH1D("hTmpA", "Normalization counts A", 100, 0, 1000);
+	TH1D *hTmpB = new TH1D("hTmpB", "Normalization counts B", 100, 0, 1000);
 
 	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 	TCut cz50("(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
 	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
 	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
 	
-	tMc->Project("hMc", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	printf("Start.\n");
+	sprintf(str, "%f*SiPmCleanEnergy+%f*PmtCleanEnergy", kSP, 1-kSP);
+	tMc->Project("hMc", str, cxyz && ccc && cVeto);
+	printf("<1>\n");
 	tMc->Project("hMcSiPM", "SiPmCleanEnergy", cxyz && ccc && cVeto);
 	tMc->Project("hMcPMT", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	printf("<2>\n");
 	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc && cVeto);
 	project_hits_distrib(tMc, hMcE);
 	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50 && cVeto);
-	tExpA->Project("hExpA", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
-	tExpB->Project("hExpB", "(SiPmCleanEnergy+PmtCleanEnergy)/2", cxyz && ccc && cVeto);
+	tExpA->Project("hExpA", str, cxyz && ccc && cVeto);
+	printf("<3>\n");
+	tExpB->Project("hExpB", str, cxyz && ccc && cVeto);
 	tExpA->Project("hExpSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto);
 	tExpB->Project("hExpSiPMB", "SiPmCleanEnergy", cxyz && ccc && cVeto);
 	tExpA->Project("hExpPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto);
 	tExpB->Project("hExpPMTB", "PmtCleanEnergy", cxyz && ccc && cVeto);
 	tExpA->Project("hHitsA", "SiPmCleanHits", cxyz && ccc && cVeto);
 	tExpB->Project("hHitsB", "SiPmCleanHits", cxyz && ccc && cVeto);
+	tExpA->Project("hCorrA", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
+	printf("<4>\n");
+	tExpB->Project("hCorrB", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tMc->Project("hCorrMC", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
+	NA = tExpA->Project("hTmpA", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
+	NB = tExpB->Project("hTmpB", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
+	
+	rAB = 1.0 * NA / NB;
+	printf("NA = %ld    NB = %ld    rAB = %f\n", NA, NB, rAB);
+	
 	project_hits_distrib(tExpA, hEA);
 	project_hits_distrib(tExpB, hEB);
 	project_mc_random_energy(tMc, hMcR);
@@ -185,6 +247,9 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hHitsB->Sumw2();
 	hEA->Sumw2();
 	hEB->Sumw2();
+	hCorrA->Sumw2();
+	hCorrB->Sumw2();
+	hCorrMC->Sumw2();
 	
 	hExpC->Add(hExpA, hExpB, 1.0, -rAB);
 	hExpSiPMC->Add(hExpSiPMA, hExpSiPMB, 1.0, -rAB);
@@ -193,6 +258,7 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hEC->Add(hEA, hEB, 1.0, -rAB);
 	hMcHits->Scale(hHitsC->Integral() / hMcHits->Integral());
 	hMcE->Scale(hEC->Integral() / hMcE->Integral());
+	hCorrC->Add(hCorrA, hCorrB, 1.0, -rAB);
 
 	hMc->GetYaxis()->SetLabelSize(0.05);
 	hMcSiPM->GetYaxis()->SetLabelSize(0.05);
@@ -203,6 +269,12 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hXY->GetXaxis()->SetLabelSize(0.045);
 	hXY->GetYaxis()->SetLabelSize(0.045);
 	hXY->GetZaxis()->SetLabelSize(0.05);
+	hCorrC->GetXaxis()->SetLabelSize(0.045);
+	hCorrC->GetYaxis()->SetLabelSize(0.045);
+	hCorrC->GetZaxis()->SetLabelSize(0.05);
+	hCorrMC->GetXaxis()->SetLabelSize(0.045);
+	hCorrMC->GetYaxis()->SetLabelSize(0.045);
+	hCorrMC->GetZaxis()->SetLabelSize(0.05);
 	hExpC->GetYaxis()->SetLabelSize(0.05);
 	hExpC->SetLineWidth(2);
 	hExpSiPMC->GetYaxis()->SetLabelSize(0.05);
@@ -225,36 +297,57 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hHitsC->SetStats(0);
 	hMcE->SetStats(0);
 	hEC->SetStats(0);
+	hCorrC->SetStats(0);
+	hCorrMC->SetStats(0);
 	
 	TLegend *lg = new TLegend(0.65, 0.8, 0.95, 0.93);
 	lg->AddEntry(hMcHits, "Monte Carlo", "L");
 	lg->AddEntry(hHitsC,  "DANSS", "LP");
 	lg->SetTextSize(0.035);
 	
+	TF1 *fitFun = new TF1("MyCB", CBfunction, 0, 20, 5);
+	fitFun->SetLineWidth(2);
+	fitFun->SetLineColor(kBlue);
+	fitFun->SetParNames("Const.", "#alpha", "n", "Mean", "#sigma");
+	fitFun->SetParLimits(2, 1, 100);
+	
 	TCanvas *cMc = new TCanvas("cMc", "Monte Carlo", 1200, 800);
 	cMc->Divide(2, 2);
 	cMc->cd(1);
-	hMc->Fit("gaus", "", "", 1.5, 2.7);
+//	hMc->Fit("gaus", "", "", 1.5, 2.7);
+	fitFun->SetParameters(hMc->GetMaximum(), 3.0, 4.0, 2.0, 0.5);
+	hMc->Fit("MyCB", "", "");
 	cMc->cd(2);
-	hMcSiPM->Fit("gaus", "", "", 1.5, 2.7);
+//	hMcSiPM->Fit("gaus", "", "", 1.5, 2.7);
+	fitFun->SetParameters(hMcSiPM->GetMaximum(), 3.0, 4.0, 2.0, 0.5);
+	hMcSiPM->Fit("MyCB", "", "");
 	cMc->cd(3);
-	hMcPMT->Fit("gaus", "", "", 1.5, 2.7);
+//	hMcPMT->Fit("gaus", "", "", 1.5, 2.7);
+	fitFun->SetParameters(hMcPMT->GetMaximum(), 3.0, 4.0, 2.0, 0.5);
+	hMcPMT->Fit("MyCB", "", "");
 	cMc->cd(4);
-	hMcR->Fit("gaus", "", "", 1.5, 2.7);
+//	hMcR->Fit("gaus", "", "", 1.5, 2.7);
+	fitFun->SetParameters(hMcR->GetMaximum(), 3.0, 4.0, 2.0, 0.5);
+	hMcR->Fit("MyCB", "", "");
 	sprintf(str, "%s.pdf(", fname);
 	cMc->SaveAs(str);
-
 	
 	TCanvas *cExp = new TCanvas("cExp", "Data", 1200, 800);
 	cExp->Divide(2, 2);
 	cExp->cd(1);
 	hXY->Draw("colz");
 	cExp->cd(2);
-	hExpC->Fit("gaus", "", "", 1.3, 2.7);
+//	hExpC->Fit("gaus", "", "", 1.3, 2.7);
+	fitFun->SetParameters(hExpC->GetMaximum(), 1.0, 3.0, 2.0, 0.5);
+	hExpC->Fit("MyCB", "", "", 0.7, 5);
 	cExp->cd(3);
-	hExpSiPMC->Fit("gaus", "", "", 1.3, 2.7);
+//	hExpSiPMC->Fit("gaus", "", "", 1.3, 2.7);
+	fitFun->SetParameters(hExpSiPMC->GetMaximum(), 1.0, 3.0, 2.0, 0.5);
+	hExpSiPMC->Fit("MyCB", "", "", 0.7, 5);
 	cExp->cd(4);
-	hExpPMTC->Fit("gaus", "", "", 1.3, 2.7);
+//	hExpPMTC->Fit("gaus", "", "", 1.3, 2.7);
+	fitFun->SetParameters(hExpPMTC->GetMaximum(), 1.0, 3.0, 2.0, 0.5);
+	hExpPMTC->Fit("MyCB", "", "", 0.7, 5);
 	cExp->SaveAs(str);
 
 	TCanvas *cHits = new TCanvas("cHits", "Hits", 1200, 800);
@@ -267,17 +360,57 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, double rAB, const char 
 	hEC->Draw();
 	hMcE->Draw("same,hist");
 	cHits->Update();
-	sprintf(str, "%s.pdf)", fname);
 	cHits->SaveAs(str);
+	
+	TCanvas *cCorr = new TCanvas("cCorr", "Correlation", 1200, 800);
+	TText txt;
+	cCorr->Divide(2, 1);
+	cCorr->cd(1);
+	hCorrC->Draw("color");
+//	hCorrC->FitSlicesX();
+	hCorrC->ProfileX("hCorrC_1");
+	TH1 * hCorrC_1 = (TH1*) gROOT->FindObject("hCorrC_1");
+	hCorrC_1->Draw("same");
+	sprintf(str, "Correlation = %6.4f", hCorrC->GetCorrelationFactor());
+	txt.DrawText(1, 4.5, str);
+	cCorr->cd(2);
+	hCorrMC->Draw("color");
+//	hCorrMC->FitSlicesX();
+	hCorrMC->ProfileX("hCorrMC_1");
+	TH1 * hCorrMC_1 = (TH1*) gROOT->FindObject("hCorrMC_1");
+	hCorrMC_1->Draw("same");
+	sprintf(str, "Correlation = %6.4f", hCorrMC->GetCorrelationFactor());
+	txt.DrawText(1, 4.5, str);
+	cCorr->Update();
+	sprintf(str, "%s.pdf)", fname);
+	cCorr->SaveAs(str);
+	
+	TCanvas *cPRL = new TCanvas("PRL", "PRL", 800, 800);
+	cPRL->SetLeftMargin(0.17);
+	cPRL->SetRightMargin(0.03);
+	cPRL->SetTopMargin(0.03);
+	cPRL->SetBottomMargin(0.10);
+	hExpC->SetLineColor(kBlack);
+	hExpC->GetXaxis()->SetRange(0, 50);
+	hExpC->SetTitle(";E, MeV;Events/100 keV");
+	hExpC->SetStats(0);
+	hExpC->GetYaxis()->SetTitleOffset(1.7);
+	hExpC->Draw();
+	sprintf(str, "%s-prl.pdf", fname);
+	cPRL->SaveAs(str);
 }
 
-void draw_22Na(int iFull, int iSer)
+void draw_22Na(int iFull, int iSer, double kSP = 0.5)
 {
 	char str[128];
+	int i;
+	
 	TChain *tMc = new TChain("DanssEvent");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_simple.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_newCuts_transcodeNew.root");
-	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_dl200um_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_dl200um_transcodeNew.root");
+	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_22Na_center_transcode.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {
@@ -294,10 +427,10 @@ void draw_22Na(int iFull, int iSer)
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286_000.root");
 		break;
 	case 2:
-		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012380.root");
-		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012381.root");
-		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012301.root");
-		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_012380.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_012381.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		break;
 	case 4:
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_020243.root");
@@ -317,21 +450,45 @@ void draw_22Na(int iFull, int iSer)
 		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020252.root");
 		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020253.root");
 		break;
+	case 8:
+		for (i=12376; i<=12407; i++) {
+			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
+			tExpA->AddFile(str);
+		}
+		for (i=12212; i<=12304; i++) {
+			if (i == 12240) continue;
+			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
+			tExpB->AddFile(str);
+		}
+		break;
+	case 16:
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020252.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020253.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020254.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_020255.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020256.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020257.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020258.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020259.root");
+		break;
 	default:
 		printf("Not yet.\n");
 		return;
 	}
-	sprintf(str, "22Na_%d_%s", iSer, (iFull) ? "full" : "fast");
-	draw_Src(tMc, tExpA, tExpB, 0.977, "^{22}Na", str);
+	sprintf(str, "22Na_%d_%s-%5.3f", iSer, (iFull) ? "full" : "fast", kSP);
+	draw_Src(tMc, tExpA, tExpB, "^{22}Na", str, kSP);
 }
 
-void draw_60Co(int iFull, int iSer)
+void draw_60Co(int iFull, int iSer, double kSP = 0.5)
 {
 	char str[128];
+	int i;
+	
 	TChain *tMc = new TChain("DanssEvent");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_transcodeNew.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_newCuts_transcodeNew.root");
-	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_dl200um_transcodeNew.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_dl200um_transcodeNew.root");
+	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_60Co_center_transcode.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {
@@ -348,16 +505,16 @@ void draw_60Co(int iFull, int iSer)
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_002286_000.root");
 		break;
 	case 2:
-		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012310.root");
-		tExpA->AddFile("/mnt/dcopy0/danss_root4/danss_012311.root");
-		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012301.root");
-		tExpB->AddFile("/mnt/dcopy0/danss_root4/danss_012302.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_012310.root");
+		tExpA->AddFile("/mnt/root0/danss_root4/danss_012311.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		break;
 	case 4:
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_020233.root");
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_020234.root");
-		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
-		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020230.root");
+		tExpB->AddFile("/mnt/root0/danss_root4/danss_020231.root");
 		break;
 		
 	case 5:
@@ -372,12 +529,25 @@ void draw_60Co(int iFull, int iSer)
 		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020252.root");
 		tExpB->AddFile("../digi.v2/danss_root4_2/danss_020253.root");
 		break;
+	case 8:
+		for (i=12306; i<=12346; i++) {
+			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
+			tExpA->AddFile(str);
+//			printf("Signal: %s\n", str);
+		}
+		for (i=12212; i<=12304; i++) {
+			if (i == 12240) continue;
+			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
+			tExpB->AddFile(str);
+//			printf("Background: %s\n", str);
+		}
+		break;
 	default:
 		printf("Not yet.\n");
 		return;
 	}
-	sprintf(str, "60Co_%d_%s", iSer, (iFull) ? "full" : "fast");
-	draw_Src(tMc, tExpA, tExpB, 0.977, "^{60}Co", str);
+	sprintf(str, "60Co_%d_%s-%5.3f", iSer, (iFull) ? "full" : "fast", kSP);
+	draw_Src(tMc, tExpA, tExpB, "^{60}Co", str, kSP);
 }
 
 void draw_all(void)

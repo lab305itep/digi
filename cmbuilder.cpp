@@ -35,8 +35,8 @@
 
 #define GFREQ2US	(GLOBALFREQ / 1000000)
 #define MAXTDIFF	100.0	// us
-#define MINTRIGE	3.0	// MeV
-#define MAXTRIGE	15.0	// MeV
+#define MINTRIGE	5.0	// MeV
+#define MAXTRIGE	20.0	// MeV
 #define MINVETOE	4.0	// MeV
 #define VETON		2	// number of hits
 #define DANSSVETOE	20.0	// Make veto if VETO counters are silent from Pmt or SiPM
@@ -51,7 +51,7 @@ int IsFission(struct DanssEventStruct4 *DanssEvent)
 
 int IsVeto(struct DanssEventStruct4 *Event)
 {
-	if (Event->VetoCleanEnergy > MINVETOE || Event->VetoCleanHits > VETON || Event->PmtCleanEnergy > DANSSVETOE || Event->SiPmCleanEnergy > DANSSVETOE) return 1;
+	if (Event->VetoCleanEnergy > MINVETOE || Event->VetoCleanHits >= VETON || Event->PmtCleanEnergy > DANSSVETOE || Event->SiPmCleanEnergy > DANSSVETOE) return 1;
 	return 0;
 }
 
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 			if (nCnt) {
 				DanssCm.N = nCnt;
 				tOut->Fill();
-				if (nCnt > 1) CmCnt++;
+				if (nCnt > 0) CmCnt++;
 				nCnt = 0;
 				memset(&DanssCm, 0, sizeof(struct DanssCmStruct));			
 			}
