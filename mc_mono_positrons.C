@@ -1,5 +1,5 @@
 //	Draw MC monochrome positrons
-TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle, const char *what)
+TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle, const char *what, TCut cut = (TCut)"")
 {
 	TFile *f;
 	TH1D *h;
@@ -22,7 +22,7 @@ TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle
 	TCut cZ("PositronX[2] > 3.5 && PositronX[2] < 95.5");
 	TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
 	TCut cGammaMax("AnnihilationMax < 0.8");
-	TCut cSel = cX && cY && cZ && cGamma && cGammaMax;
+	TCut cSel = cX && cY && cZ && cGamma && cGammaMax && cut;
 
 	gROOT->cd();
 	t->Project(hname, what, cSel);
@@ -79,9 +79,10 @@ void all_mono_positrons(void)
 	fOut->Close();
 }
 
-void all_mono_positrons_250keV(void)
+void all_mono_positrons_250keV(const char *outname, TCut cut)
 {
 	int Energy;
+	double E, S;
 	char fvar[20];
 	const char *dir = "/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mono_positrons_250keV/";
 	char strF[1024];
@@ -97,32 +98,39 @@ void all_mono_positrons_250keV(void)
 	double elow, ehigh;
 	TF1 *fg;
 	
+	TString oname(outname);
+	
 	for (i = 0; i < 48; i++) {
 		Energy = 125 + 250 * i;
 		sprintf(fvar, "%d-%d", Energy/1000, Energy%1000);
 		sprintf(strF, "%s/mc_positron%sMeV_transcodeNew.root", dir, fvar);
 		sprintf(strH, "hPE%s", fvar);
 		sprintf(strT, "Reconstructed positron energy for MC mono positrons at %6.3f MeV;E, MeV", Energy/1000.0);
-//		h[i] = mc_mono_positrons(strF, strH, strT, "PositronEnergy");
-		h[i] = mc_mono_positrons(strF, strH, strT, "(PositronEnergy-0.179)/0.929");
+		h[i] = mc_mono_positrons(strF, strH, strT, "PositronEnergy", cut);
+//		h[i] = mc_mono_positrons(strF, strH, strT, "(PositronEnergy-0.179)/0.929");
 	}
-	TFile *fOut = new TFile("mc_mono_positrons_v3.root", "RECREATE");
+	TFile *fOut = new TFile((oname + ".root").Data(), "RECREATE");
 	fOut->cd();
 	for (i=0; i<48; i++) h[i]->Write();
 	
-	gStyle->SetOptStat(0);
+	gStyle->SetOptStat(10000);
 	gStyle->SetOptFit(1);
 	
 	TCanvas *cv = new TCanvas("CV", "CV", 600, 800);
 	
-	cv->SaveAs("mc_mono_positrons_v3n.pdf[");
+	cv->SaveAs((oname+".pdf[").Data());
 	
 	for (i=0; i<48; i++) {
 		cv->Clear();
-//		Energy = 0.125 + 0.25 * i;
-		Energy = h[i]->GetMean();
-		elow=Energy - 1.5 * h[i]->GetRMS();
-		ehigh=Energy + 3 * h[i]->GetRMS();
+		E = 0.125 + 0.25 * i;
+		S = 0.3 * sqrt(E);
+//		E = h[i]->GetMean();
+		elow=E - 2 * S;
+		if (elow < 0) elow = 0;
+		ehigh=E + 5 * S;
+		if (ehigh > 12) ehigh = 12;
+		if (ehigh - elow < 1.5) ehigh = elow + 1.5;
+		printf("E = %f   S = %f   elow = %f    ehigh = %f\n", E, S, elow, ehigh);
 		h[i]->Fit("gaus", "", "", elow, ehigh);
 		fg = h[i]->GetFunction("gaus");
 		elow  = fg->GetParameter(1) - 2 * fg->GetParameter(2);
@@ -133,7 +141,7 @@ void all_mono_positrons_250keV(void)
 		er[i] = fg->GetParameter(1);
 		es[i] = fg->GetParameter(2); 
 		se[i] = sqrt(e[i]);
-		cv->SaveAs("mc_mono_positrons_v3n.pdf");
+		cv->SaveAs((oname+".pdf").Data());
 	}
 
 	cv->Clear();
@@ -168,9 +176,9 @@ void all_mono_positrons_250keV(void)
 	gE->SetTitle("Sigma;#sqrt{E}, MeV;#sigma,MeV");
 	gE->Draw("AP");
 	gE->Fit("pol1", "", "", 1, 2.8);
-	cv->SaveAs("mc_mono_positrons_v3n.pdf");
+	cv->SaveAs((oname+".pdf").Data());
 
-	cv->SaveAs("mc_mono_positrons_v3n.pdf]");
+	cv->SaveAs((oname+".pdf]").Data());
 	
 	delete cv;
 	fOut->Close();

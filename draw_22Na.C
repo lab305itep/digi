@@ -156,7 +156,7 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, const char *name, const
 	sprintf(str, "Monte Carlo energy deposit in %s decay;E, MeV", name);
 	TH1D *hMc = new TH1D("hMc", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo SiPM energy deposit in %s decay;E, MeV", name);
-	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 70, 0, 7);
+	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 35, 0, 7);
 	sprintf(str, "Monte Carlo PMT energy deposit in %s decay;E, MeV", name);
 	TH1D *hMcPMT = new TH1D("hMcPMT", str, 70, 0, 7);
 	sprintf(str, "Monte Carlo energy deposit in %s decay with random;E, MeV", name);
@@ -197,30 +197,31 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, const char *name, const
 	TCut cz50("(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100");
 	TCut ccc("(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400");
 	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
+	TCut cn("SiPmCleanHits > 5");
 	
 	printf("Start.\n");
 	sprintf(str, "%f*SiPmCleanEnergy+%f*PmtCleanEnergy", kSP, 1-kSP);
-	tMc->Project("hMc", str, cxyz && ccc && cVeto);
+	tMc->Project("hMc", str, cxyz && ccc && cVeto && cn);
 	printf("<1>\n");
-	tMc->Project("hMcSiPM", "SiPmCleanEnergy", cxyz && ccc && cVeto);
-	tMc->Project("hMcPMT", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tMc->Project("hMcSiPM", "SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
+	tMc->Project("hMcPMT", "PmtCleanEnergy", cxyz && ccc && cVeto && cn);
 	printf("<2>\n");
 	tMc->Project("hMcHits", "SiPmCleanHits", cxyz && ccc && cVeto);
 	project_hits_distrib(tMc, hMcE);
-	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50 && cVeto);
-	tExpA->Project("hExpA", str, cxyz && ccc && cVeto);
+	tExpA->Project("hXY", "NeutronX[1]+2:NeutronX[0]+2", cxyz && cz50 && cVeto && cn);
+	tExpA->Project("hExpA", str, cxyz && ccc && cVeto && cn);
 	printf("<3>\n");
-	tExpB->Project("hExpB", str, cxyz && ccc && cVeto);
-	tExpA->Project("hExpSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto);
-	tExpB->Project("hExpSiPMB", "SiPmCleanEnergy", cxyz && ccc && cVeto);
-	tExpA->Project("hExpPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto);
-	tExpB->Project("hExpPMTB", "PmtCleanEnergy", cxyz && ccc && cVeto);
+	tExpB->Project("hExpB", str, cxyz && ccc && cVeto && cn);
+	tExpA->Project("hExpSiPMA", "SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
+	tExpB->Project("hExpSiPMB", "SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
+	tExpA->Project("hExpPMTA", "PmtCleanEnergy", cxyz && ccc && cVeto && cn);
+	tExpB->Project("hExpPMTB", "PmtCleanEnergy", cxyz && ccc && cVeto && cn);
 	tExpA->Project("hHitsA", "SiPmCleanHits", cxyz && ccc && cVeto);
 	tExpB->Project("hHitsB", "SiPmCleanHits", cxyz && ccc && cVeto);
-	tExpA->Project("hCorrA", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tExpA->Project("hCorrA", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
 	printf("<4>\n");
-	tExpB->Project("hCorrB", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
-	tMc->Project("hCorrMC", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto);
+	tExpB->Project("hCorrB", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
+	tMc->Project("hCorrMC", "PmtCleanEnergy:SiPmCleanEnergy", cxyz && ccc && cVeto && cn);
 	NA = tExpA->Project("hTmpA", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
 	NB = tExpB->Project("hTmpB", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
 	
@@ -385,6 +386,39 @@ void draw_Src(TChain *tMc, TChain *tExpA, TChain *tExpB, const char *name, const
 	sprintf(str, "%s.pdf)", fname);
 	cCorr->SaveAs(str);
 	
+	sprintf(str, "%s.root", fname);
+	TFile *f = new TFile(str, "RECREATE");
+	if (f->IsOpen()) {
+		f->cd();
+		hMc->Write();
+		hMcSiPM->Write();
+		hMcPMT->Write();
+		hMcR->Write();
+		hMcHits->Write();
+		hMcE->Write();
+		hXY->Write();
+		hExpA->Write();
+		hExpB->Write();
+		hExpC->Write();
+		hExpSiPMA->Write();
+		hExpSiPMB->Write();
+		hExpSiPMC->Write();
+		hExpPMTA->Write();
+		hExpPMTB->Write();
+		hExpPMTC->Write();
+		hEA->Write();
+		hEB->Write();
+		hEC->Write();
+		hHitsA->Write();
+		hHitsB->Write();
+		hHitsC->Write();
+		hCorrA->Write();
+		hCorrB->Write();
+		hCorrC->Write();
+		hCorrMC->Write();
+		f->Close();
+	}
+	
 	TCanvas *cPRL = new TCanvas("PRL", "PRL", 800, 800);
 	cPRL->SetLeftMargin(0.17);
 	cPRL->SetRightMargin(0.03);
@@ -410,7 +444,8 @@ void draw_22Na(int iFull, int iSer, double kSP = 0.5)
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_simple.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_newCuts_transcodeNew.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_22Na_center_dl200um_transcodeNew.root");
-	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_22Na_center_transcode.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_22Na_center_transcode.root");
+	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_22Na_stripHeterogenity_transcode.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {
@@ -488,7 +523,8 @@ void draw_60Co(int iFull, int iSer, double kSP = 0.5)
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_transcodeNew.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_newCuts_transcodeNew.root");
 //	tMc->AddFile("/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mc_60Co_center_dl200um_transcodeNew.root");
-	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_60Co_center_transcode.root");
+//	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_60Co_center_transcode.root");
+	tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_60Co_stripHeterogenity_transcode.root");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
 	switch (2*iSer + iFull) {

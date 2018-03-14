@@ -232,8 +232,32 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	cd->SaveAs(expname + "-pos2mc.pdf");
 
 	TCanvas *cnr = new TCanvas("CNR", "Spectrum ratio: Exp vs MC", 1200, 900);
-//	hExpRatio->Fit("pol1", "", "", 1, 6);
-//	hMcRatio->Fit("pol1", "", "same", 1, 6);
+	TH1D *hExpRatioR = (TH1D *)hExpRatio->Clone("hExpRatioR");
+	TH1D *hOneE = (TH1D *)hExpRatio->Clone("hOne");
+	TH1D *hMcRatioR = (TH1D *)hMcRatio->Clone("hMcRatioR");
+	TH1D *hOneM = (TH1D *)hMcRatio->Clone("hOne");
+	hExpRatioR->SetTitle("Normalized ratio before shutdown / after shutdown");
+	for (i=hOneE->GetXaxis()->GetFirst(); i<=hOneE->GetXaxis()->GetLast(); i++) {
+		hOneE->SetBinContent(i, 1);
+		hOneE->SetBinError(i, 1.0E-10);
+	}
+	for (i=hOneM->GetXaxis()->GetFirst(); i<=hOneM->GetXaxis()->GetLast(); i++) {
+		hOneM->SetBinContent(i, 1);
+		hOneM->SetBinError(i, 1.0E-10);
+	}
+	hExpRatioR->Divide(hOneE, hExpRatio);
+	hMcRatioR->Divide(hOneM, hMcRatio);
+	hExpRatioR->SetMinimum(0.75);
+	hExpRatioR->SetMaximum(1);
+	hExpRatioR->Draw();
+	hMcRatioR->Draw("same");
+	lg = new TLegend(0.2, 0.25, 0.5, 0.4);
+	lg->AddEntry(hExpRatioR, "DANSS data", "LE");
+	lg->AddEntry(hMcRatioR, "Monte Carlo", "LPE");
+	lg->Draw();
+	cnr->SaveAs(expname + "-pos2mc.pdf");
+
+	cnr->Clear();
 	hExpRatio->Draw();
 	hMcRatio->Draw("same");
 	lg = new TLegend(0.2, 0.7, 0.5, 0.85);
@@ -263,8 +287,38 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	pv->SetX2NDC(0.88);
 	pv->SetY1NDC(0.18);
 	pv->SetY2NDC(0.32);
-	cnr->Update();
 
+//		Calculate various chi2
+	TF1 *fPol1 = new TF1("fPol1", "pol1", 0, 10);
+	TLatex *txt = new TLatex();
+	txt->SetTextSize(0.02);
+	fPol1->FixParameter(0, 1);
+	fPol1->FixParameter(1, 0);
+	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
+	sprintf(strl, "Const=1.000  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	txt->DrawLatex(1.5, 1.01, strl);
+	fPol1->FixParameter(0, 1.015);
+	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
+	sprintf(strl, "Const=1.015  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	txt->DrawLatex(1.5, 1.02, strl);
+	fPol1->FixParameter(0, 1.02);
+	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
+	sprintf(strl, "Const=1.02  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	txt->DrawLatex(1.5, 1.03, strl);
+
+	hExpRatio->Fit("pol0", "Q+", "", 1, 6);
+	sprintf(strl, "Const=%5.3f  #chi^{2}/ndf = %7.2f/19", 
+		((TF1*)hExpRatio->FindObject("pol0"))->GetParameter(0),
+		((TF1*)hExpRatio->FindObject("pol0"))->GetChisquare());
+	txt->DrawLatex(1.5, 1.12, strl);
+
+	fPol1->FixParameter(0, ((TF1*)hMcRatio->FindObject("pol1"))->GetParameter(0));
+	fPol1->FixParameter(1, ((TF1*)hMcRatio->FindObject("pol1"))->GetParameter(1));
+	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
+	sprintf(strl, "MC   #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	txt->DrawLatex(1.5, 1.13, strl);
+
+	cnr->Update();
 	cnr->SaveAs(expname + "-pos2mc.pdf");
 	cnr->SaveAs(expname + "-pos2mc.pdf]");
 }

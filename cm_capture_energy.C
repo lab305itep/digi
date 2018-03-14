@@ -104,7 +104,7 @@ void cm_capture_energy(const char *fname, const char *mcname)
 	hMc->SetMarkerColor(kBlue);
 	hMc->GetYaxis()->SetLabelSize(0.06);
 
-	TH1D *hMcSi = new TH1D("HMCSi", "Neutron Monte Carlo: SiPM;Energy of delayed event, MeV", 120, 0, 12);
+	TH1D *hMcSi = new TH1D("HMCSi", "Neutron Monte Carlo: SiPM;Energy of delayed event, MeV", 60, 0, 12);
 	hMcSi->SetLineWidth(4);
 	hMcSi->SetMarkerStyle(21);
 	hMcSi->SetLineColor(kBlue);
@@ -167,38 +167,50 @@ void cm_capture_energy(const char *fname, const char *mcname)
 	fH->SetParNames("Const", "#alpha", "n", "mean", "#sigma");
 	fH->SetLineColor(kRed);
 	fH->SetLineWidth(2);
+	
+	TF1 *fGP2 = new TF1("fGP2", "gaus(0) + pol2(3)", 0, 10);
+	fGP2->SetParNames("Const", "Mean", "#sigma", "P0", "P1", "P2");
+	fGP2->SetLineColor(kRed);
+	fGP2->SetLineWidth(2);
 
 	TCanvas *cv = new TCanvas("CV", "Neutron Capture", 1200, 900);
 	cv->Divide(2, 2);
 	cv->cd(1);
-	fCapt->SetParameters(hcm->GetMaximum(), 1, 10, 6.7, 1, hcm->GetMaximum()/5, 1, 10, 1.8, 0.5);
-	hcm->Fit(fCapt, "L", "0", 0.9, 12);
+//	fCapt->SetParameters(hcm->GetMaximum(), 1, 10, 6.7, 1, hcm->GetMaximum()/5, 1, 10, 1.8, 0.5);
+	fGP2->SetParameters(hcm->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hcm->Fit(fGP2, "", "0", 0.9, 4);
 	hcm->DrawCopy();
 	TVirtualPad *pd2 = cv->cd(2);
 	pd2->SetRightMargin(0.16);
 	hcmxy->Draw("COLZ");
 	cv->cd(3);
-	fH->SetParameters(hpH->GetMaximum(), 1, 1, 1.7, 1);
-	hpH->Fit(fH, "", "", 1, 4);
+//	fH->SetParameters(hpH->GetMaximum(), 1, 1, 1.7, 1);
+	fGP2->SetParameters(hpH->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hpH->Fit(fGP2, "", "", 0.9, 4);
 	cv->cd(4);
-	fMC->SetParameters(hMc->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
-	hMc->Fit(fMC, "", "", 0.5, 4);
+//	fMC->SetParameters(hMc->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
+	fGP2->SetParameters(hMc->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hMc->Fit(fGP2, "", "", 0.9, 4);
 	cv->SaveAs("248Cm.pdf(");
 	
 	TCanvas *cvA = new TCanvas("CVA", "Neutron Capture", 1200, 900);
 	cvA->Divide(2, 2);
 	cvA->cd(1);
-	fCapt->SetParameters(hcmSi->GetMaximum(), 1, 5, 6.7, 1, hcmSi->GetMaximum()/5, 1, 5, 1.8, 0.5);
-	hcmSi->Fit(fCapt, "", "", 0.9, 12);
+//	fCapt->SetParameters(hcmSi->GetMaximum(), 1, 5, 6.7, 1, hcmSi->GetMaximum()/5, 1, 5, 1.8, 0.5);
+	fGP2->SetParameters(hcmSi->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hcmSi->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(2);
-	fCapt->SetParameters(hcmPMT->GetMaximum(), 1, 10, 6.7, 1, hcmPMT->GetMaximum()/5, 1, 10, 1.8, 0.5);
-	hcmPMT->Fit(fCapt, "L", "", 0.9, 12);
+//	fCapt->SetParameters(hcmPMT->GetMaximum(), 1, 10, 6.7, 1, hcmPMT->GetMaximum()/5, 1, 10, 1.8, 0.5);
+	fGP2->SetParameters(hcmPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hcmPMT->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(3);
-	fMC->SetParameters(hMcSi->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
-	hMcSi->Fit(fMC, "", "", 0.5, 4);
+//	fMC->SetParameters(hMcSi->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
+	fGP2->SetParameters(hMcSi->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hMcSi->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(4);
-	fMC->SetParameters(hMcPMT->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
-	hMcPMT->Fit(fMC, "", "", 0.5, 4);
+//	fMC->SetParameters(hMcPMT->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
+	fGP2->SetParameters(hMcPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
+	hMcPMT->Fit(fGP2, "", "", 0.9, 4);
 	cvA->SaveAs("248Cm.pdf)");
 	
 	TCanvas *prl = new TCanvas("PRL", "Neutron capture", 800, 800);
@@ -213,7 +225,7 @@ void cm_capture_energy(const char *fname, const char *mcname)
 	hcm->SetLineColor(kBlack);
 	hcm->SetMarkerStyle(kNone);
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
-	hcm->Draw();
+	hcm->Draw("hist");
 	
 	f.Close();
 }
