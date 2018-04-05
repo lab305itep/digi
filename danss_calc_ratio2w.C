@@ -337,6 +337,7 @@ void draw_single_ratio(const char *nameA, const char *nameB, const char *name, c
 	hAB->SetMaximum(max);
 	hAB->GetYaxis()->SetLabelSize(0.08);
 	hAB->GetXaxis()->SetRange(1, last);
+	hAB->GetYaxis()->SetTitle("");
 	hAB->Fit("pol0", "", "", 1, 8);
 }
 
@@ -610,16 +611,16 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(2, 2);
 
 	cv->cd(1);
-	draw_single_ratio("hDown_4", "hUp_4", "hDownUp_4", "Ratio Down/Up Oct 16-Feb 17;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_4", "hUp_4", "hDownUp_4", "Ratio Down/Up Oct 16-Feb 17;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(2);
-	draw_single_ratio("hDown_12", "hUp_12", "hDownUp_12", "Ratio Down/Up Oct 16-Jul 17;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_12", "hUp_12", "hDownUp_12", "Ratio Down/Up Oct 16-Jul 17;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(3);
-	draw_single_ratio("hDown_0_143", "hUp_0_143", "hDownUp_0_143", "Ratio Down/Up Oct 16-Sep 17;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_0_143", "hUp_0_143", "hDownUp_0_143", "Ratio Down/Up Oct 16-Sep 17;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(4);
-	draw_single_ratio("hDown_28", "hUp_28", "hDownUp_28", "Ratio Down/Up Oct 16-Jan 18;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_28", "hUp_28", "hDownUp_28", "Ratio Down/Up Oct 16-Jan 18;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->Update();
 	cv->Print(pname);
@@ -627,23 +628,23 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(2, 2);
 
 	cv->cd(1);
-	draw_single_ratio("hDown_8", "hUp_8", "hDownUp_8", "Ratio Down/Up Feb-July 17;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_8", "hUp_8", "hDownUp_8", "Ratio Down/Up Feb-July 17;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(2);
-	draw_single_ratio("hDown_16", "hUp_16", "hDownUp_16", "Ratio Down/Up Aug 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_16", "hUp_16", "hDownUp_16", "Ratio Down/Up Aug 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(3);
-	draw_single_ratio("hDown_24", "hUp_24", "hDownUp_24", "Ratio Down/Up Mar 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_24", "hUp_24", "hDownUp_24", "Ratio Down/Up Mar 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->cd(4);
-	draw_single_ratio("hDown_144_193", "hUp_144_193", "hDownUp_144_193", "Ratio Down/Up Oct 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_144_193", "hUp_144_193", "hDownUp_144_193", "Ratio Down/Up Oct 17-Jan 18;Positron energy, MeV", 0.6, 0.9, 24);
 
 	cv->Update();
 	cv->Print(pname);
 
 //	Page 7a: Main plot
 	cv->Clear();
-	draw_single_ratio("hDown_30", "hUp_30", "hDownUpAll", "Ratio Down/Up Oct 16-Jan 18 (ALL);Positron energy, MeV;#frac{N_{DOWN}}{N_{UP}}", 0.6, 0.9, 28);
+	draw_single_ratio("hDown_30", "hUp_30", "hDownUpAll", "Ratio Down/Up Oct 16-Jan 18 (ALL);Positron energy, MeV;#frac{N_{DOWN}}{N_{UP}}", 0.6, 0.9, 24);
 	cv->Update();
 	cv->Print(pname);
 
@@ -653,19 +654,19 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 
 	cv->cd(1);
 	draw_single_ratio("hMid_28", "hUp_28", "hMidUp0", "Ratio Middle/Up All but Apr-June 16;Positron energy, MeV");
-	draw_single_ratio("hMid_30", "hUp_30", "hMidUpAll", "Ratio Middle/Up All;Positron energy, MeV", 0.7, 1, 28);
+	draw_single_ratio("hMid_30", "hUp_30", "hMidUpAll", "Ratio Middle/Up All;Positron energy, MeV", 0.7, 1, 24);
 
 	cv->cd(2);
-	draw_single_ratio("hMid_0_143", "hUp_0_143", "hMidUp1", "Ratio Middle/Up Oct 16-Sep 17;Positron energy, MeV", 0.7, 1, 28);
+	draw_single_ratio("hMid_0_143", "hUp_0_143", "hMidUp1", "Ratio Middle/Up Oct 16-Sep 17;Positron energy, MeV", 0.7, 1, 24);
 
 	cv->cd(3);
-	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up Oct 16 - Feb 17;Positron energy, MeV", 0.7, 1, 28);
+	draw_single_ratio("hMid_4", "hUp_4", "hMidUp2", "Ratio Middle/Up Oct 16 - Feb 17;Positron energy, MeV", 0.7, 1, 24);
 
 	cv->cd(4);
-	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up March-July 17;Positron energy, MeV", 0.7, 1, 28);
+	draw_single_ratio("hMid_8", "hUp_8", "hMidUp3", "Ratio Middle/Up March-July 17;Positron energy, MeV", 0.7, 1, 24);
 
 	cv->cd(5);
-	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up Aug 17-Jan 18;Positron energy, MeV", 0.7, 1, 28);
+	draw_single_ratio("hMid_16", "hUp_16", "hMidUp4", "Ratio Middle/Up Aug 17-Jan 18;Positron energy, MeV", 0.7, 1, 24);
 
 	cv->Update();
 	cv->Print(pname);
@@ -675,22 +676,22 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Divide(3, 2);
 
 	cv->cd(1);
-	draw_single_ratio("hDownUp_4", "hDownUp_28", "hDownUpdr1a", "Double ratio Down/Up Oct 16-Feb 17 / All;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_4", "hDownUp_28", "hDownUpdr1a", "Double ratio Down/Up Oct 16-Feb 17 / All;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->cd(2);
-	draw_single_ratio("hDownUp_12", "hDownUp_28", "hDownUpdr2a", "Double ratio Down/Up Oct 16-Jul 17 / All;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_12", "hDownUp_28", "hDownUpdr2a", "Double ratio Down/Up Oct 16-Jul 17 / All;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->cd(3);
-	draw_single_ratio("hDownUp_0_143", "hDownUp_28", "hDownUpdr3a", "Double ratio Down/Up Oct 16-Sep 17 / All;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_0_143", "hDownUp_28", "hDownUpdr3a", "Double ratio Down/Up Oct 16-Sep 17 / All;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->cd(4);
-	draw_single_ratio("hDownUp_4", "hDownUp_24", "hDownUpdr1r", "Double ratio Down/Up Oct 16-Feb 17 / Mar 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_4", "hDownUp_24", "hDownUpdr1r", "Double ratio Down/Up Oct 16-Feb 17 / Mar 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->cd(5);
-	draw_single_ratio("hDownUp_12", "hDownUp_16", "hDownUpdr2r", "Double ratio Down/Up Oct 16-Jul 17 / Aug 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_12", "hDownUp_16", "hDownUpdr2r", "Double ratio Down/Up Oct 16-Jul 17 / Aug 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->cd(6);
-	draw_single_ratio("hDownUp_0_143", "hDownUp_144_193", "hDownUpdr3r", "Double ratio Down/Up Oct 16-Sep 17 / Oct 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 28);
+	draw_single_ratio("hDownUp_0_143", "hDownUp_144_193", "hDownUpdr3r", "Double ratio Down/Up Oct 16-Sep 17 / Oct 17-Jan 18;Positron energy, MeV", 0.8, 1.2, 24);
 
 	cv->Update();
 	cv->Print(pname);
@@ -721,7 +722,7 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 
 //	Page 9a: after shutdown / before shutdown
 	cv->Clear();
-	draw_normalized_ratio(16, 8, "hNRatio43", "Normalized ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 28, bgScale);
+	draw_normalized_ratio(16, 8, "hNRatio43", "Normalized ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 24, bgScale);
 	cv->Update();
 	cv->Print(pname);
 
@@ -821,4 +822,66 @@ void danss_draw_sp2(const char *fname, double bgScale = 5.6/2.5)
 	hUp->Draw("axis,same");
 	lg->Draw();
 	cv->Print(pname);
+}
+
+void CompareSpectra(const char *nameA, const char *nameB)
+{
+	gStyle->SetOptStat(0);
+	gStyle->SetOptFit(1);
+	
+	TFile *fA = new TFile(nameA);
+	TFile *fB = new TFile(nameB);
+	
+	TH1 *hUpA   = (TH1 *) fA->Get("hUp_30");
+	TH1 *hUpB   = (TH1 *) fB->Get("hUp_30");
+	TH1 *hMidA  = (TH1 *) fA->Get("hMid_30");
+	TH1 *hMidB  = (TH1 *) fB->Get("hMid_30");
+	TH1 *hDownA = (TH1 *) fA->Get("hDown_30");
+	TH1 *hDownB = (TH1 *) fB->Get("hDown_30");
+	
+	if (!(hUpA && hUpB && hMidA && hMidB && hDownA && hDownB)) return;
+	
+	TH1 *hDiffUp    = (TH1 *)hUpA->Clone("hDiffUp");
+	hDiffUp->SetTitle("Position Up, normalized difference;MeV;Difference");
+	TH1 *hRatioUp   = (TH1 *)hUpA->Clone("hRatioUp");
+	hRatioUp->SetTitle("Position Up, ratio;MeV;Ratio");
+	TH1 *hDiffMid   = (TH1 *)hUpA->Clone("hDiffMid");
+	hDiffMid->SetTitle("Position Mid, normalized difference;MeV;Difference");
+	TH1 *hRatioMid  = (TH1 *)hUpA->Clone("hRatioMid");
+	hRatioMid->SetTitle("Position Mid, ratio;MeV;Ratio");
+	TH1 *hDiffDown  = (TH1 *)hUpA->Clone("hDiffDown");
+	hDiffDown->SetTitle("Position Down, normalized difference;MeV;Difference");
+	TH1 *hRatioDown = (TH1 *)hUpA->Clone("hRatioDown");
+	hRatioDown->SetTitle("Position Down, ratio;MeV;Ratio");
+
+	hRatioUp->Divide(hUpA, hUpB);
+	hRatioMid->Divide(hMidA, hMidB);
+	hRatioDown->Divide(hDownA, hDownB);
+
+	hDiffUp->Add(hUpA, hUpB, 1, -hUpA->Integral()/hUpB->Integral());
+	hDiffMid->Add(hMidA, hMidB, 1, -hMidA->Integral()/hMidB->Integral());
+	hDiffDown->Add(hDownA, hDownB, 1, -hDownA->Integral()/hDownB->Integral());
+
+	hRatioUp->GetXaxis()->SetRange(1, 24);
+	hRatioMid->GetXaxis()->SetRange(1, 24);
+	hRatioDown->GetXaxis()->SetRange(1, 24);
+	hDiffUp->GetXaxis()->SetRange(1, 24);
+	hDiffMid->GetXaxis()->SetRange(1, 24);
+	hDiffDown->GetXaxis()->SetRange(1, 24);
+	
+	TCanvas *cv = new TCanvas("CV", "CV", 1200, 800);
+	cv->Divide(3, 2);
+	cv->cd(1);
+	hRatioUp->Fit("pol0");
+	cv->cd(2);
+	hRatioMid->Fit("pol0");
+	cv->cd(3);
+	hRatioDown->Fit("pol0");
+	cv->cd(4);
+	hDiffUp->Fit("pol0");
+	cv->cd(5);
+	hDiffMid->Fit("pol0");
+	cv->cd(6);
+	hDiffDown->Fit("pol0");
+	
 }

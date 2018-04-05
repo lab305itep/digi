@@ -1,3 +1,23 @@
+TRandom2 rnd;
+
+class MyRandom {
+    public:
+	inline MyRandom(void) {;};
+	inline ~MyRandom(void) {;};
+	static inline double Gaus(double mean = 0, double sigma = 1) 
+		{
+		return rnd.Gaus(mean, sigma);
+	};
+	static inline double GausAdd(double val, double sigma)
+	{
+		return rnd.Gaus(val, sqrt(val)*sigma);
+	};
+	static inline double GausAdd2(double val, double sigma)
+	{
+		return rnd.Gaus(val, val*sigma);
+	};
+};
+
 //	Crystall Ball function
 double CBfunction(double *x, double *par)
 {
@@ -58,9 +78,11 @@ double MCFunction(double *x, double *par)
 	return CBfunction(x, par) + par[5] + x[0]*par[6] + x[0]*x[0]*par[7];
 }
 
-void cm_capture_energy(const char *fname, const char *mcname)
+void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
 {
 	int i, j;
+	char str[2048];
+	
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
 	gStyle->SetOptFit(1);
@@ -145,10 +167,13 @@ void cm_capture_energy(const char *fname, const char *mcname)
 	
 	gROOT->cd();
 	t->Project("HDC", "(SiPmCleanEnergy[1]+PmtCleanEnergy[1])/2", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
-	tMc->Project("HMC", "(SiPmCleanEnergy+PmtCleanEnergy)/2");
+	sprintf(str, "MyRandom::GausAdd((SiPmCleanEnergy+PmtCleanEnergy)/2, %6.4f)", kRndm);
+	tMc->Project("HMC", str);
 	t->Project("HDCSi", "SiPmCleanEnergy[1]", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
+	sprintf(str, "MyRandom::GausAdd(SiPmCleanEnergy, %6.4f)", kRndm);
 	tMc->Project("HMCSi", "SiPmCleanEnergy");
 	t->Project("HDCPMT", "PmtCleanEnergy[1]", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
+	sprintf(str, "MyRandom::GausAdd(PmtCleanEnergy, %6.4f)", kRndm);
 	tMc->Project("HMCPMT", "PmtCleanEnergy");
 	t->Project("HPH", "PositronEnergy[1]", "N>1 && gtDiff[1]/125<5 && gtDiff[1]/125>1 && Hits[1] < 5");
 	t->Project("HXY", "NeutronX[1][1]+2:NeutronX[1][0]+2", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2 && NeutronX[1][1]>=0 && NeutronX[1][0]>=0");
@@ -225,7 +250,16 @@ void cm_capture_energy(const char *fname, const char *mcname)
 	hcm->SetLineColor(kBlack);
 	hcm->SetMarkerStyle(kNone);
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
-	hcm->Draw("hist");
+	hcm->Draw("e");
+	hMc->SetFillStyle(kNone);
+	hMc->Scale(hcm->Integral(60, 120) / hMc->Integral(60, 120));
+	hMc->Draw("same,hist");
+	TLegend *lg = new TLegend(0.3, 0.75, 0.5, 0.85);
+	lg->AddEntry(hcm, "Experiment", "LE");
+	sprintf(str, "MC+%2.0f%%/#sqrt{E}", 100*kRndm);
+	lg->AddEntry(hMc, str, "L");
+	lg->Draw();
+	prl->Update();
 	
 	f.Close();
 }
