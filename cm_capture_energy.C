@@ -236,7 +236,7 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
 //	fMC->SetParameters(hMcPMT->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMcPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMcPMT->Fit(fGP2, "", "", 0.9, 4);
-	cvA->SaveAs("248Cm.pdf)");
+	cvA->SaveAs("248Cm.pdf");
 	
 	TCanvas *prl = new TCanvas("PRL", "Neutron capture", 800, 800);
 	prl->cd();
@@ -252,14 +252,15 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
 	hcm->Draw("e");
 	hMc->SetFillStyle(kNone);
-	hMc->Scale(hcm->Integral(60, 120) / hMc->Integral(60, 120));
+	hMc->Scale(hcm->Integral(65, 120) / hMc->Integral(65, 120));
 	hMc->Draw("same,hist");
-	TLegend *lg = new TLegend(0.3, 0.75, 0.5, 0.85);
+	TLegend *lg = new TLegend(0.75, 0.8, 0.95, 0.95);
 	lg->AddEntry(hcm, "Experiment", "LE");
 	sprintf(str, "MC+%2.0f%%/#sqrt{E}", 100*kRndm);
 	lg->AddEntry(hMc, str, "L");
 	lg->Draw();
 	prl->Update();
+	prl->SaveAs("248Cm.pdf)");
 	
 	f.Close();
 }
