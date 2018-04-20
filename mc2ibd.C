@@ -11,7 +11,7 @@ TCut cGammaMax("AnnihilationMax < 0.8");
 TCut cPe("PositronEnergy > 1");
 TCut cN("NeutronEnergy > 3.5");
 
-void mc2ibd_gtDiff(TTree *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 {
 	char str[1024];
 	TLatex *txt = new TLatex();
@@ -50,9 +50,9 @@ void mc2ibd_gtDiff(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	lg->AddEntry(fExp, "Capture exponent fit", "L");
 	lg->Draw();
 	sprintf(str, "#tau_{capt}=%5.2f us", -1/fExp->GetParameter(1));
-	txt->DrawLatex(20, 15000, str);
+	txt->DrawLatex(20, hExp->GetMaximum()/5, str);
 	sprintf(str, "#chi^{2}/NDF=%6.1f/34", fExp->GetChisquare());
-	txt->DrawLatex(20, 7000, str);
+	txt->DrawLatex(20, hExp->GetMaximum()/10, str);
 	
 	cv->cd(2);
 	f2Exp->SetParameters(hMC->GetMaximum(), 13, 5);
@@ -60,12 +60,12 @@ void mc2ibd_gtDiff(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	hMC->Fit(fExp, "+", "", 15, 50);
 	lg->Draw();
 	sprintf(str, "#tau_{capt}=%5.2f us", -1/fExp->GetParameter(1));
-	txt->DrawLatex(20, 1600, str);
+	txt->DrawLatex(20, hMC->GetMaximum()/5, str);
 	sprintf(str, "#chi^{2}/NDF=%6.1f/34", fExp->GetChisquare());
-	txt->DrawLatex(20, 700, str);
+	txt->DrawLatex(20, hMC->GetMaximum()/10, str);
 }
 
-void mc2ibd_R1(TTree *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_R1(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 {
 	char str[1024];
 	TLatex *txt = new TLatex();
@@ -95,7 +95,7 @@ void mc2ibd_R1(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	lg->Draw();
 }
 
-void mc2ibd_R2(TTree *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_R2(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 {
 	char str[1024];
 	TLatex *txt = new TLatex();
@@ -125,7 +125,7 @@ void mc2ibd_R2(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	lg->Draw();
 }
 
-void mc2ibd_NE(TTree *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_NE(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 {
 	char str[1024];
 	TLatex *txt = new TLatex();
@@ -155,7 +155,7 @@ void mc2ibd_NE(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	lg->Draw();
 }
 
-void mc2ibd_PX(TTree *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_PX(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 {
 	char str[1024];
 	int i;
@@ -211,15 +211,83 @@ void mc2ibd_PX(TTree *tMC, TFile *fBgnd, TCanvas *cv)
 	lg->Draw();
 }
 
+void mc2ibd_PPX(char X, TChain *tMC, TFile *fBgnd, TCanvas *cv)
+{
+	char str[1024];
+	TH1D *hExp;
+	TH1D *hMC;
+	TCut cut;
+
+	sprintf(str, "hP%cA-diff", X);
+	hExp = (TH1D *) fBgnd->Get(str);
+	if (!hExp) {
+		printf("Histogram hP%cA-diff not found in %s\n", X, fBgnd->GetName());
+		return;
+	}
+	gROOT->cd();
+	sprintf(str, "hMCPP%c", X);
+	hMC = new TH1D(str, "MC XYZ", hExp->GetNbinsX(), 0, 100);
+	sprintf(str, "PositronX[%d]+%4.1f", X - 'X', (X=='Z') ? 0.5 : 2.0);
+	switch (X) {
+	case 'X':
+		cut = cY && "PositronX[0]>=0" && cZ && cR && c20 && cGamma && cGammaMax && cPe && cN;
+		break;
+	case 'Y':
+		cut = cX && "PositronX[1]>=0" && cZ && cR && c20 && cGamma && cGammaMax && cPe && cN;
+		break;
+	default:
+		cut = cX && cY && cR && c20 && cGamma && cGammaMax && cPe && cN;
+	}
+	tMC->Project(hMC->GetName(), str, cut);
+	hMC->Sumw2();
+	cv->Clear();
+	hExp->SetMarkerStyle(kFullStar);
+	hExp->SetMarkerColor(kBlue);
+	hExp->SetLineColor(kBlue);
+	hExp->SetMarkerSize(3);
+	hExp->SetMarkerStyle(kDot);
+	hMC->SetLineColor(kBlack);
+	hMC->SetLineWidth(3);
+	hMC->Scale(hExp->Integral() / hMC->Integral());
+	hExp->Draw();
+	hMC->Draw("same");
+	TLegend *lg = new TLegend(0.5, 0.2, 0.65, 0.35);
+	lg->AddEntry(hExp, "IBD", "P");
+	lg->AddEntry(hMC,  "MC",  "LE");
+	lg->Draw();
+	cv->Update();
+}
+
+TChain *make_mc_tree(const char *fname = NULL)
+{
+	int i;
+	const char files[4][256] = {
+		"mc_ibd_235U_transcode_pair.root",
+		"mc_ibd_238U_transcode_pair.root",
+		"mc_ibd_239Pu_transcode_pair.root",
+		"mc_ibd_241Pu_transcode_pair.root"
+	};
+
+	TChain *tMC = new TChain("DanssPair", "DanssPair");
+	if (fname != NULL && strcasecmp(fname, "all")) {
+		tMC->AddFile(fname);
+	} else {
+		for (i=0; i<4; i++) tMC->AddFile(files[i]);
+	}
+	if (!tMC->GetEntries()) return NULL;
+	return tMC;
+}
+
 void mc2ibd(const char *mcfile, const char *bgndfile)
 {
+	int i;
+
 	gStyle->SetOptStat(0);
 	gStyle->SetOptFit(1);
 
-	TFile *fMC = new TFile(mcfile);
 	TFile *fBgnd = new TFile(bgndfile);
-	if (!fMC->IsOpen() || !fBgnd->IsOpen()) return;
-	TTree *tMC = (TTree *) fMC->Get("DanssPair");
+	if (!fBgnd->IsOpen()) return;
+	TChain *tMC = make_mc_tree(mcfile);
 	if (!tMC) {
 		printf("DanssPair tree not found in %s\n", mcfile);
 		return;
@@ -239,11 +307,16 @@ void mc2ibd(const char *mcfile, const char *bgndfile)
 	mc2ibd_NE(tMC, fBgnd, cv);
 	cv->SaveAs("mc2ibd.pdf");
 
-	mc2ibd_PX(tMC, fBgnd, cv);
-	cv->SaveAs("mc2ibd.pdf");
+//	mc2ibd_PX(tMC, fBgnd, cv);
+//	cv->SaveAs("mc2ibd.pdf");
+	
+	for(i=0; i<3; i++) {
+		mc2ibd_PPX('X'+i, tMC, fBgnd, cv);
+		cv->SaveAs("mc2ibd.pdf");
+	}
 	
 	cv->SaveAs("mc2ibd.pdf]");
-	fMC->Close();
+
 	fBgnd->Close();
 }
 
@@ -291,7 +364,7 @@ void ibd_xyzratio(const char *fileA, const char *fileB, const char *title)
 	fB->Close();
 }
 
-void mc_xyzratio(const char *file)
+void mc_xyzratio(const char *fname = NULL)
 {
 	TH1D *hA[3];
 	TH1D *hB[3];
@@ -300,15 +373,13 @@ void mc_xyzratio(const char *file)
 	char str[256];
 	const int Color[] = {kRed, kBlue, kGreen};
 	TCut cut;
-	
-	TFile *f = new TFile(file);
-	if (!f->IsOpen()) return;
-	TTree *tMC = (TTree *) f->Get("DanssPair");
+
+	TChain *tMC = make_mc_tree(fname);
 	if (!tMC) {
-		printf("DanssPair tree not found in %s\n", file);
+		printf("DanssPair tree not found\n");
 		return;
 	}
-	
+
 	gROOT->cd();
 	for (i=0; i<3; i++) {
 		sprintf(str, "hMCgt3P%c", 'X'+i);
@@ -347,6 +418,4 @@ void mc_xyzratio(const char *file)
 	}
 	lg->Draw();
 	cv->SaveAs("XYZ-ratioMC.pdf");
-	
-	f->Close();
 }
