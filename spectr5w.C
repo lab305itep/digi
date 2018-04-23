@@ -21,7 +21,8 @@ void make_cuts(TCut &cSig, TCut &cBgnd, TCut cAux)
         TCut cR1("Distance < 45");
         TCut cR2("Distance < 55");
         TCut cRZ("fabs(DistanceZ) < 40");
-        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+//        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+        TCut cR = cR2 && (cRXY || cR1);
         TCut cN("NeutronEnergy > 3.5");
 	TCut cSel = cX && cY && cZ && cR && c20 && cGamma && cGammaMax && cN && cPe && cIso && cShower && cAux;
 	cSig = cSel && cVeto;
@@ -37,6 +38,8 @@ TH1D *spectr5(int nSect, const char *prefix, int mask, int run_from, int run_to,
 	gStyle->SetOptStat(1001100);
 	make_cuts(cSig, cBgnd, cAux);
 //		Background tail correction
+//	TF1 fBgndN("fBgndN", "0.01370-0.00057*x", 0, 100);
+//	TF1 fBgndC("fBgndC", "0.06217-0.00288*x", 0, 100);
 	TF1 fBgndN("fBgndN", "0.01370-0.00057*x", 0, 100);
 	TF1 fBgndC("fBgndC", "0.06217-0.00288*x", 0, 100);
 

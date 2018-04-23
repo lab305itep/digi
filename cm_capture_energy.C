@@ -78,10 +78,12 @@ double MCFunction(double *x, double *par)
 	return CBfunction(x, par) + par[5] + x[0]*par[6] + x[0]*x[0]*par[7];
 }
 
-void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
+void cm_capture_energy(const char *fname, const char *mcname, double kRndm, double scale)
 {
 	int i, j;
 	char str[2048];
+	double chi2;
+	TLatex txt;
 	
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
@@ -166,13 +168,16 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
 	if (!tMc) return;
 	
 	gROOT->cd();
-	t->Project("HDC", "(SiPmCleanEnergy[1]+PmtCleanEnergy[1])/2", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
+	sprintf(str, "%f*(SiPmCleanEnergy[1]+PmtCleanEnergy[1])/2", scale);
+	t->Project("HDC", str, "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
 	sprintf(str, "MyRandom::GausAdd((SiPmCleanEnergy+PmtCleanEnergy)/2, %6.4f)", kRndm);
 	tMc->Project("HMC", str);
-	t->Project("HDCSi", "SiPmCleanEnergy[1]", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
+	sprintf(str, "%f*SiPmCleanEnergy[1]", scale);
+	t->Project("HDCSi", str, "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
 	sprintf(str, "MyRandom::GausAdd(SiPmCleanEnergy, %6.4f)", kRndm);
 	tMc->Project("HMCSi", "SiPmCleanEnergy");
-	t->Project("HDCPMT", "PmtCleanEnergy[1]", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
+	sprintf(str, "%f*PmtCleanEnergy[1]", scale);
+	t->Project("HDCPMT", str, "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
 	sprintf(str, "MyRandom::GausAdd(PmtCleanEnergy, %6.4f)", kRndm);
 	tMc->Project("HMCPMT", "PmtCleanEnergy");
 	t->Project("HPH", "PositronEnergy[1]", "N>1 && gtDiff[1]/125<5 && gtDiff[1]/125>1 && Hits[1] < 5");
@@ -252,13 +257,19 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm)
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
 	hcm->Draw("e");
 	hMc->SetFillStyle(kNone);
-	hMc->Scale(hcm->Integral(65, 120) / hMc->Integral(65, 120));
+	hMc->Scale(hcm->Integral(68, 120) / hMc->Integral(68, 120));
 	hMc->Draw("same,hist");
-	TLegend *lg = new TLegend(0.75, 0.8, 0.95, 0.95);
-	lg->AddEntry(hcm, "Experiment", "LE");
+	TLegend *lg = new TLegend(0.70, 0.83, 0.98, 0.95);
+	sprintf(str, "Experiment * %5.1f%%", 100*scale);
+	lg->AddEntry(hcm, str, "LE");
 	sprintf(str, "MC+%2.0f%%/#sqrt{E}", 100*kRndm);
 	lg->AddEntry(hMc, str, "L");
 	lg->Draw();
+	chi2 = 0;
+	for (i=68; i<=120; i++) chi2 += (hcm->GetBinContent(i) - hMc->GetBinContent(i)) * (hcm->GetBinContent(i) - hMc->GetBinContent(i)) /
+		(hcm->GetBinError(i) * hcm->GetBinError(i) + hMc->GetBinError(i) * hMc->GetBinError(i));
+	sprintf(str, "#chi^{2}/n.d.f. = %6.1f / 52", chi2);
+	txt.DrawLatex(1.5, 0.05*hcm->GetMaximum(), str);
 	prl->Update();
 	prl->SaveAs("248Cm.pdf)");
 	
