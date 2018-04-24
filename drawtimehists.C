@@ -3,6 +3,7 @@ int ChannelNumber;
 TFile *RootFile;
 FILE *RepFile;
 TCanvas *cv;
+TH1D *hSum;
 
 int Open(const char *name)
 {
@@ -36,7 +37,10 @@ void Draw(int update = 1)
 		cv->cd(i+1);
 		sprintf(str, "hDT%2.2dc%2.2d", UnitNumber, ChannelNumber + i);
 		h = (TH1 *) RootFile->Get(str);
-		if (h) h->Draw();
+		if (h) {
+			h->Draw();
+			hSum->Add(h);
+		}
 		if (h->GetEntries() > 1000 && RepFile) 
 			fprintf(RepFile, "Channel=%2.2d.%2.2d  DT=%6.1f\n", UnitNumber, ChannelNumber + i, h->GetMean());
 	}
@@ -79,10 +83,16 @@ void Print(const char *name)
 	strcpy(ptr, "[");
 	cv->Print(str);
 	*ptr = '\0';
+	hSum = new TH1D("hTimeSum", "Average time distribution", 250, -25, 25);
 	for (UnitNumber = 1; UnitNumber < 48; UnitNumber++) for (ChannelNumber = 0; ChannelNumber<64; ChannelNumber += 16) {
 		Draw(1);
 		cv->Print(str);
 	}
+	cv->Clear();
+	gStyle->SetOptFit(1);
+	hSum->Fit("gaus");
+	cv->Update();
+	cv->Print(str);
 	strcpy(ptr, "]");
 	cv->Print(str);
 }
