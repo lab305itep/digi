@@ -1,19 +1,19 @@
-void digi_statone(int num)
+void digi_statone(int num, const char *root_dir)
 {
 	char fname[1024];
 	double tm;
 	char start[64], stop[64];
 	
-	sprintf(fname, "danss_root4/danss_%6.6d.root", num);
+	sprintf(fname, "%s/danss_%6.6d.root", root_dir, num);
 	TFile *f = new TFile(fname);
 	if (!f->IsOpen()) {
-		printf("File %s not found\n", fname);
+		printf("%d 0 file %s not found\n", num, fname);
 		return;
 	}
 
 	TTree *info = (TTree *) f->Get("DanssInfo");
 	if (!info) {
-		printf("File %s - no info\n", fname);
+		printf("%d 0 file %s - no info\n", num, fname);
 		return;
 	}
 	info->GetEntry(0);
@@ -24,7 +24,7 @@ void digi_statone(int num)
 	
 	TTree *evt = (TTree *) f->Get("DanssEvent");
 	if (!evt) {
-		printf("File %s - no events\n", fname);
+		printf("%d 0 file %s - no events\n", num, fname);
 		return;
 	}
 
@@ -45,7 +45,7 @@ void digi_statone(int num)
 //	
 	strftime(start, sizeof(start), "%F %R", localtime(&tStart));
 	strftime(stop , sizeof(stop) , "%R", localtime(&tStop));
-	printf("%6d %2d %s %s %5.0f   %8d %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f %6.1f\n", 
+	printf("%6d %2d %s %s %5.0f   %8d %6.1f %6.1f %6.1f %6.2f %6.1f %6.1f %6.1f %6.1f %6.1f\n", 
 		num, ipos, start, stop, tm, N, N/tm, veto/tm, vetoOnly/tm, danssOnly/tm, gt1MeV/tm, gt3MeV/tm, gt20MeV/tm, positrons/tm, neutrons/tm);
 
 	f->Close();
@@ -62,14 +62,13 @@ void digi_statlist(void)
 	int i;
 	
 	digi_stattitle();
-	for (i=0; i<sizeof(runs)/sizeof(runs[0]); i++) digi_statone(runs[i]);
+	for (i=0; i<sizeof(runs)/sizeof(runs[0]); i++) digi_statone(runs[i], "/mnt/root1/danss_root5");
 }
 
-void digi_stat(int first, int last)
+void digi_stat(int first, int last, const char *root_dir = "/mnt/root1/danss_root5")
 {
 	int i;
 	
 	digi_stattitle();
-	for (i=first; i<=last; i++) digi_statone(i);
+	for (i=first; i<=last; i++) digi_statone(i, root_dir);
 }
-

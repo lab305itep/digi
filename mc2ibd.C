@@ -261,11 +261,17 @@ void mc2ibd_PPX(char X, TChain *tMC, TFile *fBgnd, TCanvas *cv)
 TChain *make_mc_tree(const char *fname = NULL)
 {
 	int i;
+//	const char files[4][256] = {
+//		"mc_ibd_235U_transcode_pair.root",
+//		"mc_ibd_238U_transcode_pair.root",
+//		"mc_ibd_239Pu_transcode_pair.root",
+//		"mc_ibd_241Pu_transcode_pair.root"
+//	};
 	const char files[4][256] = {
-		"mc_ibd_235U_transcode_pair.root",
-		"mc_ibd_238U_transcode_pair.root",
-		"mc_ibd_239Pu_transcode_pair.root",
-		"mc_ibd_241Pu_transcode_pair.root"
+		"mc_ibdNewGd_235U_transcode_pair.root",
+		"mc_ibdNewGd_238U_transcode_pair.root",
+		"mc_ibdNewGd_239Pu_transcode_pair.root",
+		"mc_ibdNewGd_241Pu_transcode_pair.root"
 	};
 
 	TChain *tMC = new TChain("DanssPair", "DanssPair");

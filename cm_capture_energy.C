@@ -78,12 +78,17 @@ double MCFunction(double *x, double *par)
 	return CBfunction(x, par) + par[5] + x[0]*par[6] + x[0]*x[0]*par[7];
 }
 
-void cm_capture_energy(const char *fname, const char *mcname, double kRndm, double scale)
+void cm_capture_energy(const char *fname, const char *mcname, double kRndm, double scale, int kEmin, int kEmax)
 {
 	int i, j;
 	char str[2048];
 	double chi2;
 	TLatex txt;
+	
+	if (kEmin < 1 || kEmin > kEmax || kEmax > 120) {
+		printf("1 <= kEmin <= kEmax <= 120: kEmin = %d, kEmax = %d\n", kEmin, kEmax);
+		return;
+	}
 	
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
@@ -162,10 +167,19 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	if (!f.IsOpen()) return;
 	TTree *t = (TTree *) f.Get("DanssCm");
 	if (!t) return;
-	TFile fMc(mcname);
-	if (!fMc.IsOpen()) return;
-	TTree *tMc = (TTree *) fMc.Get("DanssEvent");
-	if (!tMc) return;
+	TChain *tMc = new TChain("DanssEvent", "DanssEvent");
+	if (!strcasecmp(mcname, "all")) {
+		tMc->AddFile("/mnt/root0/danss_root4/mc_248Cm_neutron_Gd_corr_transcode.root");
+		tMc->AddFile("/mnt/root0/danss_root4/mc_248Cm_neutron_Gd_corr_0_transcode.root");
+		tMc->AddFile("/mnt/root0/danss_root4/mc_248Cm_neutron_Gd_corr_1_transcode.root");
+		tMc->AddFile("/mnt/root0/danss_root4/mc_248Cm_neutron_Gd_corr_2_transcode.root");
+	} else {
+		tMc->AddFile(mcname);
+	}
+//	TFile fMc(mcname);
+//	if (!fMc.IsOpen()) return;
+//	TTree *tMc = (TTree *) fMc.Get("DanssEvent");
+	if (!tMc->GetEntries()) return;
 	
 	gROOT->cd();
 	sprintf(str, "%f*(SiPmCleanEnergy[1]+PmtCleanEnergy[1])/2", scale);
@@ -203,6 +217,9 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	fGP2->SetLineColor(kRed);
 	fGP2->SetLineWidth(2);
 
+	sprintf(str, "248Cm_R%4.2f_N%5.3f.pdf", kRndm, scale);
+	TString pdfName(str);
+	
 	TCanvas *cv = new TCanvas("CV", "Neutron Capture", 1200, 900);
 	cv->Divide(2, 2);
 	cv->cd(1);
@@ -221,7 +238,7 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 //	fMC->SetParameters(hMc->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMc->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMc->Fit(fGP2, "", "", 0.9, 4);
-	cv->SaveAs("248Cm.pdf(");
+	cv->SaveAs((pdfName+"(").Data());
 	
 	TCanvas *cvA = new TCanvas("CVA", "Neutron Capture", 1200, 900);
 	cvA->Divide(2, 2);
@@ -241,7 +258,7 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 //	fMC->SetParameters(hMcPMT->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMcPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMcPMT->Fit(fGP2, "", "", 0.9, 4);
-	cvA->SaveAs("248Cm.pdf");
+	cvA->SaveAs(pdfName.Data());
 	
 	TCanvas *prl = new TCanvas("PRL", "Neutron capture", 800, 800);
 	prl->cd();
@@ -257,7 +274,7 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
 	hcm->Draw("e");
 	hMc->SetFillStyle(kNone);
-	hMc->Scale(hcm->Integral(68, 120) / hMc->Integral(68, 120));
+	hMc->Scale(hcm->Integral(kEmin, kEmax) / hMc->Integral(kEmin, kEmax));
 	hMc->Draw("same,hist");
 	TLegend *lg = new TLegend(0.70, 0.83, 0.98, 0.95);
 	sprintf(str, "Experiment * %5.1f%%", 100*scale);
@@ -266,12 +283,14 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	lg->AddEntry(hMc, str, "L");
 	lg->Draw();
 	chi2 = 0;
-	for (i=68; i<=120; i++) chi2 += (hcm->GetBinContent(i) - hMc->GetBinContent(i)) * (hcm->GetBinContent(i) - hMc->GetBinContent(i)) /
+	for (i=kEmin; i<=kEmax; i++) chi2 += (hcm->GetBinContent(i) - hMc->GetBinContent(i)) * (hcm->GetBinContent(i) - hMc->GetBinContent(i)) /
 		(hcm->GetBinError(i) * hcm->GetBinError(i) + hMc->GetBinError(i) * hMc->GetBinError(i));
 	sprintf(str, "#chi^{2}/n.d.f. = %6.1f / 52", chi2);
-	txt.DrawLatex(1.5, 0.05*hcm->GetMaximum(), str);
+	txt.DrawLatex(1.5, 0.1*hcm->GetMaximum(), str);
+	sprintf(str, "[%4.1f-%4.1f] MeV", (kEmin-1)*0.1, kEmax*0.1);
+	txt.DrawLatex(1.5, 0.04*hcm->GetMaximum(), str);
 	prl->Update();
-	prl->SaveAs("248Cm.pdf)");
-	
+	prl->SaveAs((pdfName+")").Data());
+
 	f.Close();
 }

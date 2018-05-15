@@ -159,6 +159,48 @@ struct DanssEventStruct4 {
 	int		NHits;			// Number of hits
 };
 
+struct DanssEventStruct5 {
+//		Common parameters
+	long long	globalTime;		// time in terms of 125 MHz
+	long long	number;			// event number in the file
+	int		runNumber;		// the run number
+	int		unixTime;		// linux time, seconds
+	float		fineTime;		// fine time of the event (for hit selection)
+//		Veto parameters
+	int		VetoHits;		// hits in the event record
+	float		VetoEnergy;		// Energy Sum of all hits
+	int		VetoCleanHits;		// hits above threshold and in time window
+	float		VetoCleanEnergy;	// Energy Sum of clean hits
+//		PMT parameters
+	int		PmtHits;		// the same as above for PMT
+	float		PmtEnergy;
+	int		PmtCleanHits;
+	float		PmtCleanEnergy;
+//		SiPM parameters
+	int		SiPmHits;		// the same as above for PMT
+	float		SiPmEnergy;
+	int		SiPmCleanHits;
+	float		SiPmCleanEnergy;
+	int		SiPmEarlyHits;		// to understand random background
+	float		SiPmEarlyEnergy;
+//		"positron cluster" parameters
+	int		PositronHits;		// hits in the cluster
+	int		PositronFlags;		// Positron flags
+	float		PositronMinLen;		// Minimum track length to create the cluster
+	float		PositronEnergy;		// Energy sum of the cluster, corrected (SiPM+PMT)
+	float		TotalEnergy;		// Event full energy correctd (SiPM+PMT)
+	float		PositronSiPmEnergy;	// SiPM energy in the cluster, corrected
+	float		PositronPmtEnergy;	// PMT energy in the cluster, corrected
+	float		PositronX[3];		// cluster position
+	int		AnnihilationGammas;	// number of possible annihilation gammas
+	float		AnnihilationEnergy;	// Energy in annihilation gammas
+	float		AnnihilationMax;	// Energy in the maximum annihilation hit
+//		"neutron" parameters
+	float		NeutronX[3];		// center of gammas position
+//	float		NeutronRadius;		// average distance between hits and the center
+	int		NHits;			// Number of hits
+};
+
 //	Positron flag masks
 #define PFLAG_MAXENERGY		1		// Too much energy in DANSS
 #define PFLAG_NOCLUSTER		2		// No cluster
@@ -364,6 +406,50 @@ struct DanssPairStruct5 {
 	float		PositronMinLen;		// mimimum track length for the cluster
 	float		PositronEnergy;		// Energy sum of the cluster (SiPM)
 	float		TotalEnergy;		// Energy of the maximum hit (SiPM)
+	float		PositronX[3];		// cluster position
+	int		AnnihilationGammas;	// number of possible annihilation gammas
+	float		AnnihilationEnergy;	// Energy in annihilation gammas
+	float		AnnihilationMax;	// Energy in the maximum annihilation hit
+//		"neutron" parameters
+	int		NeutronHits;		// number of hits considered as neutron capture gammas
+	float		NeutronEnergy;		// Energy sum of above (SiPM)
+	float		NeutronX[3];		// center of gammas position
+//		Pair parameters
+	float		gtDiff;			// time difference in us between positron and neutron
+	float		Distance;		// distance between neutron and positron, cm
+	float		DistanceZ;		// in Z, cm
+//		Environment
+	float		gtFromPrevious;		// time from the previous hit before positron, us
+	float		PreviousEnergy;		// energy of the previous event
+	float		gtToNext;		// time to the next hit after neutron, counted from positron, us
+	float		NextEnergy;		// energy of the next event
+	int		EventsBetween;		// Events between positron and neutron
+//		Veto
+	float		gtFromVeto;		// time from the last Veto event
+	int		VetoHits;		// hits in Veto counters
+	float		VetoEnergy;		// Energy in Veto counters
+	float		DanssEnergy;		// Veto Energy in Danss (Pmt + SiPm)/2
+	float		gtFromShower;		// time from large energy shower in DANSS
+	float		ShowerEnergy;		// shower event energy in DANSS (Pmt + SiPm)/2
+//		Hits
+	int		NPHits;			// Number of hits in "positron event"
+	int		NNHits;			// Number of hits in "neutron event"
+};
+
+struct DanssPairStruct6 {
+//		Common parameters
+	long long	number[2];		// event numbers in the file
+	int		unixTime;		// linux time, seconds
+	float		SiPmCleanEnergy[2];	// Full Clean energy SiPm
+	float		PmtCleanEnergy[2];	// Full Clean energy Pmt
+	int		PositronFlags[2];	// positron flags for both triggers
+//		"positron cluster" parameters
+	int		PositronHits;		// hits in the cluster
+	float		PositronMinLen;		// mimimum track length for the cluster
+	float		PositronEnergy;		// Energy sum of the cluster (SiPM)
+	float		TotalEnergy;		// Energy of the maximum hit (SiPM)
+	float		PositronSiPmEnergy;	// SiPM energy in the cluster, corrected
+	float		PositronPmtEnergy;	// PMT energy in the cluster, corrected
 	float		PositronX[3];		// cluster position
 	int		AnnihilationGammas;	// number of possible annihilation gammas
 	float		AnnihilationEnergy;	// Energy in annihilation gammas

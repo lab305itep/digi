@@ -44,7 +44,7 @@
 #include "evtbuilder.h"
 
 /***********************	Definitions	****************************/
-#define MYVERSION	"4.01"
+#define MYVERSION	"4.02"
 //	Initial clean parameters
 #define MINSIPMPIXELS	3			// Minimum number of pixels to consider SiPM hit
 #define MINSIPMPIXELS2	2			// Minimum number of pixels to consider SiPM hit without confirmation (method 2)
@@ -93,7 +93,7 @@ TRandom2 *				Random;
 TFile *					OutputFile;
 TTree *					OutputTree;
 TTree *					InfoTree;
-struct DanssEventStruct4		DanssEvent;
+struct DanssEventStruct5		DanssEvent;
 struct DanssInfoStruct4			DanssInfo;
 struct DanssMcStruct			DanssMc;
 int 					HitFlag[iMaxDataElements];	// array to flag out SiPM hits
@@ -330,9 +330,9 @@ void CalculatePositron(ReadDigiDataUser *user)
 //	Step 1: Count SiPM
 	for (i=0; i<N; i++) if (HitFlag[i] >= 10) {
 		if (user->side(i) == 'X') {
-			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 'X');
+			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 'X');
 		} else {
-			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 'Y');
+			DanssEvent.PositronSiPmEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 'Y');
 		}
 	}
 //	Step 2: Count PMT
@@ -341,19 +341,23 @@ void CalculatePositron(ReadDigiDataUser *user)
 		if (j >= N) continue;
 		HitFlag[i] = 5;
 		if (user->side(i) == 'X') {
-			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 'X');
+			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[1], 'X');
 		} else {
-			DanssEvent.PositronEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 'Y');
+			DanssEvent.PositronPmtEnergy += acorr(user->e(i), DanssEvent.PositronX[0], 'Y');
 		}
 	}
 //	Step 3: Subtract gammas in PMT
 	if (!(iFlags & FLG_NOPMTCORR)) for (i=0; i<N; i++) if (HitFlag[i] >= 0 && HitFlag[i] < 10 && user->type(i) == SiPmHit) {
 		for (j=0; j<N; j++) if (IsInModule(i, j, user) && HitFlag[j] == 5) break;
 		if (j >= N) continue;
-		DanssEvent.PositronEnergy -= user->e(i);
+		if (user->side(i) == 'X') {
+			DanssEvent.PositronPmtEnergy -= acorr(user->e(i), DanssEvent.PositronX[1], 'X');
+		} else {
+			DanssEvent.PositronPmtEnergy -= acorr(user->e(i), DanssEvent.PositronX[0], 'Y');
+		}
 	}
 //	Step 4: Divide by 2, because we count SiPM + PMT
-	DanssEvent.PositronEnergy /= 2;
+	DanssEvent.PositronEnergy = (DanssEvent.PositronSiPmEnergy + DanssEvent.PositronPmtEnergy) / 2;
 //	Calculate Total energy with longitudinal correction
 	for (i=0; i<N; i++) if (HitFlag[i] >= 0 && (user->type(i) == PmtHit || user->type(i) == SiPmHit)) {
 		if (user->side(i) == 'X') {
@@ -875,6 +879,8 @@ void ReadDigiDataUser::initUserData(int argc, const char **argv)
 		"PositronMinLen/F:"	// Minimum track length to create the cluster
 		"PositronEnergy/F:"	// Energy sum of the cluster, corrected, (SiPM + PMT) / 2
 		"TotalEnergy/F:"	// Total energy, longitudinally correctd (former Energy of the maximum hit)
+		"PositronSiPmEnergy/F:"	// SiPM energy in the cluster, corrected
+		"PositronPmtEnergy/F:"	// PMT energy in the cluster, corrected
 		"PositronX[3]/F:"	// cluster position
 		"AnnihilationGammas/I:"	// number of possible annihilation gammas
 		"AnnihilationEnergy/F:"	// Energy in annihilation gammas
@@ -935,7 +941,7 @@ int ReadDigiDataUser::processUserEvent()
   	if( ttype() != 1 ) return 0;
 	
 	memset(HitFlag, 0, nhits() * sizeof(int));
-	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct4));
+	memset(&DanssEvent, 0, sizeof(struct DanssEventStruct5));
 
 	fileLastTime = globalTime();
 	DanssInfo.stopTime = absTime();

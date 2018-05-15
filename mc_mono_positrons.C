@@ -1,3 +1,51 @@
+double MyCorrectionSimple(double ESiPm, double EPmt)
+{
+	const double SiPmCoef[2] = {0.148, 0.921};
+	const double PmtCoef[2] = {0.165, 0.929};
+	double EaSiPm = (ESiPm - SiPmCoef[0]) / SiPmCoef[1];
+	double EaPmt = (EPmt - PmtCoef[0]) / PmtCoef[1];
+	return (EaSiPm + EaPmt) / 2;
+}
+
+double MyCorrectionSiPm(double E, int N) 
+{
+	const double SiPmCoef[8][2] = {{-0.037, 0.978}, {0.086, 0.922}, {0.304, 0.882}, {0.460, 0.865},
+		{0.584, 0.858}, {0.674, 0.859}, {0.742, 0.859}, {0.862, 0.856}};
+	return (N > 0 && N < 8) ? (E - SiPmCoef[N-1][0]) / SiPmCoef[N-1][1] : (E - SiPmCoef[7][0]) / SiPmCoef[7][1];
+}
+
+double MyCorrectionPmt(double E, int N)
+{
+	const double PmtCoef[8][2] = {{0.064, 0.939}, {0.135, 0.921}, {0.320, 0.893}, {0.451, 0.883},
+		{0.557, 0.880}, {0.612, 0.883}, {0.645, 0.889}, {0.669, 0.898}};
+	return (N > 0 && N < 8) ? (E - PmtCoef[N-1][0]) / PmtCoef[N-1][1] : (E - PmtCoef[7][0]) / PmtCoef[7][1];
+};
+
+double DoCorrection2(double E, const double C[3])
+{
+	double Ea = (E - C[0])/C[1];
+//	printf("C = %f %f %f => Ea = %f\n", C[0], C[1], C[2], Ea);
+	return Ea - C[2] * Ea * Ea / C[1];
+}
+
+double MyCorrectionSiPm2(double E, int N) 
+{
+	const double SiPmCoef[4][3] = {{-0.037, 0.979, -0.00007}, {0.215, 0.833, 0.0118}, {0.444, 0.793, 0.0108}, {0.594, 0.825, 0.0049}};
+	int k;
+	k = N;
+	if (k < 1 || k > 3) k = 4;
+	return DoCorrection2(E, SiPmCoef[k-1]);
+}
+
+double MyCorrectionPmt2(double E, int N) 
+{
+	const double PmtCoef[4][3] = {{0.057, 0.945, -0.00088}, {0.231, 0.859, 0.0079}, {0.436, 0.824, 0.0082}, {0.545, 0.860, 0.0031}};
+	int k;
+	k = N;
+	if (k < 1 || k > 3) k = 4;
+	return DoCorrection2(E, PmtCoef[k-1]);
+}
+
 //	Draw MC monochrome positrons
 TH1D *mc_mono_positrons(const char *fname, const char *hname, const char *htitle, const char *what, TCut cut = (TCut)"")
 {
@@ -79,7 +127,7 @@ void all_mono_positrons(void)
 	fOut->Close();
 }
 
-void all_mono_positrons_250keV(const char *outname, TCut cut)
+void all_mono_positrons_250keV(const char *outname, const char *what = "PositronEnergy", TCut cut = (TCut) "")
 {
 	int Energy;
 	double E, S;
@@ -88,11 +136,14 @@ void all_mono_positrons_250keV(const char *outname, TCut cut)
 	char strF[1024];
 	char strH[1024];
 	char strT[1024];
-	double e[48];
-	double er[48];
-	double dr[48];
-	double es[48];
-	double se[48];
+	double e[48];	// energy
+	double er[48];	// mean
+	double dr[48];	// difference
+	double es[48];	// sigma
+	double se[48];	// sqrt(energy)
+	double ee[48];	// energy error
+	double ere[48];	// mean error
+	double ese[48];	// sigma error
 	int i;
 	TH1D *h[48];
 	double elow, ehigh;
@@ -103,17 +154,17 @@ void all_mono_positrons_250keV(const char *outname, TCut cut)
 	for (i = 0; i < 48; i++) {
 		Energy = 125 + 250 * i;
 		sprintf(fvar, "%d-%d", Energy/1000, Energy%1000);
-		sprintf(strF, "%s/mc_positron%sMeV_transcodeNew.root", dir, fvar);
+		sprintf(strF, "%s/mc_positron%sMeV_transcode.root", dir, fvar);
 		sprintf(strH, "hPE%s", fvar);
-		sprintf(strT, "Reconstructed positron energy for MC mono positrons at %6.3f MeV;E, MeV", Energy/1000.0);
-		h[i] = mc_mono_positrons(strF, strH, strT, "PositronEnergy", cut);
+		sprintf(strT, "Reconstructed positron energy %s for MC mono positrons at %6.3f MeV;E, MeV", what, Energy/1000.0);
+		h[i] = mc_mono_positrons(strF, strH, strT, what, cut);
 //		h[i] = mc_mono_positrons(strF, strH, strT, "(PositronEnergy-0.179)/0.929");
 	}
 	TFile *fOut = new TFile((oname + ".root").Data(), "RECREATE");
 	fOut->cd();
 	for (i=0; i<48; i++) h[i]->Write();
 	
-	gStyle->SetOptStat(10000);
+	gStyle->SetOptStat(10);
 	gStyle->SetOptFit(1);
 	
 	TCanvas *cv = new TCanvas("CV", "CV", 600, 800);
@@ -138,9 +189,12 @@ void all_mono_positrons_250keV(const char *outname, TCut cut)
 		h[i]->Fit("gaus", "", "", elow, ehigh);
 		fg = h[i]->GetFunction("gaus");
 		e[i] = 0.125 + 0.25 * i;
+		se[i] = sqrt(e[i]);
+		ee[i] = 0;
 		er[i] = fg->GetParameter(1);
 		es[i] = fg->GetParameter(2); 
-		se[i] = sqrt(e[i]);
+		ere[i] = fg->GetParError(1);
+		ese[i] = fg->GetParError(2); 
 		cv->SaveAs((oname+".pdf").Data());
 	}
 
@@ -152,31 +206,37 @@ void all_mono_positrons_250keV(const char *outname, TCut cut)
 	hG->SetMaximum(12.5);
 	hG->Draw();
 	TLegend *lg = new TLegend(0.5, 0.2, 0.8, 0.3);
-	TGraph *gE = new TGraph(48, e, er);
+	TGraphErrors *gE = new TGraphErrors(48, e, er, ee, ere);
 	gE->SetMarkerStyle(kFullCircle);
 	gE->SetMarkerColor(kBlue);
 //	gE->SetMarkerSize(2);
-	gE->Draw("P");
+	gE->Draw("PE");
 	gE->Fit("pol1", "", "", 1, 8);
-	lg->AddEntry(gE, "Data", "P");
+	lg->AddEntry(gE, "Data", "PE");
 	fg = gE->GetFunction("pol1");
 	for (i=0; i<48; i++) dr[i] = 10*(er[i] - fg->Eval(0.125 + 0.25 * i));
-	gE = new TGraph(48, e, dr);
-	gE->SetMarkerStyle(kFullCircle);
-	gE->SetMarkerColor(kRed);
-	gE->Draw("P");
-	lg->AddEntry(gE, "Difference x10", "P");
+	TGraph *gER = new TGraph(48, e, dr);
+	gER->SetMarkerStyle(kFullCircle);
+	gER->SetMarkerColor(kRed);
+	gER->Draw("P");
+	lg->AddEntry(gER, "Difference x10", "P");
 	lg->Draw();
+	gE->Write();
 
 	cv->cd(2);
-	gE = new TGraph(48, se, es);
+	hG = new TH1D("hS", "#sigma;#sqrt{E}, MeV;#sigma,MeV", 12, 0, 4);
+	hG->SetMinimum(0);
+	hG->SetMaximum(1.5);
+	gE = new TGraphErrors(48, se, es, ee, ese);
 	gE->SetMarkerStyle(kCircle);
 	gE->SetMarkerColor(kGreen);
 //	gE->SetMarkerSize(2);
-	gE->SetTitle("Sigma;#sqrt{E}, MeV;#sigma,MeV");
-	gE->Draw("AP");
+	gE->SetTitle("#sigma;#sqrt{E}, MeV;#sigma,MeV");
+	hG->Draw();
+	gE->Draw("PE");
 	gE->Fit("pol1", "", "", 1, 2.8);
 	cv->SaveAs((oname+".pdf").Data());
+	gE->Write();
 
 	cv->SaveAs((oname+".pdf]").Data());
 	

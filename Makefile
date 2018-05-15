@@ -14,6 +14,9 @@ pairbuilder3 : pairbuilder3.cpp
 pairbuilder4 : pairbuilder4.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
+pairbuilder5 : pairbuilder5.cpp
+	g++ -o $@ $^ `root-config --cflags --libs`
+
 randombuilder : randombuilder.cpp
 	g++ -o $@ $^ `root-config --cflags --libs`
 
