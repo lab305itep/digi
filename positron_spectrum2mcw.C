@@ -6,7 +6,7 @@ class MyRandom {
 	inline MyRandom(void) {;};
 	inline ~MyRandom(void) {;};
 	static inline double Gaus(double mean = 0, double sigma = 1) 
-		{
+	{
 		return rnd.Gaus(mean, sigma);
 	};
 	static inline double GausAdd(double val, double sigma)
@@ -34,11 +34,17 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	const Color_t fColor[4] = {kRed, kBlue, kGreen, kOrange};
 //	const float crossection[4] = {6.39, 8.90, 4.18, 5.76};	// from Sinev
 	const float crossection[4] = {6.69, 10.10, 4.36, 6.04};	// from H-M as quoted by DB 1707.07728
+//	const char mcfile[4][128] = {
+//		"/space/danss_root3/withdead-uncorr/mc_positron_235U_simple_newScale.root",
+//		"/space/danss_root3/withdead-uncorr/mc_positron_238U_simple_newScale.root",
+//		"/space/danss_root3/withdead-uncorr/mc_positron_239Pu_simple_newScale.root",
+//		"/space/danss_root3/withdead-uncorr/mc_positron_241Pu_simple_newScale.root"
+//	};
 	const char mcfile[4][128] = {
-		"/space/danss_root3/withdead-uncorr/mc_positron_235U_simple_newScale.root",
-		"/space/danss_root3/withdead-uncorr/mc_positron_238U_simple_newScale.root",
-		"/space/danss_root3/withdead-uncorr/mc_positron_239Pu_simple_newScale.root",
-		"/space/danss_root3/withdead-uncorr/mc_positron_241Pu_simple_newScale.root"
+		"mc_ibdNewGd_235U_transcode_pair.root",
+		"mc_ibdNewGd_238U_transcode_pair.root",
+		"mc_ibdNewGd_239Pu_transcode_pair.root",
+		"mc_ibdNewGd_241Pu_transcode_pair.root"
 	};
 //	From Sinev
 //	const double fuelmix[3][4]  = {{0.69, 0.07, 0.21, 0.03}, {0.58, 0.07, 0.30, 0.05}, {0.47, 0.07, 0.39, 0.07}};
@@ -47,9 +53,13 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 //		Replace end with 2 month before the end and begin with 5th campaign begin - our calculations
 //	const double fuelmix[3][4]  = {{0.795, 0.07, 0.111, 0.024}, {0.69, 0.07, 0.19, 0.05}, {0.613, 0.079, 0.244, 0.065}};
 //		KNPP calculations       begin 5                      Sinev (old) middle        End 4 - 2 month
-	const double fuelmix[3][4]  = {{0.661, 0.067, 0.249, 0.023}, {0.58, 0.07, 0.30, 0.05}, {0.474, 0.074, 0.371, 0.077}};
+//	const double fuelmix[3][4]  = {{0.661, 0.067, 0.249, 0.023}, {0.58, 0.07, 0.30, 0.05}, {0.474, 0.074, 0.371, 0.077}};
+//	KNPP fuel contribution calculations Begin 4			End 4				Begin 5
+	const double fuelmix0[3][4]  = {{0.637, 0.068, 0.266, 0.028}, {0.447, 0.075, 0.389, 0.085}, {0.661, 0.067, 0.249, 0.023}};
+//		Calculated   begin 5 + 2.5 months           middle (not used)    End 4 - 1.5 month Coeffs
+	double fuelmix[3][4];
 	const char cmppart[3][20] = {"Begin", "Middle", "End"};
-	TString expname("danss_report_v4_sep17-calc");
+	TString expname("danss_report_v4_mar18-calc");
 	TFile *fMc[4];
 	TTree *tMc[4];
 	TH1D *hMc[4];
@@ -71,6 +81,18 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	char strs[128];
 	char strl[1024];
 	double s, term, A, B;
+
+//		Calculated   begin 5 + 2.5 months     middle (not used)    End 4 - 1.5 month
+	for (i=0; i<4; i++) {
+//		begin 5 + 2.5 months => <begin 5> * (1- 2.5*30/471) + <end 4> * (2.5*30/471)
+		term = 2.5 * 30 / 471;
+		fuelmix[0][i] = fuelmix0[2][i] * (1 - term) + fuelmix0[1][i] * term;
+//		middle (not used)
+		fuelmix[1][i] = (fuelmix0[0][i] + fuelmix0[1][i]) / 2.0;
+//		End 4 - 1.5 month
+		term = 1.5 * 30 / 471;
+		fuelmix[2][i] = fuelmix0[1][i] * (1 - term) + fuelmix0[0][i] * term;
+	}
 	
 	gROOT->SetStyle("Plain");
 	gStyle->SetOptStat(0);
@@ -83,7 +105,7 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 
 	fExp = new TFile(expname + ".root");
 	if (!fExp->IsOpen()) return;
-	hExpw = (TH1D*) fExp->Get("hSum3");
+	hExpw = (TH1D*) fExp->Get("hSumAfter");
 	if (!hExpw) return;
 	hExp = new TH1D("hExp", "Experimental positron spectrum;MeV;Events/(day*0.25 MeV)", 
 		RangeMax - RangeMin + 1, hExpw->GetBinLowEdge(RangeMin), hExpw->GetBinLowEdge(RangeMax) + hExpw->GetBinWidth(RangeMax));
@@ -96,7 +118,7 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	hExp->SetMarkerStyle(20);
 	hExp->SetLineWidth(4);
 
-	hExpRatio = (TH1D*) fExp->Get("hNRatio43");
+	hExpRatio = (TH1D*) fExp->Get("hNRatioAfter2Before");
 	if (!hExpRatio) return;
 	hExpRatio->Scale(1.004);	// Dead time & Power correction
 	hExpRatio->SetLineWidth(3);
@@ -116,14 +138,14 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	for (i=0; i<4; i++) {
 		fMc[i] = new TFile(mcfile[i]);
 		if (!fMc[i]->IsOpen()) break;
-		tMc[i] = (TTree *) fMc[i]->Get("DanssEvent");
+		tMc[i] = (TTree *) fMc[i]->Get("DanssPair");
 	}
 	if (i != 4) {
 		printf("Mc file %s error\n", mcfile[i]);
 		return;
 	}
 	gROOT->cd();
-	sprintf(strs, "%6.3f*MyRandom::GausAdd((PositronEnergy-0.179)/0.929, %8.5f)", norm, sigma);
+	sprintf(strs, "%6.3f*MyRandom::GausAdd(PositronEnergy, %8.5f)", norm, sigma);
 	for (i=0; i<4; i++) tMc[i]->Project(hMc[i]->GetName(), strs, cXYZ);
 	for (i=0; i<4; i++) hMc[i]->Sumw2();
 	for (i=0; i<4; i++) hMc[i]->Scale(crossection[i]);
@@ -173,35 +195,43 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	fSave.Close();
 	
 	for (j=0; j<3; j++) hMcMixt[j]->Scale(CalculateScale(hExp, hMcMixt[j], NormMin, NormMax));
-	hRatio = (TH1D *) hMcMixt[1]->Clone("hRatioExpMc");
-	hRatio->Divide(hExp, hMcMixt[2]);
+	hRatio = (TH1D *) hMcMixt[0]->Clone("hRatioExpMc");
+	hRatio->Divide(hExp, hMcMixt[0]);
 	hRatio->SetTitle(";Positron energy, MeV;#frac{N_{EXP}}{N_{MC}}");
 
-	hDiff = (TH1D *) hMcMixt[2]->Clone("hRatioExpMc");
-	hDiff->Add(hExp, hMcMixt[2], 1, -1);
+	hDiff = (TH1D *) hMcMixt[0]->Clone("hRatioExpMc");
+	hDiff->Add(hExp, hMcMixt[0], 1, -1);
 	hDiff->SetTitle("Experiment - Monte Carlo;Positron energy, MeV;#Delta Events/(day*0.25 MeV)");
 	
 	TCanvas *cm = new TCanvas("CM", "Fuel", 1200, 900);
-	cm->SaveAs(expname + "[.pdf");
 	hMc[1]->SetTitle("DANSS simulated spectrum per isotope;MeV;");
 	hMc[1]->Draw("hist");
 	hMc[0]->Draw("hist,same");
 	hMc[2]->Draw("hist,same");
 	hMc[3]->Draw("hist,same");
-	TLegend *lm = new TLegend(0.7, 0.7, 0.9, 0.9);
-	for (i=0; i<4; i++) lm->AddEntry(hMc[i], fuel[i], "L");
+	TLegend *lm = new TLegend(0.5, 0.7, 0.9, 0.9);
+	for (i=0; i<4; i++) {
+		sprintf(strs, "%s - %4.1f%% (before) / %4.1f%% (after)", fuel[i], 100*fuelmix[2][i], 100*fuelmix[0][i]);
+		lm->AddEntry(hMc[i], strs, "L");
+	}
 	lm->Draw();
+	TLatex *txt = new TLatex();
+	txt->SetTextSize(0.035);
+	sprintf(strs, "MC Scale=%5.3f Random+=%2.0f%%", norm, sigma*100);
+	txt->DrawLatex(4.3, 95000, strs);
+	sprintf(strs, "_S%5.3f_R%4.2f", norm, sigma);
+	expname += strs;
 	cm->SaveAs(expname + "-pos2mc.pdf[");
 	cm->SaveAs(expname + "-pos2mc.pdf");
 	
 	TCanvas *cv = new TCanvas("CV", "Exp & MC", 1200, 900);
 //	for (j=0; j<3; j++) hMcMixt[j]->Draw((j) ? "same,hist" : "hist");
-	hMcMixt[2]->SetTitle("");
-	hMcMixt[2]->Draw("E");
+	hMcMixt[0]->SetTitle("3 months period one month after campaign begin");
+	hMcMixt[0]->Draw("E");
 	hExp->Draw("same");
 	TLegend *lg = new TLegend(0.6, 0.75, 0.9, 0.9);
 	lg->AddEntry(hExp, "DANSS data", "LP");
-	lg->AddEntry(hMcMixt[2], "Monte Carlo", "LP");
+	lg->AddEntry(hMcMixt[0], "Monte Carlo", "LP");
 //	for (j=0; j<3; j++) {
 //		sprintf(strs, "MC - %s", cmppart[j]);
 //		lg->AddEntry(hMcMixt[j], strs, "L");
@@ -271,7 +301,9 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	hExpRatio->SetStats();
 	hMcRatio->SetStats();
 	hExpRatio->Fit("pol1", "", "", 1, 6);
+	hExpRatio->GetFunction("pol1")->SetLineColor(kGreen);
 	hMcRatio->Fit("pol1", "", "sames", 1, 6);
+	hMcRatio->GetFunction("pol1")->SetLineColor(kBlue);
 	lg->Draw();
 	cnr->Update();
 	pv = (TPaveStats *) hExpRatio->FindObject("stats");
@@ -289,21 +321,17 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 	pv->SetY2NDC(0.32);
 
 //		Calculate various chi2
-	TF1 *fPol1 = new TF1("fPol1", "pol1", 0, 10);
-	TLatex *txt = new TLatex();
+	TF1 *fPol1 = new TF1("fPol1", "pol1", 1, 6);
 	txt->SetTextSize(0.02);
 	fPol1->FixParameter(0, 1);
 	fPol1->FixParameter(1, 0);
-	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
-	sprintf(strl, "Const=1.000  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	sprintf(strl, "Const=1.000  #chi^{2}/ndf = %7.2f/20", hExpRatio->Chisquare(fPol1, "r"));
 	txt->DrawLatex(1.5, 1.01, strl);
 	fPol1->FixParameter(0, 1.015);
-	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
-	sprintf(strl, "Const=1.015  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	sprintf(strl, "Const=1.015  #chi^{2}/ndf = %7.2f/20", hExpRatio->Chisquare(fPol1, "r"));
 	txt->DrawLatex(1.5, 1.02, strl);
 	fPol1->FixParameter(0, 1.02);
-	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
-	sprintf(strl, "Const=1.02  #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	sprintf(strl, "Const=1.02  #chi^{2}/ndf = %7.2f/20", hExpRatio->Chisquare(fPol1, "r"));
 	txt->DrawLatex(1.5, 1.03, strl);
 
 	hExpRatio->Fit("pol0", "Q+", "", 1, 6);
@@ -314,8 +342,7 @@ void positron_spectrum2mcw(int RangeMin, int RangeMax, int NormMin, int NormMax,
 
 	fPol1->FixParameter(0, ((TF1*)hMcRatio->FindObject("pol1"))->GetParameter(0));
 	fPol1->FixParameter(1, ((TF1*)hMcRatio->FindObject("pol1"))->GetParameter(1));
-	hExpRatio->Fit(fPol1, "QN", "", 1, 6);
-	sprintf(strl, "MC   #chi^{2}/ndf = %7.2f/20", fPol1->GetChisquare());
+	sprintf(strl, "MC   #chi^{2}/ndf = %7.2f/20", hExpRatio->Chisquare(fPol1, "r"));
 	txt->DrawLatex(1.5, 1.13, strl);
 
 	cnr->Update();

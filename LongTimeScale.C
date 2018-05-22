@@ -1,5 +1,5 @@
-#include "HPainter.h"
-void LongTimeScale(float ShowerThreshold = 800, int run_first = 2306, int run_last = 15028)
+#include "HPainter2.h"
+void LongTimeScale(float ShowerThreshold = 800, int run_first = 5808, int run_last = 36408)
 {
 	char str[128];
 	double upTime;
@@ -13,11 +13,13 @@ void LongTimeScale(float ShowerThreshold = 800, int run_first = 2306, int run_la
 	TCut cRXY("PositronX[0] >= 0 && PositronX[1] >= 0 && NeutronX[0] >= 0 && NeutronX[1] >= 0");
 	TCut c20("gtDiff > 2");
         TCut cGamma("AnnihilationEnergy < 1.8 && AnnihilationGammas <= 10");
+	TCut cGammaMax("AnnihilationMax < 0.8");
         TCut cPe("PositronEnergy > 1");
         TCut cR1("Distance < 45");
         TCut cR2("Distance < 55");
-        TCut cRZ("fabs(DistanceZ) < 40");
-        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+//        TCut cRZ("fabs(DistanceZ) < 40");
+//        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+        TCut cR = cR2 && (cRXY || cR1);
         TCut cN("NeutronEnergy > 3.5");
         TCut ct;
 
@@ -25,8 +27,8 @@ void LongTimeScale(float ShowerThreshold = 800, int run_first = 2306, int run_la
 	gStyle->SetOptFit(1);
 	
 	TH1D *h = new TH1D("hLongTime", ";s;Events / day", 50, 0, 1);
-	HPainter *hp = new HPainter(0x801E, run_first, run_last, "/space/danss_root2b/");
-	ct = cIso && cX && cY && cZ && c20 && cR && cPe && cGamma && cN && cVeto;
+	HPainter2 *hp = new HPainter2(0x801E, run_first, run_last, "/mnt/root1/danss_pair6/");
+	ct = cIso && cX && cY && cZ && c20 && cR && cPe && cGamma && cGammaMax && cN && cVeto;
 	sprintf(str, "ShowerEnergy > %8.1f", ShowerThreshold);
 	hp->Project(h, "gtFromShower/1E6", ct && str);
 	upTime = hp->GetUpTime();
@@ -45,4 +47,9 @@ void LongTimeScale(float ShowerThreshold = 800, int run_first = 2306, int run_la
 	new TCanvas("CV", "LongScale", 1200, 800);
 	h->SetTitle("Fit with sum of two exponents");
 	h->Fit(f2Exp, "", "", 0.02, 1);
+	sprintf(str, "LongTimeScale_%4.0fMeV.root", ShowerThreshold);
+	TFile fSave(str, "RECREATE");
+	fSave.cd();
+	h->Write();
+	fSave.Close();
 }

@@ -11,10 +11,11 @@ TCut cGammaMax("AnnihilationMax < 0.8");
 TCut cPe("PositronEnergy > 1");
 TCut cN("NeutronEnergy > 3.5");
 
-void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv)
+void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv, const char *pdfname)
 {
 	char str[1024];
 	TLatex *txt = new TLatex();
+	TVirtualPad *pd;
 
 	TH1D *hExp = (TH1D *) fBgnd->Get("hgtDiffA-diff");
 	if (!hExp) {
@@ -30,7 +31,35 @@ void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 	hMC->SetLineColor(kBlack);
 	tMC->Project(hMC->GetName(), "gtDiff", cX && cY && cZ && cR && cGamma && cGammaMax && cPe && cN);
 	hMC->Sumw2();
+	hMC->Scale(hExp->Integral(2,50) / hMC->Integral(2,50));
+//		Exp vs MC
+	cv->Clear();
+	cv->Divide(1, 2);
+	cv->cd(1);
+	hExp->SetLineColor(kBlack);
+	hExp->SetLineWidth(3);
+	hMC->SetLineColor(kBlue);
+	hMC->SetLineWidth(1);
+	hExp->Draw();
+	hMC->Draw("hist,same");
+	TLegend *lg = new TLegend(0.15, 0.2, 0.4, 0.35);
+	lg->AddEntry(hExp, "IBD", "LE");
+	lg->AddEntry(hMC, "MC", "L");
+	lg->Draw();
+
+	pd = cv->cd(2);
+	hExp->SetMinimum(2000);
+	hExp->Draw();
+	hMC->Draw("hist,same");
+	lg->Draw();
+	pd->SetLogy(1);
+	cv->Update();
+	cv->SaveAs(pdfname);
+	hExp->SetMinimum(0);
+	hExp->SetLineWidth(1);
+	hMC->SetLineColor(kBlack);
 	
+//		Fits
 	TF1 *f2Exp = new TF1("f2Exp", "[0]*(exp(-x/[1]) - exp(-x/[2]))", 0, 100);
 	f2Exp->SetParNames("Const.", "#tau_{capt}", "#tau_{th}");
 	f2Exp->SetLineColor(kBlue);
@@ -44,7 +73,7 @@ void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 	f2Exp->SetParameters(hExp->GetMaximum(), 13, 5);
 	hExp->Fit(f2Exp, "", "", 1, 50);
 	hExp->Fit(fExp, "+", "", 15, 50);
-	TLegend *lg = new TLegend(0.15, 0.2, 0.4, 0.35);
+	lg = new TLegend(0.15, 0.2, 0.4, 0.35);
 	lg->AddEntry(hExp, "Data", "LE");
 	lg->AddEntry(f2Exp, "Fit with two exponents", "L");
 	lg->AddEntry(fExp, "Capture exponent fit", "L");
@@ -63,6 +92,21 @@ void mc2ibd_gtDiff(TChain *tMC, TFile *fBgnd, TCanvas *cv)
 	txt->DrawLatex(20, hMC->GetMaximum()/5, str);
 	sprintf(str, "#chi^{2}/NDF=%6.1f/34", fExp->GetChisquare());
 	txt->DrawLatex(20, hMC->GetMaximum()/10, str);
+	cv->SaveAs(pdfname);
+//		Tha same in log scale
+	hExp->SetMinimum(2000);
+	cv->Clear();
+	cv->Divide(1, 2);
+	pd = cv->cd(1);
+	hExp->Draw();
+	lg->Draw();
+	pd->SetLogy(1);
+	
+	pd = cv->cd(2);
+	hMC->Draw();
+	lg->Draw();
+	pd->SetLogy(1);
+	cv->Update();
 }
 
 void mc2ibd_R1(TChain *tMC, TFile *fBgnd, TCanvas *cv)
@@ -241,19 +285,16 @@ void mc2ibd_PPX(char X, TChain *tMC, TFile *fBgnd, TCanvas *cv)
 	tMC->Project(hMC->GetName(), str, cut);
 	hMC->Sumw2();
 	cv->Clear();
-	hExp->SetMarkerStyle(kFullStar);
-	hExp->SetMarkerColor(kBlue);
-	hExp->SetLineColor(kBlue);
-	hExp->SetMarkerSize(3);
-	hExp->SetMarkerStyle(kDot);
-	hMC->SetLineColor(kBlack);
-	hMC->SetLineWidth(3);
+	hExp->SetLineColor(kBlack);
+	hExp->SetLineWidth(3);
+	hMC->SetLineColor(kBlue);
+	hMC->SetLineWidth(1);
 	hMC->Scale(hExp->Integral() / hMC->Integral());
 	hExp->Draw();
-	hMC->Draw("same");
+	hMC->Draw("hist,same");
 	TLegend *lg = new TLegend(0.5, 0.2, 0.65, 0.35);
-	lg->AddEntry(hExp, "IBD", "P");
-	lg->AddEntry(hMC,  "MC",  "LE");
+	lg->AddEntry(hExp, "IBD", "LE");
+	lg->AddEntry(hMC,  "MC",  "L");
 	lg->Draw();
 	cv->Update();
 }
@@ -301,7 +342,7 @@ void mc2ibd(const char *mcfile, const char *bgndfile)
 	TCanvas *cv = new TCanvas("CV", "CV", 1200, 900);
 	cv->SaveAs("mc2ibd.pdf[");
 	
-	mc2ibd_gtDiff(tMC, fBgnd, cv);
+	mc2ibd_gtDiff(tMC, fBgnd, cv, "mc2ibd.pdf");
 	cv->SaveAs("mc2ibd.pdf");
 
 	mc2ibd_R1(tMC, fBgnd, cv);

@@ -567,3 +567,76 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 	delete tExpB;
 }
 
+void src2mc(const char *expfile, const char *mcfile, const char *newname)
+{
+	int i;
+
+	TFile *fExp = new TFile(expfile);
+	TFile *fMC = new TFile(mcfile);
+	TH1 *hExpE = (TH1 *) fExp->Get("hExpC");
+	TH1 *hExpH = (TH1 *) fExp->Get("hHitsC");
+	TH1 *hMCE = (TH1 *) fMC->Get("hMc");
+	TH1 *hMCH = (TH1 *) fMC->Get("hMcHits");
+	if (!(hExpE && hExpH && hMCE && hMCH)) {
+		printf("Something is wrong.\n");
+		return;
+	}
+	hExpE->RecursiveRemove(hExpE->GetFunction("gaus"));
+	hMCE->RecursiveRemove(hMCE->GetFunction("gaus"));
+	TCanvas *cv = new TCanvas("CV", "SRC", 1200, 900);
+	cv->Divide(2, 1);
+	TVirtualPad * pd = cv->cd(1);
+	pd->SetLeftMargin(0.21);
+	pd->SetRightMargin(0.03);
+	hExpE->SetLineColor(kBlack);
+	hExpE->SetLineWidth(3);
+	hExpE->SetStats(0);
+	hExpE->GetXaxis()->SetTitle("Energy, MeV");
+	hExpE->GetYaxis()->SetTitle("Events/100 keV");
+	hExpE->GetYaxis()->SetTitleOffset(2.0);
+	hExpE->Draw("e");
+	hMCE->Scale(hExpE->Integral() / hMCE->Integral());
+	hMCE->SetLineColor(kBlue);
+	hMCE->SetStats(0);
+	hMCE->Draw("same,hist");
+	TLegend *lg = new TLegend(0.65, 0.8, 0.97, 0.9);
+	lg->AddEntry(hExpE, "Experiment", "LE");
+	lg->AddEntry(hMCE, "MC", "L");
+	lg->Draw();
+
+	pd = cv->cd(2);
+	pd->SetLeftMargin(0.13);
+	pd->SetRightMargin(0.03);
+	hMCH->Scale(hExpH->Integral() / hMCH->Integral());
+	hMCH->SetLineColor(kBlue);
+	hMCH->SetStats(0);
+	hMCH->GetXaxis()->SetTitle("SiPM hits");
+	hMCH->GetYaxis()->SetTitle("Events/100 keV");
+	hMCH->GetYaxis()->SetTitleOffset(1.3);
+	hMCH->Draw("hist");
+	hExpH->SetLineColor(kBlack);
+	hExpH->SetLineWidth(3);
+	hExpH->SetStats(0);
+	hExpH->Draw("e,same");
+	lg->Draw();
+	cv->Update();
+	cv->SaveAs(newname);
+	
+	printf("%s - experiment energy:\nEnergy     Events\n", newname);
+	for (i=0; i<hExpE->GetNbinsX(); i++) printf("%5.3f-%5.3f    %f +- %f\n",
+		hExpE->GetBinLowEdge(i+1), hExpE->GetBinLowEdge(i+1) + hExpE->GetBinWidth(i+1),
+		hExpE->GetBinContent(i+1), hExpE->GetBinError(i+1));
+	printf("%s - experiment SiPM hits:\nN     Events\n", newname);
+	for (i=0; i<hExpH->GetNbinsX(); i++) printf("%d    %f +- %f\n", i,
+		hExpH->GetBinContent(i+1), hExpH->GetBinError(i+1));
+	printf("%s - MC energy:\nEnergy     Events\n", newname);
+	for (i=0; i<hMCE->GetNbinsX(); i++) printf("%5.3f-%5.3f    %f +- %f\n",
+		hMCE->GetBinLowEdge(i+1), hMCE->GetBinLowEdge(i+1) + hMCE->GetBinWidth(i+1),
+		hMCE->GetBinContent(i+1), hMCE->GetBinError(i+1));
+	printf("%s - MC SiPM hits:\nN     Events\n", newname);
+	for (i=0; i<hMCH->GetNbinsX(); i++) printf("%d    %f +- %f\n", i,
+		hMCH->GetBinContent(i+1), hMCH->GetBinError(i+1));
+
+	fExp->Close();
+	fMC->Close();
+}

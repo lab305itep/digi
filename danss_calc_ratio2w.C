@@ -112,7 +112,7 @@ int sum_of_spectral(TH1D *hSum, const char *posmask, const char *pfrom, const ch
 	N = sizeof(positions) / sizeof(positions[0]);
 	hSum->Reset();
 	tSum = 0;
-	for (i=0; i<N; i++) if (is_in_date_range(positions[i].name, pfrom, pto)) {
+	for (i=0; i<N; i++) if (is_in_date_range(positions[i].name, pfrom, pto) && positions[i].period) {	// ignore reactor not @100%
 		ptr = strchr(posmask, positions[i].name[0]);
 		if (!(ptr && positions[i].period)) continue;
 		sprintf(str, "%s_hSig-diff", positions[i].name);
@@ -372,7 +372,8 @@ void draw_single_ratio(const char *nameA, const char *nameB, const char *name, c
 	hAB->Fit("pol0", "", "", 1, 8);
 }
 
-void draw_normalized_ratio(const int maskA, const int maskB, const char *name, const char *title, double min=0.6, double max=1.2, int last=60, double bgScale = 1.0)
+void draw_normalized_ratio(const char* beginA, const char *endA, const char* beginB, const char *endB, 
+	const char *name, const char *title, double min=0.6, double max=1.2, int last=60, double bgScale = 1.0)
 {
 	char strs[128];
 	double daysAU, daysAM, daysAD, daysBU, daysBM, daysBD;
@@ -389,12 +390,12 @@ void draw_normalized_ratio(const int maskA, const int maskB, const char *name, c
 	TH1D *hBD = new TH1D("hNRBD", "", 60, 1, 16);
 	TH1D *hAB = new TH1D(name, title, 60, 1, 16);
 //		Make initial sum
-	sum_of_spectra(hAU, "u", maskA, bgScale, &daysAU);
-	sum_of_spectra(hAM, "m", maskA, bgScale, &daysAM);
-	sum_of_spectra(hAD, "d", maskA, bgScale, &daysAD);
-	sum_of_spectra(hBU, "u", maskB, bgScale, &daysBU);
-	sum_of_spectra(hBM, "m", maskB, bgScale, &daysBM);
-	sum_of_spectra(hBD, "d", maskB, bgScale, &daysBD);
+	sum_of_spectral(hAU, "u", beginA, endA, bgScale, &daysAU);
+	sum_of_spectral(hAM, "m", beginA, endA, bgScale, &daysAM);
+	sum_of_spectral(hAD, "d", beginA, endA, bgScale, &daysAD);
+	sum_of_spectral(hBU, "u", beginB, endB, bgScale, &daysBU);
+	sum_of_spectral(hBM, "m", beginB, endB, bgScale, &daysBM);
+	sum_of_spectral(hBD, "d", beginB, endB, bgScale, &daysBD);
 //		Subtract other blocks
 	TH1D *hTmpA = (TH1D *) hAU->Clone("hTmpA");
 	TH1D *hTmpB = (TH1D *) hBU->Clone("hTmpB");
@@ -546,8 +547,8 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	txt = new TLatex();
 	
 //	Page 1:	Spectra All
-	draw_spectra_page(cv, "Oct 16-Mar 18", 0x1E, bgScale);
-//	cv->Print(pname);
+	draw_spectra_page(cv, "Apr 16-Mar 18", 0x1E, bgScale);
+	cv->Print(pname);
 	
 //	Page 1a:	Spectra All but April-June 16.
 	draw_spectra_page(cv, "Oct 16-Mar 18", 0x1C, bgScale);
@@ -556,10 +557,18 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 //	Page 1b:	before Sep17
 	draw_spectra_pagel(cv, "Oct 16-Sep 17", "01.10.16", "30.09.17", bgScale);
 	cv->Print(pname);
+	
+//	3 months Before reactor shut down
+	draw_spectra_pagel(cv, "Apr-July 17", "05.04.17", "07.07.17", bgScale);
+	cv->Print(pname);
+
+//	3 months After reactor on + 1 month
+	draw_spectra_pagel(cv, "Oct-Dec 17", "20.09.17", "20.12.17", bgScale);
+	cv->Print(pname);
 
 //	Page 2:	Spectra April-June
-//	draw_spectra_page(cv, "April-June 16", 2, bgScale);
-//	cv->Print(pname);
+	draw_spectra_page(cv, "April-June 16", 2, bgScale);
+	cv->Print(pname);
 
 //	Page 3:	Spectra October-November
 	draw_spectra_page(cv, "Oct 16 - Feb 17", 4, bgScale);
@@ -594,8 +603,8 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	hSum->Draw("e");
 
 	cv->cd(2);
-	TH1D *hSum1 = new TH1D("hSum1", "Positron spectrum Oct 16 - Sep 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
-	sum_of_spectral(hSum1, "umdrs", "01.10.16", "30.09.17", bgScale);
+	TH1D *hSum1 = new TH1D("hSumAfter", "Positron spectrum Oct - Dec 17;Positron energy, MeV;Events / (day * 0.25 MeV)", 60, 1, 16);
+	sum_of_spectral(hSum1, "umdrs", "20.09.17", "20.12.17", bgScale);
 	hSum1->Write();
 	hSum1->Draw("e");
 
@@ -752,9 +761,10 @@ void danss_calc_ratio2w(const char *fname, double bgScale = 5.6/2.5)
 	cv->Update();
 	cv->Print(pname);
 
-//	Page 9a: after shutdown / before shutdown
+//	Page 9a: after shutdown / before shutdown - use proper periods.
 	cv->Clear();
-	draw_normalized_ratio(16, 8, "hNRatio43", "Normalized ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 24, bgScale);
+	draw_normalized_ratio("20.09.17", "20.12.17", "05.04.17", "07.07.17", "hNRatioAfter2Before", 
+		"Normalized ratio after shutdown / before shutdown;Positron energy, MeV", 0.9, 1.4, 24, bgScale);
 	cv->Update();
 	cv->Print(pname);
 

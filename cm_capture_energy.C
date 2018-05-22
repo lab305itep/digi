@@ -78,7 +78,7 @@ double MCFunction(double *x, double *par)
 	return CBfunction(x, par) + par[5] + x[0]*par[6] + x[0]*x[0]*par[7];
 }
 
-void cm_capture_energy(const char *fname, const char *mcname, double kRndm, double scale, int kEmin, int kEmax)
+void cm_capture_energy(const char *fname, const char *mcname, double kRndm = 0.17, double scale = 1.0, int kEmin=61, int kEmax=120)
 {
 	int i, j;
 	char str[2048];
@@ -149,19 +149,20 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	hMcPMT->SetMarkerColor(kBlue);
 	hMcPMT->GetYaxis()->SetLabelSize(0.06);
 
-	TH1D *hpH = new TH1D("HPH", "^{248}Cm source data;Energy of cluster in delayed event, MeV", 50, 0, 5);
-	hpH->SetLineWidth(4);
-	hpH->SetMarkerStyle(21);
-	hpH->SetLineColor(kBlue);
-	hpH->SetFillColor(kBlue-10);
-	hpH->SetMarkerColor(kBlue);
-	hpH->GetYaxis()->SetLabelSize(0.06);
-
 	TH2D *hcmxy = new TH2D("HXY", "^{248}Cm source data;X, cm;Y, cm", 25, 0, 100, 25, 0, 100);
 	hcmxy->GetXaxis()->SetLabelSize(0.05);
 	hcmxy->GetYaxis()->SetLabelSize(0.05);
 	hcmxy->GetZaxis()->SetLabelSize(0.05);
-//	for (i=0; i<25; i++) for (j=0; j<25; j++) hcmxy->Fill(4.0*i+2, 4.0*j+2);
+
+	TH2D *hMcxy = new TH2D("HMCXY", "Neutron Monte Carlo;X, cm;Y, cm", 25, 0, 100, 25, 0, 100);
+	hMcxy->GetXaxis()->SetLabelSize(0.05);
+	hMcxy->GetYaxis()->SetLabelSize(0.05);
+	hMcxy->GetZaxis()->SetLabelSize(0.05);
+	
+	TH1D *hDiff = new TH1D("HDIFF", "Data - MC;Energy of delayed event, MeV;(Data-MC)/Data", 120, 0, 12);
+	hDiff->SetLineWidth(4);
+	hDiff->SetLineColor(kBlue);
+	hDiff->GetYaxis()->SetLabelSize(0.06);
 
 	TFile f(fname);
 	if (!f.IsOpen()) return;
@@ -176,9 +177,6 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	} else {
 		tMc->AddFile(mcname);
 	}
-//	TFile fMc(mcname);
-//	if (!fMc.IsOpen()) return;
-//	TTree *tMc = (TTree *) fMc.Get("DanssEvent");
 	if (!tMc->GetEntries()) return;
 	
 	gROOT->cd();
@@ -189,29 +187,17 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	sprintf(str, "%f*SiPmCleanEnergy[1]", scale);
 	t->Project("HDCSi", str, "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
 	sprintf(str, "MyRandom::GausAdd(SiPmCleanEnergy, %6.4f)", kRndm);
-	tMc->Project("HMCSi", "SiPmCleanEnergy");
+	tMc->Project("HMCSi", str);
 	sprintf(str, "%f*PmtCleanEnergy[1]", scale);
 	t->Project("HDCPMT", str, "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2");
 	sprintf(str, "MyRandom::GausAdd(PmtCleanEnergy, %6.4f)", kRndm);
-	tMc->Project("HMCPMT", "PmtCleanEnergy");
-	t->Project("HPH", "PositronEnergy[1]", "N>1 && gtDiff[1]/125<5 && gtDiff[1]/125>1 && Hits[1] < 5");
+	tMc->Project("HMCPMT", str);
 	t->Project("HXY", "NeutronX[1][1]+2:NeutronX[1][0]+2", "N>1 && gtDiff[1]/125<50 && gtDiff[1]/125>2 && NeutronX[1][1]>=0 && NeutronX[1][0]>=0");
+	tMc->Project("HMCXY", "NeutronX[1]+2:NeutronX[0]+2", "NeutronX[1]>=0 && NeutronX[0]>=0");
 	hcmxy->Fill(18., 2., -1);
-	TF1 *fCapt = new TF1("fCapt", CaptureFunction, 0, 20, 10);
-	fCapt->SetParNames("Gd:Const", "Gd:#alpha", "Gd:n", "Gd:mean", "Gd:#sigma", "H:Const", "H:#alpha", "H:n", "H:mean", "H:#sigma");
-	fCapt->SetLineColor(kRed);
-	fCapt->SetLineWidth(2);
-	
-	TF1 *fMC = new TF1("fMC", MCFunction, 0, 20, 8);
-	fMC->SetParNames("H:Const", "H:#alpha", "H:n", "H:mean", "H:#sigma", "P0", "P1", "P2");
-	fMC->SetLineColor(kRed);
-	fMC->SetLineWidth(2);
-	
-	TF1 *fH = new TF1("fH", CBfunction, 0, 20, 5);
-	fH->SetParNames("Const", "#alpha", "n", "mean", "#sigma");
-	fH->SetLineColor(kRed);
-	fH->SetLineWidth(2);
-	
+	hMcxy->Fill(18., 2., -1);
+	*hDiff = ((*hcm) - (*hMc)) / (*hcm);
+
 	TF1 *fGP2 = new TF1("fGP2", "gaus(0) + pol2(3)", 0, 10);
 	fGP2->SetParNames("Const", "Mean", "#sigma", "P0", "P1", "P2");
 	fGP2->SetLineColor(kRed);
@@ -223,7 +209,6 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	TCanvas *cv = new TCanvas("CV", "Neutron Capture", 1200, 900);
 	cv->Divide(2, 2);
 	cv->cd(1);
-//	fCapt->SetParameters(hcm->GetMaximum(), 1, 10, 6.7, 1, hcm->GetMaximum()/5, 1, 10, 1.8, 0.5);
 	fGP2->SetParameters(hcm->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hcm->Fit(fGP2, "", "0", 0.9, 4);
 	hcm->DrawCopy();
@@ -231,52 +216,53 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	pd2->SetRightMargin(0.16);
 	hcmxy->Draw("COLZ");
 	cv->cd(3);
-//	fH->SetParameters(hpH->GetMaximum(), 1, 1, 1.7, 1);
-	fGP2->SetParameters(hpH->GetMaximum()/5, 2, 0.5, 0, 0, 0);
-	hpH->Fit(fGP2, "", "", 0.9, 4);
-	cv->cd(4);
-//	fMC->SetParameters(hMc->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMc->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMc->Fit(fGP2, "", "", 0.9, 4);
+	pd2 = cv->cd(4);
+	pd2->SetRightMargin(0.16);
+	hMcxy->Draw("COLZ");
 	cv->SaveAs((pdfName+"(").Data());
 	
 	TCanvas *cvA = new TCanvas("CVA", "Neutron Capture", 1200, 900);
 	cvA->Divide(2, 2);
 	cvA->cd(1);
-//	fCapt->SetParameters(hcmSi->GetMaximum(), 1, 5, 6.7, 1, hcmSi->GetMaximum()/5, 1, 5, 1.8, 0.5);
 	fGP2->SetParameters(hcmSi->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hcmSi->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(2);
-//	fCapt->SetParameters(hcmPMT->GetMaximum(), 1, 10, 6.7, 1, hcmPMT->GetMaximum()/5, 1, 10, 1.8, 0.5);
 	fGP2->SetParameters(hcmPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hcmPMT->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(3);
-//	fMC->SetParameters(hMcSi->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMcSi->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMcSi->Fit(fGP2, "", "", 0.9, 4);
 	cvA->cd(4);
-//	fMC->SetParameters(hMcPMT->GetMaximum()/5, 1, 1, 2.0, 0.5, 0, 0, 0);
 	fGP2->SetParameters(hMcPMT->GetMaximum()/5, 2, 0.5, 0, 0, 0);
 	hMcPMT->Fit(fGP2, "", "", 0.9, 4);
 	cvA->SaveAs(pdfName.Data());
 	
-	TCanvas *prl = new TCanvas("PRL", "Neutron capture", 800, 800);
+	TCanvas *prl = new TCanvas("PRL", "Neutron capture", 900, 900);
 	prl->cd();
 	prl->SetLeftMargin(0.20);
 	prl->SetRightMargin(0.03);
 	prl->SetTopMargin(0.03);
 	prl->SetBottomMargin(0.12);
 	hcm->GetYaxis()->SetTitleOffset(1.9);
-	hcm->SetStats(0);
+	hcm->SetStats(1);
 	hcm->SetFillStyle(kNone);
 	hcm->SetLineColor(kBlack);
 	hcm->SetMarkerStyle(kNone);
 	hcm->SetTitle(";Delayed energy, MeV;Events/100 keV");
 	hcm->Draw("e");
+	prl->Update();
+	TPaveStats *st = (TPaveStats *)hcm->FindObject("stats");
+	st->SetX1NDC(0.23);
+	st->SetX2NDC(0.50);
+	st->SetY1NDC(0.65);
+	st->SetY2NDC(0.95);
 	hMc->SetFillStyle(kNone);
 	hMc->Scale(hcm->Integral(kEmin, kEmax) / hMc->Integral(kEmin, kEmax));
-	hMc->Draw("same,hist");
-	TLegend *lg = new TLegend(0.70, 0.83, 0.98, 0.95);
+	hMc->GetXaxis()->SetRange(65, 120);
+	hMc->Draw("same,hist,][");
+	TLegend *lg = new TLegend(0.73, 0.83, 0.99, 0.95);
 	sprintf(str, "Experiment * %5.1f%%", 100*scale);
 	lg->AddEntry(hcm, str, "LE");
 	sprintf(str, "MC+%2.0f%%/#sqrt{E}", 100*kRndm);
@@ -285,12 +271,54 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm, doub
 	chi2 = 0;
 	for (i=kEmin; i<=kEmax; i++) chi2 += (hcm->GetBinContent(i) - hMc->GetBinContent(i)) * (hcm->GetBinContent(i) - hMc->GetBinContent(i)) /
 		(hcm->GetBinError(i) * hcm->GetBinError(i) + hMc->GetBinError(i) * hMc->GetBinError(i));
-	sprintf(str, "#chi^{2}/n.d.f. = %6.1f / 52", chi2);
-	txt.DrawLatex(1.5, 0.1*hcm->GetMaximum(), str);
+	sprintf(str, "#chi^{2}/n.d.f. = %6.1f / %d", chi2, kEmax-kEmin+1);
+	txt.SetTextSize(0.03);
+	txt.DrawLatex(3.5, 0.1*hcm->GetMaximum(), str);
 	sprintf(str, "[%4.1f-%4.1f] MeV", (kEmin-1)*0.1, kEmax*0.1);
-	txt.DrawLatex(1.5, 0.04*hcm->GetMaximum(), str);
+	txt.DrawLatex(3.5, 0.04*hcm->GetMaximum(), str);
 	prl->Update();
-	prl->SaveAs((pdfName+")").Data());
+	prl->SaveAs(pdfName.Data());
+	
+	TCanvas *prlA = new TCanvas("PRLA", "Neutron capture", 900, 900);
+	prlA->cd();
+	prlA->SetLeftMargin(0.20);
+	prlA->SetRightMargin(0.03);
+	prlA->SetTopMargin(0.03);
+	prlA->SetBottomMargin(0.12);
+	hcm->SetStats(0);
+	hcm->Draw("e");
+	hMc->Draw("same,hist,][");
+	prlA->SaveAs(pdfName.Data());
+	
+	TCanvas *prl1 = new TCanvas("PRL1", "Neutron capture", 900, 500);
+	prl1->cd();
+	prl1->SetLeftMargin(0.20);
+	prl1->SetRightMargin(0.03);
+	prl1->SetTopMargin(0.03);
+	prl1->SetBottomMargin(0.12);
+	*hDiff = ((*hcm) - (*hMc)) / (*hcm);
+	hDiff->SetMinimum(-0.15);
+	hDiff->SetMaximum(0.15);
+	hDiff->GetXaxis()->SetRange(kEmin, kEmax);
+	hDiff->GetYaxis()->SetTitleOffset(1.9);
+	hDiff->SetStats(0);
+	hDiff->SetFillStyle(kNone);
+	hDiff->SetLineColor(kBlack);
+	hDiff->SetMarkerStyle(kNone);
+	hDiff->SetTitle(";Delayed energy, MeV;(Data-MC)/Data");
+	hDiff->Draw("e");
+	
+	prl1->Update();
+	prl1->SaveAs((pdfName+")").Data());
+
+//	Printing:
+	printf("kRndm + %3.0f%%     Scale = %5.3f     Range = [%4.1f-%4.1f] MeV\n", 100*kRndm, scale, (kEmin-1)*0.1, kEmax*0.1);
+	printf("Experimental data:\nE, MeV       Events\n");
+	for (i=0; i<120; i++) printf("%5.3f-%5.3f     %f +- %f\n", 0.1*i, 0.1*(i+1), hcm->GetBinContent(i+1), hcm->GetBinError(i+1));
+	printf("MC:\nE, MeV       Events\n");
+	for (i=64; i<120; i++) printf("%5.3f-%5.3f     %f +- %f\n", 0.1*i, 0.1*(i+1), hMc->GetBinContent(i+1), hMc->GetBinError(i+1));
+	printf("(MC-Data)/Data:\nE, MeV       Ratio\n");
+	for (i=65; i<85; i++) printf("%5.3f-%5.3f     %f +- %f\n", 0.1*i, 0.1*(i+1), hDiff->GetBinContent(i+1), hDiff->GetBinError(i+1));
 
 	f.Close();
 }
