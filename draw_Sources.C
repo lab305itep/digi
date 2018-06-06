@@ -33,11 +33,13 @@ class MyRandom {
 	};
 };
 
-void draw_Exp(TChain *tExpA, TChain *tExpB, const char *name, const char *fname, TCut cXY, TCut cZ, double Efit[2], double kSP = 0.5)
+void draw_Exp(TChain *tExpA, TChain *tExpB, TChain *tInfoA, TChain *tInfoB, 
+	const char *name, const char *fname, TCut cXY, TCut cZ, double Efit[2], double kSP = 0.5)
 {
 	char str[256];
-	double rAB;
-	long NA, NB;
+	long long gtA, gtB;
+	double timeA, timeB;
+	int i;
 	
 	gStyle->SetOptStat("i");
 	gStyle->SetOptFit(1);
@@ -67,9 +69,6 @@ void draw_Exp(TChain *tExpA, TChain *tExpB, const char *name, const char *fname,
 	TH1D *hHitsA = new TH1D("hHitsA", str, 20, 0, 20);
 	TH1D *hHitsB = new TH1D("hHitsB", str, 20, 0, 20);
 	TH1D *hHitsC = new TH1D("hHitsC", str, 20, 0, 20);
-	
-	TH1D *hTmpA = new TH1D("hTmpA", "Normalization counts A", 100, 0, 1000);
-	TH1D *hTmpB = new TH1D("hTmpB", "Normalization counts B", 100, 0, 1000);
 
 	TCut cxyz("NeutronX[0] >= 0 && NeutronX[1] >= 0 && NeutronX[2] >= 0");
 	TCut cVeto("VetoCleanHits < 2 && VetoCleanEnergy < 4");
@@ -86,11 +85,20 @@ void draw_Exp(TChain *tExpA, TChain *tExpB, const char *name, const char *fname,
 	tExpB->Project("hExpPMTB", "PmtCleanEnergy", cSel && cZ && cXY && cn);
 	tExpA->Project("hHitsA", "SiPmCleanHits", cSel && cZ && cXY);
 	tExpB->Project("hHitsB", "SiPmCleanHits", cSel && cZ && cXY);
-	NA = tExpA->Project("hTmpA", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
-	NB = tExpB->Project("hTmpB", "SiPmCleanEnergy", "(SiPmCleanEnergy + PmtCleanEnergy) / 2 > 100");
 	
-	rAB = 1.0 * NA / NB;
-	printf("NA = %ld    NB = %ld    rAB = %f\n", NA, NB, rAB);
+	gtA = gtB = 0;
+	for(i=0; i<tInfoA->GetEntries(); i++) {
+		tInfoA->GetEntry(i);
+		gtA += tInfoA->GetLeaf("gTime")->GetValueLong64();
+	}
+	for(i=0; i<tInfoB->GetEntries(); i++) {
+		tInfoB->GetEntry(i);
+		gtB += tInfoB->GetLeaf("gTime")->GetValueLong64();
+	}
+	timeA = gtA / 1.25E8;
+	timeB = gtB / 1.25E8;
+	
+	printf("A = %6.1fs    B = %6.1fs\n", timeA, timeB);
 	
 	hExpA->Sumw2();
 	hExpB->Sumw2();
@@ -101,10 +109,10 @@ void draw_Exp(TChain *tExpA, TChain *tExpB, const char *name, const char *fname,
 	hHitsA->Sumw2();
 	hHitsB->Sumw2();
 	
-	hExpC->Add(hExpA, hExpB, 1.0, -rAB);
-	hExpSiPMC->Add(hExpSiPMA, hExpSiPMB, 1.0, -rAB);
-	hExpPMTC->Add(hExpPMTA, hExpPMTB, 1.0, -rAB);
-	hHitsC->Add(hHitsA, hHitsB, 1.0, -rAB);
+	hExpC->Add(hExpA, hExpB, 1.0/timeA, -1.0/timeB);
+	hExpSiPMC->Add(hExpSiPMA, hExpSiPMB, 1.0/timeA, -1.0/timeB);
+	hExpPMTC->Add(hExpPMTA, hExpPMTB, 1.0/timeA, -1.0/timeB);
+	hHitsC->Add(hHitsA, hHitsB, 1.0/timeA, -1.0/timeB);
 
 	hXY->GetXaxis()->SetLabelSize(0.045);
 	hXY->GetYaxis()->SetLabelSize(0.045);
@@ -254,6 +262,8 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 	TChain *tMc = new TChain("DanssEvent");
 	TChain *tExpA = new TChain("DanssEvent");
 	TChain *tExpB = new TChain("DanssEvent");
+	TChain *tInfoA = new TChain("DanssInfo");
+	TChain *tInfoB = new TChain("DanssInfo");
 	
 	code = iser / 1000;
 	switch (iser) {
@@ -264,6 +274,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_012381.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012380.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012381.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_short_old_center_ksp_%4.2f", kSP);
 		break;
@@ -274,6 +288,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_020244.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_020243.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_020244.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
 		name = "22Na";
 		sprintf(fname, "22Na_may17_old_center_ksp_%4.2f", kSP);
 		break;
@@ -283,11 +301,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12376; i<=12407; i++) {
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_old_center_ksp_%4.2f", kSP);
@@ -299,6 +319,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_012371.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012370.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012371.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_short_old_90cm_ksp_%4.2f", kSP);
 		break;
@@ -308,11 +332,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12364; i<=12373; i++) {
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_old_90cm_ksp_%4.2f", kSP);
@@ -324,6 +350,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_012381.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012380.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012381.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_short_new_center_ksp_%4.2f", kSP);
 		break;
@@ -334,6 +364,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_020244.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_020252.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_020253.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_020243.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_020244.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_020252.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_020253.root");
 		name = "22Na";
 		sprintf(fname, "22Na_may17_new_center_ksp_%4.2f", kSP);
 		break;
@@ -343,11 +377,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12376; i<=12407; i++) {
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_new_center_ksp_%4.2f", kSP);
@@ -359,6 +395,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_012371.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012370.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012371.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_short_new_90cm_ksp_%4.2f", kSP);
 		break;
@@ -368,11 +408,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12364; i<=12373; i++) {
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "22Na";
 		sprintf(fname, "22Na_feb17_new_90cm_ksp_%4.2f", kSP);
@@ -384,6 +426,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_012311.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012310.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012311.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_short_old_center_ksp_%4.2f", kSP);
 		break;
@@ -394,6 +440,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_020234.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_020233.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_020234.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_020252.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_020253.root");
 		name = "60Co";
 		sprintf(fname, "60Co_may17_old_center_ksp_%4.2f", kSP);
 		break;
@@ -403,11 +453,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12306; i<=12346; i++) {
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_old_center_ksp_%4.2f", kSP);
@@ -419,6 +471,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root0/danss_root4/danss_012351.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
 		tExpB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012350.root");
+		tInfoA->AddFile("/mnt/root0/danss_root4/danss_012351.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012301.root");
+		tInfoB->AddFile("/mnt/root0/danss_root4/danss_012302.root");
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_short_old_90cm_ksp_%4.2f", kSP);
 		break;
@@ -428,11 +484,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12348; i<=12361; i++) {
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root0/danss_root4/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_old_90cm_ksp_%4.2f", kSP);
@@ -444,6 +502,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_012311.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012310.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012311.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_short_new_center_ksp_%4.2f", kSP);
 		break;
@@ -454,6 +516,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_020234.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_020252.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_020253.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_020233.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_020234.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_020252.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_020253.root");
 		name = "60Co";
 		sprintf(fname, "60Co_may17_new_center_ksp_%4.2f", kSP);
 		break;
@@ -463,11 +529,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12306; i<=12346; i++) {
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_new_center_ksp_%4.2f", kSP);
@@ -479,6 +547,10 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tExpA->AddFile("/mnt/root1/danss_root5/danss_012351.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
 		tExpB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012350.root");
+		tInfoA->AddFile("/mnt/root1/danss_root5/danss_012351.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012301.root");
+		tInfoB->AddFile("/mnt/root1/danss_root5/danss_012302.root");
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_short_new_90cm_ksp_%4.2f", kSP);
 		break;
@@ -488,11 +560,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		for (i=12348; i<=12361; i++) {
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpA->AddFile(str);
+			tInfoA->AddFile(str);
 		}
 		for (i=12212; i<=12304; i++) {
 			if (i == 12240) continue;
 			sprintf(str, "/mnt/root1/danss_root5/danss_%6.6d.root", i);
 			tExpB->AddFile(str);
+			tInfoB->AddFile(str);
 		}
 		name = "60Co";
 		sprintf(fname, "60Co_feb17_new_90cm_ksp_%4.2f", kSP);
@@ -553,7 +627,7 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 
 	switch (code) {
 	case 0:	// Experiment
-		draw_Exp(tExpA, tExpB, name, fname, cXY, cZ, Efit, kSP);
+		draw_Exp(tExpA, tExpB, tInfoA, tInfoB, name, fname, cXY, cZ, Efit, kSP);
 		break;
 	case 1:	// MC
 		draw_MC(tMc, name, fname, cXY, cZ, Efit, kSP, kRndm);

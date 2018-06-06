@@ -259,7 +259,7 @@ void cm_capture_energy(const char *fname, const char *mcname, double kRndm = 0.1
 	st->SetY1NDC(0.65);
 	st->SetY2NDC(0.95);
 	hMc->SetFillStyle(kNone);
-	hMc->Scale(hcm->Integral(kEmin, kEmax) / hMc->Integral(kEmin, kEmax));
+	hMc->Scale(hcm->Integral(66, 73) / hMc->Integral(66, 73));
 	hMc->GetXaxis()->SetRange(65, 120);
 	hMc->Draw("same,hist,][");
 	TLegend *lg = new TLegend(0.73, 0.83, 0.99, 0.95);
