@@ -39,8 +39,8 @@ void background_calc(const char *fname = "background_plots2.root", int run_first
         TCut cPe("PositronEnergy > 1");
         TCut cR1("Distance < 45");
         TCut cR2("Distance < 55");
-        TCut cRZ("fabs(DistanceZ) < 40");
-        TCut cR = cR2 && (cRXY || cR1) && cRZ;
+//        TCut cRZ("fabs(DistanceZ) < 40");
+        TCut cR = cR2 && (cRXY || cR1);// && cRZ;
         TCut cN("NeutronEnergy > 3.5");
         TCut ct;
 	TCut cv[3];
@@ -93,7 +93,7 @@ void background_calc(const char *fname = "background_plots2.root", int run_first
 		}
 	}
 
-	HPainter2 *hp = new HPainter2(0x801E, run_first, run_last);
+	HPainter2 *hp = new HPainter2(14, run_first, run_last);
 	hp->SetFile(fRoot);
 
 	for (j=0; j<3; j++) {

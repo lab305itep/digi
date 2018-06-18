@@ -578,6 +578,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		name = "22Na";
 		sprintf(fname, "22Na_MC_center_ksp_%4.2f_rndm_%4.2f", kSP, kRndm);
 		break;
+	case 1002:	// Na MC, center, Birks
+		cXY = (TCut) "(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400";
+		cZ = (TCut) "(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100";
+		tMc->AddFile("/mnt/root0/danss_root4/mc_22Na_BrkTest_transcode.root");
+		name = "22Na";
+		sprintf(fname, "22Na_MC_BrkTest_ksp_%4.2f_rndm_%4.2f", kSP, kRndm);
+		break;
 	case 1010:	// Na MC, edge
 		cXY = (TCut) "(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 88) * (NeutronX[1] - 88) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400";
 		cZ = (TCut) "(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100";
@@ -592,6 +599,13 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		tMc->AddFile("/mnt/root0/danss_root4/MC_newGeo_G/mc_60Co_center_transcode.root");
 		name = "60Co";
 		sprintf(fname, "60Co_MC_center_ksp_%4.2f_rndm_%4.2f", kSP, kRndm);
+		break;
+	case 1102:	// Co MC, center, Birks
+		cXY = (TCut) "(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 48) * (NeutronX[1] - 48) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400";
+		cZ = (TCut) "(NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 100";
+		tMc->AddFile("/mnt/root0/danss_root4/mc_60Co_BrkTest_transcode.root");
+		name = "60Co";
+		sprintf(fname, "60Co_MC_BrkTest_ksp_%4.2f_rndm_%4.2f", kSP, kRndm);
 		break;
 	case 1110:	// Co MC, edge
 		cXY = (TCut) "(NeutronX[0] - 48) * (NeutronX[0] - 48) + (NeutronX[1] - 88) * (NeutronX[1] - 88) + (NeutronX[2] - 49.5) * (NeutronX[2] - 49.5) < 400";
@@ -620,6 +634,7 @@ void draw_Sources(int iser, double kSP = 0.5, double kRndm = 0.0)
 		printf("38 - February 17, 90cm, new analysis, large dataset\n");
 		printf("DD - for MC:\n");
 		printf("0  - center (50, 50, 50) position\n");
+		printf("2  - center position, + birks effect for electrons\n");
 		printf("10 - Y90cm (50, 90, 50) position\n");
 		code = -1;
 		break;

@@ -1,10 +1,11 @@
-#define NHISTS 17
+#define NHISTS 21
 
 void background_draw(const char *rootname = "background_plots2.root")
 {
 	char strs[128];
 	char strl[1024];
-	const char titles[NHISTS][16] = {"gtDiff", "R1", "R2", "RZ", "PX", "PY", "PZ", "NX", "NY", "NZ", "NE", "NH", "PH", "AH", "AE", "AM", "AMO"};
+	const char titles[NHISTS][16] = {"gtDiff", "R1", "R2", "RZ", "PX", "PY", "PZ", 
+		"NX", "NY", "NZ", "NE", "NH", "PH", "AH", "AE", "AM", "AMO", "P2AZ", "AH1", "AE1", "P2AZ1"};
 	const char suffix[4][10] = {"A-rand", "A-diff", "B-diff", "C-diff"};
 	const Color_t color[4] = {kGreen+2, kBlue, kRed, kOrange};
 	const int marker[4] = {kOpenCircle, kFullCircle, kOpenSquare, kOpenStar};
