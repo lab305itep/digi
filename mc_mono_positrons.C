@@ -127,34 +127,40 @@ void all_mono_positrons(void)
 	fOut->Close();
 }
 
+#define NBINS	45
+
 void all_mono_positrons_250keV(const char *outname, const char *what = "PositronEnergy", TCut cut = (TCut) "")
 {
 	int Energy;
 	double E, S;
 	char fvar[20];
-	const char *dir = "/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mono_positrons_250keV/";
+//	const char *dir = "/mnt/root0/danss_root4/LY_siPm18_pmt20_new/newTransvProfile/mono_positrons_250keV/";
+	const char *dir = "/mnt/root1/danss_root5//mono_positrons_250keV/";
 	char strF[1024];
 	char strH[1024];
 	char strT[1024];
-	double e[48];	// energy
-	double er[48];	// mean
-	double dr[48];	// difference
-	double es[48];	// sigma
-	double se[48];	// sqrt(energy)
-	double ee[48];	// energy error
-	double ere[48];	// mean error
-	double ese[48];	// sigma error
+	double e[NBINS];	// energy
+	double er[NBINS];	// mean
+	double dr[NBINS];	// difference
+	double es[NBINS];	// sigma
+	double se[NBINS];	// sqrt(energy)
+	double ee[NBINS];	// energy error
+	double ere[NBINS];	// mean error
+	double ese[NBINS];	// sigma error
 	int i;
-	TH1D *h[48];
+	TH1D *h[NBINS];
 	double elow, ehigh;
 	TF1 *fg;
 	
 	TString oname(outname);
 	
-	for (i = 0; i < 48; i++) {
+	for (i = 0; i < NBINS; i++) {
 		Energy = 125 + 250 * i;
-		sprintf(fvar, "%d-%d", Energy/1000, Energy%1000);
-		sprintf(strF, "%s/mc_positron%sMeV_transcode.root", dir, fvar);
+//		sprintf(fvar, "%d-%d", Energy/1000, Energy%1000);
+		sprintf(fvar, "%2.2d-%3d", Energy/1000, Energy%1000);
+//		sprintf(strF, "%s/mc_positron%sMeV_transcode.root", dir, fvar);
+//		sprintf(strF, "%s/mc_MonoPositrons_indLY_transcode_rawProc_pedSim_e%sMeV.root", dir, fvar);
+		sprintf(strF, "%s/mc_MonoPositrons_glbLY_transcode_rawProc_pedSim_e%sMeV.root", dir, fvar);
 		sprintf(strH, "hPE%s", fvar);
 		sprintf(strT, "Reconstructed positron energy %s for MC mono positrons at %6.3f MeV;E, MeV", what, Energy/1000.0);
 		h[i] = mc_mono_positrons(strF, strH, strT, what, cut);
@@ -162,7 +168,7 @@ void all_mono_positrons_250keV(const char *outname, const char *what = "Positron
 	}
 	TFile *fOut = new TFile((oname + ".root").Data(), "RECREATE");
 	fOut->cd();
-	for (i=0; i<48; i++) h[i]->Write();
+	for (i=0; i<NBINS; i++) h[i]->Write();
 	
 	gStyle->SetOptStat(10);
 	gStyle->SetOptFit(1);
@@ -171,7 +177,7 @@ void all_mono_positrons_250keV(const char *outname, const char *what = "Positron
 	
 	cv->SaveAs((oname+".pdf[").Data());
 	
-	for (i=0; i<48; i++) {
+	for (i=0; i<NBINS; i++) {
 		cv->Clear();
 		E = 0.125 + 0.25 * i;
 		S = 0.3 * sqrt(E);
@@ -214,8 +220,8 @@ void all_mono_positrons_250keV(const char *outname, const char *what = "Positron
 	gE->Fit("pol1", "", "", 1, 8);
 	lg->AddEntry(gE, "Data", "PE");
 	fg = gE->GetFunction("pol1");
-	for (i=0; i<48; i++) dr[i] = 10*(er[i] - fg->Eval(0.125 + 0.25 * i));
-	TGraph *gER = new TGraph(48, e, dr);
+	for (i=0; i<NBINS; i++) dr[i] = 10*(er[i] - fg->Eval(0.125 + 0.25 * i));
+	TGraph *gER = new TGraph(NBINS, e, dr);
 	gER->SetMarkerStyle(kFullCircle);
 	gER->SetMarkerColor(kRed);
 	gER->Draw("P");
@@ -227,7 +233,7 @@ void all_mono_positrons_250keV(const char *outname, const char *what = "Positron
 	hG = new TH1D("hS", "#sigma;#sqrt{E}, MeV;#sigma,MeV", 12, 0, 4);
 	hG->SetMinimum(0);
 	hG->SetMaximum(1.5);
-	gE = new TGraphErrors(48, se, es, ee, ese);
+	gE = new TGraphErrors(NBINS, se, es, ee, ese);
 	gE->SetMarkerStyle(kCircle);
 	gE->SetMarkerColor(kGreen);
 //	gE->SetMarkerSize(2);

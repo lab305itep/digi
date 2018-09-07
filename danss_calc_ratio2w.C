@@ -394,9 +394,12 @@ void draw_tail_hist(const char *title, const char *posmask)
 	lg->AddEntry(hN, "Neutrino", "l");
 	lg->AddEntry(hC, "Cosmic", "l");
 	lg->Draw();
-	sprintf(strs, "Integral 1-7 MeV = %5.1f events/day", hN->GetFunction("pol1")->Integral(hN->FindBin(1.001), hN->FindBin(6.999)));
+	sprintf(strs, "Neutrino 1-7 MeV = %5.1f events/day", hN->GetFunction("pol1")->Integral(1, 7) / hN->GetBinWidth(1));
 	txt.SetTextColor(kBlue);
 	txt.DrawLatex(11, 5, strs);
+	sprintf(strs, "Cosmic 1-7 MeV = %5.1f events/day", hC->GetFunction("pol1")->Integral(1, 7) / hC->GetBinWidth(1));
+	txt.SetTextColor(kRed);
+	txt.DrawLatex(11, 4.3, strs);
 }
 
 void draw_single_ratio(const char *nameA, const char *nameB, const char *name, const char *title, double min=0.6, double max=1.2, int last=60)

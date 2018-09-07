@@ -189,7 +189,7 @@ void draw_MC(TChain *tMc, const char *name, const char *fname, TCut cXY, TCut cZ
 //	gStyle->SetLineWidth(4);
 	
 	sprintf(str, "Monte Carlo energy deposit in %s decay;E, MeV", name);
-	TH1D *hMc = new TH1D("hMc", str, 70, 0, 7);
+	TH1D *hMc = new TH1D("hMc", str, 140, 0, 7);
 	sprintf(str, "Monte Carlo SiPM energy deposit in %s decay;E, MeV", name);
 	TH1D *hMcSiPM = new TH1D("hMcSiPM", str, 35, 0, 7);
 	sprintf(str, "Monte Carlo PMT energy deposit in %s decay;E, MeV", name);
